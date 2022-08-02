@@ -31,17 +31,7 @@ DATA_FILE = os.path.join(SUB_DIR, "data.geojson")
 
 osi = gpd.read_file(DATA_FILE)
 
-osi.to_file(GPKG_BOUNDARY, layer="Admin_Areas_OSi")
-
-# Boundary
-
-osi_roi = osi[["geometry"]].copy()
-
-osi_roi["NAME"] = "Republic of Ireland"
-
-osi_roi = osi_roi.dissolve(by="NAME")
-
-osi_roi.to_file(GPKG_BOUNDARY, layer="Boundary_ROI")
+osi.to_file(GPKG_BOUNDARY, layer="Admin_Areas_ROI_OSi")
 
 ######################################################################
 # OSNI Open Data - Largescale Boundaries - County Boundaries
@@ -66,9 +56,18 @@ DATA_FILE = os.path.join(SUB_DIR, "data.geojson")
 
 osni = gpd.read_file(DATA_FILE)
 
-osni.to_file(GPKG_BOUNDARY, layer="Admin_Areas_OSNI")
+osni.to_file(GPKG_BOUNDARY, layer="Admin_Areas_NI_OSNI")
 
-# Boundary
+######################################################################
+# OSi/OSNI boundaries
+
+osi_roi = osi[["geometry"]].copy()
+
+osi_roi["NAME"] = "Republic of Ireland"
+
+osi_roi = osi_roi.dissolve(by="NAME")
+
+osi_roi.reset_index(inplace=True)
 
 osni_ni = osni[["geometry"]].copy()
 
@@ -76,7 +75,11 @@ osni_ni["NAME"] = "Northern Ireland"
 
 osni_ni = osni_ni.dissolve(by="NAME")
 
-osni_ni.to_file(GPKG_BOUNDARY, layer="Boundary_NI")
+osni_ni.reset_index(inplace=True)
+
+ie = osi_roi.merge(osni_ni, how="outer")
+
+ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_OS")
 
 ######################################################################
 # All-Ireland counties
@@ -107,7 +110,7 @@ osni_counties["PROVINCE"] = "Ulster"
 
 ie_counties = osi_counties.merge(osni_counties, how="outer")
 
-ie_counties.to_file(GPKG_BOUNDARY, layer="Counties_IE")
+ie_counties.to_file(GPKG_BOUNDARY, layer="Counties_IE_OS")
 
 # All-Ireland boundary
 
@@ -117,7 +120,9 @@ ie["NAME"] = "Ireland"
 
 ie = ie.dissolve(by="NAME")
 
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE")
+ie.reset_index(inplace=True)
+
+ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_OS")
 
 ######################################################################
 # NUTS (Nomenclature of territorial units for statistics)
@@ -126,6 +131,7 @@ URL = (
     "https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/" +
     "ref-nuts-2021-01m.geojson.zip"
 )
+
 SUB_DIR = os.path.join(DATA_DIR, "nuts-2021", "raw")
 
 dd.download_data(server=URL, ddir=SUB_DIR)
@@ -142,13 +148,15 @@ nuts = nuts[nuts["CNTR_CODE"].isin(["IE", "UK"])]
 
 nuts_ie = nuts[nuts["CNTR_CODE"].isin(["IE"])]
 
-nuts_ni = nuts[nuts["NUTS_NAME"].isin(["Northern Ireland"])]
+nuts_ni = nuts[nuts["CNTR_CODE"].isin(["UK"])]
+
+nuts_ni = nuts[nuts["NUTS_NAME"].str.contains("Ireland")]
 
 nuts2 = nuts_ie.merge(nuts_ni, how="outer")
 
 nuts2.drop(columns="FID", inplace=True)
 
-nuts2.to_file(GPKG_BOUNDARY, layer="NUTS2_IE")
+nuts2.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS2")
 
 # NUTS 3
 
@@ -166,7 +174,7 @@ nuts3 = nuts_ie.merge(nuts_ni, how="outer")
 
 nuts3.drop(columns="FID", inplace=True)
 
-nuts3.to_file(GPKG_BOUNDARY, layer="NUTS3_IE")
+nuts3.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS3")
 
 # Boundaries
 
@@ -174,10 +182,16 @@ ie = nuts3.dissolve(by="CNTR_CODE")
 
 ie = ie[["geometry"]]
 
-ie.to_file(GPKG_BOUNDARY, layer="NUTS_ROI_NI")
+ie.reset_index(inplace=True)
+
+ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_NUTS")
 
 ie["NAME"] = "Ireland"
 
 ie = ie.dissolve(by="NAME")
 
-ie.to_file(GPKG_BOUNDARY, layer="NUTS_IE")
+ie.reset_index(inplace=True)
+
+ie.drop(columns=["CNTR_CODE"], inplace=True)
+
+ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS")
