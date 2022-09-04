@@ -1,3 +1,8 @@
+"""download_data_boundary.py
+
+Download Ireland boundary data and save as layers in a GeoPackage file
+"""
+
 # import libraries
 import os
 import geopandas as gpd
@@ -82,7 +87,7 @@ ie = osi_roi.merge(osni_ni, how="outer")
 ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_OS")
 
 ######################################################################
-# All-Ireland counties
+# Island of Ireland counties
 
 osi_counties = osi.dissolve(by="COUNTY")
 
@@ -112,7 +117,7 @@ ie_counties = osi_counties.merge(osni_counties, how="outer")
 
 ie_counties.to_file(GPKG_BOUNDARY, layer="Counties_IE_OS")
 
-# All-Ireland boundary
+# Island of Ireland boundary
 
 ie = ie_counties[["geometry"]].copy()
 
@@ -195,3 +200,9 @@ ie.reset_index(inplace=True)
 ie.drop(columns=["CNTR_CODE"], inplace=True)
 
 ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS")
+
+# Boundaries in Irish Transverse Mercator
+
+ie.to_crs(2157, inplace=True)
+
+ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS_ITM")

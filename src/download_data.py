@@ -1,3 +1,9 @@
+"""download_data.py
+
+Download data using specified URL and optional parameters into
+the specified directory
+"""
+
 import os
 import requests
 
@@ -11,14 +17,14 @@ def download_data(
     """
     Download data using specified URL and optional parameters into
     the specified directory
-    Parameters:
-    -----------
-    `server`: data download URL
-    `ddir`: directory where the downloaded files will be stored; default is
-            "data"
-    `params`: optional request parameters; default is None
-    `chunk_size`: number of bytes of data per downloaded chunk; default is
-                  1048676
+
+    Keyword arguments:
+    server -- data download URL
+    ddir -- directory where the downloaded files will be stored (default
+            "data")
+    params -- optional request parameters (default None)
+    chunk_size -- number of bytes of data per downloaded chunk (default
+                  1048676)
     """
     # get request
     r = requests.get(server, params=params, stream=True)
@@ -39,7 +45,4 @@ def download_data(
                 filedl.write(chunk)
         print("Data successfully downloaded to", ddir)
     else:
-        print(
-            "Data not downloaded to", ddir,
-            "\nStatus code:", r.status_code
-        )
+        print("Data not downloaded to", ddir, "\nStatus code:", r.status_code)

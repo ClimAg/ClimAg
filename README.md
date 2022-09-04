@@ -2,14 +2,6 @@
 
 This research was funded by the Environment Protection Agency (EPA), Ireland project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"](https://www.ucc.ie/en/eel/projects/climag/) under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
-## Notebooks
-
-Notebook | Link
---- | ---
-ireland-boundary-nuts | [nbviewer](https://nbviewer.org/gist/nmstreethran/20d0fdcb9fd282703aa24abd401bb8e1/ireland-boundary-nuts.ipynb)
-ireland-boundary | [nbviewer](https://nbviewer.org/gist/nmstreethran/20d0fdcb9fd282703aa24abd401bb8e1/ireland-boundary.ipynb)
-clc-2018 | [nbviewer](https://nbviewer.org/gist/nmstreethran/20d0fdcb9fd282703aa24abd401bb8e1/clc-2018.ipynb)
-
 ## Licence
 
 Copyright 2022 N. M. Streethran
