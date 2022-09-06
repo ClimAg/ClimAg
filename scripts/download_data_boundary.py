@@ -6,7 +6,7 @@ Download Ireland boundary data and save as layers in a GeoPackage file
 # import libraries
 import os
 import geopandas as gpd
-from src import download_data as dd
+from climag import download_data as dd
 
 # base data download directory
 DATA_DIR = os.path.join("data", "boundary")
@@ -17,7 +17,7 @@ GPKG_BOUNDARY = os.path.join("data", "boundary", "boundaries.gpkg")
 # Administrative Areas - OSi National Statutory Boundaries - 2019
 
 URL = (
-    "https://data-osi.opendata.arcgis.com/datasets/" +
+    "https://data-osi.opendata.arcgis.com/datasets/"
     "d81188d16e804bde81548e982e80c53e_0.geojson"
 )
 
@@ -30,9 +30,12 @@ payload = {
 
 SUB_DIR = os.path.join(DATA_DIR, "admin-osi", "raw")
 
-dd.download_data(server=URL, ddir=SUB_DIR, params=payload)
+dd.download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
-DATA_FILE = os.path.join(SUB_DIR, "data.geojson")
+DATA_FILE = os.path.join(
+    SUB_DIR,
+    "Administrative_Areas_-_OSi_National_Statutory_Boundaries_-_2019.geojson"
+)
 
 osi = gpd.read_file(DATA_FILE)
 
@@ -42,7 +45,7 @@ osi.to_file(GPKG_BOUNDARY, layer="Admin_Areas_ROI_OSi")
 # OSNI Open Data - Largescale Boundaries - County Boundaries
 
 URL = (
-    "https://osni-spatialni.opendata.arcgis.com/datasets/spatialni::" +
+    "https://osni-spatialni.opendata.arcgis.com/datasets/spatialni::"
     "osni-open-data-largescale-boundaries-county-boundaries-.geojson"
 )
 
@@ -55,9 +58,12 @@ payload = {
 
 SUB_DIR = os.path.join(DATA_DIR, "admin-osni", "raw")
 
-dd.download_data(server=URL, ddir=SUB_DIR, params=payload)
+dd.download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
-DATA_FILE = os.path.join(SUB_DIR, "data.geojson")
+DATA_FILE = os.path.join(
+    SUB_DIR,
+    "OSNI_Open_Data_-_Largescale_Boundaries_-_County_Boundaries_.geojson"
+)
 
 osni = gpd.read_file(DATA_FILE)
 
@@ -133,20 +139,20 @@ ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_OS")
 # NUTS (Nomenclature of territorial units for statistics)
 
 URL = (
-    "https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/" +
+    "https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/"
     "ref-nuts-2021-01m.geojson.zip"
 )
 
 SUB_DIR = os.path.join(DATA_DIR, "nuts-2021", "raw")
 
-dd.download_data(server=URL, ddir=SUB_DIR)
+dd.download_data(server=URL, dl_dir=SUB_DIR)
 
-DATA_FILE = os.path.join(SUB_DIR, "data.zip")
+DATA_FILE = os.path.join(SUB_DIR, "ref-nuts-2021-01m.geojson.zip")
 
 # NUTS2
 
 nuts = gpd.read_file(
-    "zip://" + DATA_FILE + "!" + "NUTS_RG_01M_2021_4326_LEVL_2.geojson"
+    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_2.geojson"
 )
 
 nuts = nuts[nuts["CNTR_CODE"].isin(["IE", "UK"])]
@@ -166,7 +172,7 @@ nuts2.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS2")
 # NUTS 3
 
 nuts = gpd.read_file(
-    "zip://" + DATA_FILE + "!" + "NUTS_RG_01M_2021_4326_LEVL_3.geojson"
+    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_3.geojson"
 )
 
 nuts = nuts[nuts["CNTR_CODE"].isin(["IE", "UK"])]

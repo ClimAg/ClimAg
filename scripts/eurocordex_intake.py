@@ -12,7 +12,7 @@ DKRZ data store
 import json
 import os
 import intake
-import requests
+from climag import download_data as dd
 
 DATA_DIR_BASE = os.path.join("data", "eurocordex")
 
@@ -40,25 +40,18 @@ timerange = [
 ]
 
 variables = [
-    "evspsblpot", "hurs", "huss", "mrso", "pr", "ps",
-    "rlds", "rsds", "rlus", "rsus", "sund",
-    "tas", "tasmax", "tasmin"
+    "evspsblpot", "hurs", "huss", "mrso", "pr", "ps", "rlds", "rsds", "rlus",
+    "rsus", "sund", "tas", "tasmax", "tasmin"
 ]
 
 # create local catalogue
 
 JSON_FILE_PATH = os.path.join(DATA_DIR_BASE, "dkrz_cordex_disk.json")
 
-# download JSON catalogue from DKRZ's GitLab
-r = requests.get(
-    dkrz_cat._entries["dkrz_cordex_disk"]._open_args["esmcol_obj"],
-    stream=True
-)
+server = dkrz_cat._entries["dkrz_cordex_disk"]._open_args["esmcol_obj"]
 
-if r.status_code == 200:
-    with open(JSON_FILE_PATH, "wb") as catfile:
-        for chunk in r.iter_content(chunk_size=1048676):
-            catfile.write(chunk)
+# download JSON catalogue from DKRZ's GitLab
+dd.download_data(server=server, dl_dir=DATA_DIR_BASE)
 
 # filter for EUR-11, historical and rcp85 experiments only, at daily res
 # keep data for the relevant variables and time ranges
@@ -85,13 +78,13 @@ CSV_FILE_PATH = os.path.join(DATA_DIR_BASE, "eurocordex_eur11_catalogue.csv")
 cordex_eur11.df.to_csv(CSV_FILE_PATH, index=False)
 
 # modify the JSON catalogue
-json_file = open(JSON_FILE_PATH, encoding="utf-8")
-cordex_eur11_cat = json.load(json_file)
-json_file.close()
+with open(JSON_FILE_PATH, encoding="utf-8") as json_file:
+    cordex_eur11_cat = json.load(json_file)
+    json_file.close()
 
 GITHUB_CSV_LINK = (
-    "https://media.githubusercontent.com/media/ClimAg/data/main/eurocordex/" +
-    "eurocordex_eur11_catalogue.csv?token=AHOG4CXFUAWFBZDPQEOBTOTDCUOD6"
+    "https://media.githubusercontent.com/media/ClimAg/data/main/eurocordex/"
+    "eurocordex_eur11_catalogue.csv"
 )
 
 cordex_eur11_cat["catalog_file"] = GITHUB_CSV_LINK
@@ -99,16 +92,23 @@ cordex_eur11_cat["catalog_file"] = GITHUB_CSV_LINK
 cordex_eur11_cat["id"] = "eurocordex_eur11"
 
 cordex_eur11_cat["description"] = (
-    "This is an ESM collection for EURO-CORDEX data accessible on GitHub " +
-    "LFS. Data has been generated using the DKRZ intake-esm stores. " +
-    "Data is filtered for the EUR-11 CORDEX domain at the daily timescale, " +
-    "the 'historical' (1976-2005) and 'rcp85' (2041-2070) experiments, and " +
-    "the following variables: 'evspsblpot', 'hurs', 'huss', 'mrso', 'pr', " +
-    "'ps', 'rlds', 'rsds', 'rlus', 'rsus', 'sund', 'tas', 'tasmax', 'tasmin'"
+    "This is an ESM collection for EURO-CORDEX data accessible on GitHub "
+    "LFS. Data has been generated using the DKRZ intake-esm stores. "
+    "Data is filtered for the EUR-11 CORDEX domain at the daily timescale, "
+    "the 'historical' (1976-2005) and 'rcp85' (2041-2070) experiments, and "
+    "the following variables: " + ', '.join(variables)
 )
 
 # save the modified JSON file
 JSON_FILE_PATH = os.path.join(DATA_DIR_BASE, "eurocordex_eur11_local.json")
 
+with open(JSON_FILE_PATH, "w", encoding="utf-8") as json_file:
+    json.dump(cordex_eur11_cat, json_file, ensure_ascii=False, indent=4)
+
+# create a copy that reads the CSV file from disk
+cordex_eur11_cat["catalog_file"] = CSV_FILE_PATH
+JSON_FILE_PATH = os.path.join(
+    DATA_DIR_BASE, "eurocordex_eur11_local_disk.json"
+)
 with open(JSON_FILE_PATH, "w", encoding="utf-8") as json_file:
     json.dump(cordex_eur11_cat, json_file, ensure_ascii=False, indent=4)
