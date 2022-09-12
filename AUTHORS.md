@@ -2,7 +2,7 @@
 
 ## Authors
 
-- Nithiya Streethran <nmstreethran@gmail.com>
+- Nithiya M Streethran <nmstreethran@gmail.com>
 
 ## Contributors
 

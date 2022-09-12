@@ -1,6 +1,8 @@
 # ClimAg
 
-This research was funded by the [Environment Protection Agency (EPA), Ireland][EPA] project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"][ClimAg] under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
+This research was funded by the [Environment Protection Agency (EPA), Ireland][EPA]
+project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"][ClimAg]
+under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
 ## Features
 
@@ -24,9 +26,38 @@ limitations under the License.
 
 ## Credits
 
-Some parts of this repository were created with [Cookiecutter] and the [`audreyr/cookiecutter-pypackage`][audreyr] project template.
+Pasture model ([ModVege]): Original code by Chemin (2022). This is the
+Python implementation of the ModVege pasture model, translated from Java to
+Python by Chemin (2022).
+The Java model was provided by R. Martin of INRAE UREP Clermont-Ferrand
+for the original Python implementation.
+The original ModVege pasture model was developed by
+[Jouven et al. (2006)][Jouven].
+
+Grass growth data for Northern Ireland has been extracted from bulletins of
+the [GrassCheck] project by Agrisearch.
+
+Some parts of this repository were created with [Cookiecutter] and the
+[`audreyr/cookiecutter-pypackage`][audreyr] project template.
+
+## References
+
+### Software
+
+- Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
+  <https://github.com/YannChemin/modvege> (Accessed 6 September 2022).
+
+### Publications
+
+- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+  of biomass, structure and digestibility of herbage in managed permanent
+  pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
+  pp. 112-124. DOI: [10.1111/j.1365-2494.2006.00515.x][Jouven].
 
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/
+[ModVege]: https://github.com/YannChemin/modvege
+[Jouven]: https://doi.org/10.1111/j.1365-2494.2006.00515.x
+[GrassCheck]: https://agrisearch.org/grasscheck
 [Cookiecutter]: https://github.com/audreyr/cookiecutter
 [audreyr]: https://github.com/audreyr/cookiecutter-pypackage

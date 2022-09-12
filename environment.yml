@@ -9,3 +9,9 @@ dependencies:
   - rioxarray
   - geopandas
   - intake-esm
+  - ecgtools
+  - cartopy
+  - nc-time-axis
+  - jupyterlab
+  - flake8
+  - pylint

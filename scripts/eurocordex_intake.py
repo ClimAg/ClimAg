@@ -96,7 +96,7 @@ cordex_eur11_cat["description"] = (
     "LFS. Data has been generated using the DKRZ intake-esm stores. "
     "Data is filtered for the EUR-11 CORDEX domain at the daily timescale, "
     "the 'historical' (1976-2005) and 'rcp85' (2041-2070) experiments, and "
-    "the following variables: " + ', '.join(variables)
+    "the following variables: " + ", ".join(variables)
 )
 
 # save the modified JSON file

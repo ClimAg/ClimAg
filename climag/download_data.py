@@ -9,8 +9,6 @@ import re
 from datetime import datetime, timezone
 import requests
 
-BASE_DIR_DEF = "data"
-
 
 # define function to download data
 def download_data(
@@ -34,7 +32,7 @@ def download_data(
     # download data to directory
     # https://stackoverflow.com/a/53299682
     try:
-        r = requests.get(server, params=params, stream=True)
+        r = requests.get(server, params=params, stream=True, timeout=3000)
         if (
             "Content-Disposition" in r.headers.keys() and
             "filename" in r.headers["Content-Disposition"]
