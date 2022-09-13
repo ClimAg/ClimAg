@@ -12,7 +12,7 @@ DKRZ data store
 import json
 import os
 import intake
-from climag import download_data as dd
+from climag.download_data import download_data
 
 DATA_DIR_BASE = os.path.join("data", "eurocordex")
 
@@ -51,7 +51,7 @@ JSON_FILE_PATH = os.path.join(DATA_DIR_BASE, "dkrz_cordex_disk.json")
 server = dkrz_cat._entries["dkrz_cordex_disk"]._open_args["esmcol_obj"]
 
 # download JSON catalogue from DKRZ's GitLab
-dd.download_data(server=server, dl_dir=DATA_DIR_BASE)
+download_data(server=server, dl_dir=DATA_DIR_BASE)
 
 # filter for EUR-11, historical and rcp85 experiments only, at daily res
 # keep data for the relevant variables and time ranges
