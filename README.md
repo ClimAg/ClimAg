@@ -51,8 +51,15 @@ Some parts of this repository were created with [Cookiecutter] and the
 
 - Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
-  pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
+  pastures. 1. Model description', *Grass and Forage Science*, vol. 61, no. 2,
   pp. 112-124. DOI: [10.1111/j.1365-2494.2006.00515.x][Jouven].
+- Huson, K. M., Lively, F. O., Aubry, A., Takahashi, T., Gordon, A. and McDonnell, D. A. (2020).
+  'GrassCheck: monitoring grass growth and maximizing grass utilisation on UK farms',
+  in Virkajärvi, P. et al. (eds), *Meeting the future demands for grassland production*,
+  Grassland Science in Europe, Helsinki, Finland, European Grassland Federation,
+  vol. 25, pp. 716–718. [Online]. Available at
+  <https://web.archive.org/web/20201111201020/https://www.europeangrassland.org/fileadmin/documents/Infos/Printed_Matter/Proceedings/EGF2020.pdf>
+  (Accessed 25 August 2022).
 
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/

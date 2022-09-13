@@ -6,7 +6,7 @@ Download Ireland boundary data and save as layers in a GeoPackage file
 # import libraries
 import os
 import geopandas as gpd
-from climag import download_data as dd
+from climag.download_data import download_data
 
 # base data download directory
 DATA_DIR = os.path.join("data", "boundary")
@@ -30,7 +30,7 @@ payload = {
 
 SUB_DIR = os.path.join(DATA_DIR, "admin-osi", "raw")
 
-dd.download_data(server=URL, dl_dir=SUB_DIR, params=payload)
+download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
 DATA_FILE = os.path.join(
     SUB_DIR,
@@ -58,7 +58,7 @@ payload = {
 
 SUB_DIR = os.path.join(DATA_DIR, "admin-osni", "raw")
 
-dd.download_data(server=URL, dl_dir=SUB_DIR, params=payload)
+download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
 DATA_FILE = os.path.join(
     SUB_DIR,
@@ -145,7 +145,7 @@ URL = (
 
 SUB_DIR = os.path.join(DATA_DIR, "nuts-2021", "raw")
 
-dd.download_data(server=URL, dl_dir=SUB_DIR)
+download_data(server=URL, dl_dir=SUB_DIR)
 
 DATA_FILE = os.path.join(SUB_DIR, "ref-nuts-2021-01m.geojson.zip")
 
@@ -189,21 +189,25 @@ nuts3.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS3")
 
 # Boundaries
 
-ie = nuts3.dissolve(by="CNTR_CODE")
+ie = gpd.read_file(
+    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_1.geojson"
+)
 
-ie = ie[["geometry"]]
+ie = ie[ie["NUTS_ID"].str.contains("UKN|IE")]
 
 ie.reset_index(inplace=True)
 
+ie.drop(columns="FID", inplace=True)
+
 ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_NUTS")
+
+ie = ie[["geometry"]]
 
 ie["NAME"] = "Ireland"
 
 ie = ie.dissolve(by="NAME")
 
 ie.reset_index(inplace=True)
-
-ie.drop(columns=["CNTR_CODE"], inplace=True)
 
 ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS")
 

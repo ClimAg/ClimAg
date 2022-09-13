@@ -1,7 +1,7 @@
 """download_data.py
 
-Download data using specified URL and optional parameters into
-the specified directory
+Download data using specified URL and optional parameters into the specified
+directory
 """
 
 import os

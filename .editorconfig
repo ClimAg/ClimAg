@@ -9,7 +9,7 @@ indent_style = space
 trim_trailing_whitespace = true
 charset = utf-8
 
-[*.{py,sh}]
+[*.{py,sh,r}]
 indent_size = 4
 
 [*.{md,yml}]

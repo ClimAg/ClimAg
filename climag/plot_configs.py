@@ -1,0 +1,155 @@
+"""plot_configs.py
+
+Matplotlib plot style configurations and additional functions to plot climate
+model datasets, e.g. CORDEX
+"""
+
+from datetime import datetime
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
+
+# configure plot styles
+plt.style.use("seaborn-whitegrid")
+plt.rcParams["font.family"] = "Source Sans 3"
+plt.rcParams["figure.dpi"] = 96
+plt.rcParams["axes.grid"] = False
+plt.rcParams["text.color"] = "darkslategrey"
+plt.rcParams["axes.labelcolor"] = "darkslategrey"
+plt.rcParams["xtick.labelcolor"] = "darkslategrey"
+plt.rcParams["ytick.labelcolor"] = "darkslategrey"
+plt.rcParams["figure.titleweight"] = "semibold"
+plt.rcParams["axes.titleweight"] = "semibold"
+plt.rcParams["figure.titlesize"] = "13"
+plt.rcParams["axes.titlesize"] = "12"
+plt.rcParams["axes.labelsize"] = "10"
+
+
+# convert lat/lon to rotated pole coordinates
+def rotated_pole_point(data, lon, lat):
+    """
+    Convert the latitude and longitude of a specific point to rotated pole
+    coordinates used in the input data.
+
+    Parameters
+    ----------
+    data : input climate data which uses rotated pole coordinates
+    lon : longitude of the point
+    lat : latitude of the point
+    """
+    pole_latitude = (
+        data.rio.crs.to_dict(
+            projjson=True
+        )["conversion"]["parameters"][0]["value"]
+    )
+    pole_longitude = (
+        data.rio.crs.to_dict(
+            projjson=True
+        )["conversion"]["parameters"][1]["value"]
+    )
+    rp_cds = ccrs.RotatedGeodetic(
+        pole_latitude=pole_latitude, pole_longitude=pole_longitude,
+    ).transform_point(x=lon, y=lat, src_crs=ccrs.Geodetic())
+    return rp_cds[0], rp_cds[1]
+
+
+def cordex_plot_title(data, lon=None, lat=None):
+    """
+    Define the map plot title for CORDEX data.
+
+    Parameters
+    ----------
+    data : input CORDEX data
+    """
+    if lon is None and lat is None:
+        if data.attrs["frequency"] == "mon":
+            date_format = "%b %Y"
+        elif data.attrs["frequency"] == "day":
+            date_format = "%-d %b %Y"
+        else:
+            date_format = "%Y-%m-%d %H:%M:%S"
+        end_str = datetime.strftime(
+            datetime.fromisoformat(str(data["time"].values)), date_format
+        )
+    else:
+        end_str = "(" + str(lon) + ", " + str(lat) + ")"
+    plot_title = (
+        data.attrs["project_id"] + ", " +
+        data.attrs["CORDEX_domain"] + ", " +
+        data.attrs["driving_model_id"] + ", " +
+        data.attrs["driving_model_ensemble_member"] + ", " +
+        data.attrs["driving_experiment_name"] + ", " +
+        data.attrs["model_id"] + ", " +
+        data.attrs["rcm_version_id"] + ", " +
+        data.attrs["frequency"] + ", " +
+        end_str
+    )
+    return plot_title
+
+
+def rotated_pole_transform(data):
+    """
+    Rotated pole transform for plotting CORDEX data.
+
+    Parameters
+    ----------
+    data : input CORDEX data
+    """
+    pole_latitude = (
+        data.rio.crs.to_dict(
+            projjson=True
+        )["conversion"]["parameters"][0]["value"]
+    )
+    pole_longitude = (
+        data.rio.crs.to_dict(
+            projjson=True
+        )["conversion"]["parameters"][1]["value"]
+    )
+    transform = ccrs.RotatedPole(
+        pole_latitude=pole_latitude, pole_longitude=pole_longitude
+    )
+    return transform
+
+
+# def data_plot(
+#     data,
+#     cmap="terrain",
+#     vmin=None,
+#     vmax=None,
+#     grid_color="lightslategrey",
+#     border_color="darkslategrey",
+#     border_width=.5,
+#     border_res="50m",
+#     cbar_label=None,
+#     transform=None,
+#     grid_xlocs=range(-180, 180, 10),
+#     grid_ylocs=range(-90, 90, 5),
+#     plot_title=None,
+#     plot_figsize=(20, 10)
+# ):
+#     """
+#     Custom plot function
+#     """
+#     plt.figure(figsize=plot_figsize)
+#     ax = plt.axes(projection=transform)
+#     ax.gridlines(
+#         draw_labels=True,
+#         linewidth=.5,
+#         color=grid_color,
+#         xlocs=grid_xlocs,
+#         ylocs=grid_ylocs
+#     )
+#     data.plot(
+#         ax=ax,
+#         cmap=cmap,
+#         transform=transform,
+#         vmin=vmin,
+#         vmax=vmax,
+#         x="rlon",
+#         y="rlat",
+#         cbar_kwargs={"label": cbar_label}
+#     )
+#     ax.coastlines(
+#         resolution=border_res, color=border_color, linewidth=border_width
+#     )
+#     if plot_title is not None:
+#         ax.set_title(plot_title)
