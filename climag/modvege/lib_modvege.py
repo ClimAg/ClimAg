@@ -1,3 +1,8 @@
+"""lib_modvege.py
+
+https://github.com/YannChemin/modvege
+"""
+
 import numpy as np
 
 
@@ -74,9 +79,10 @@ def exeCut(cutHeight, bulkDensity, biomass):
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
         takenBiomass = biomass - biomassAfterCut
-        return (takenBiomass, biomassAfterCut)
     else:
-        return (0, biomass)
+        takenBiomass = 0
+        biomassAfterCut = biomass
+    return (takenBiomass, biomassAfterCut)
 
 
 def exeDefoliationByBiomass(biomass, biomassToIngest):
@@ -139,7 +145,6 @@ def dv_update(
         )
     else:
         dv_avg_age = 0
-
     dv_biomass += growthBiomass
     return (dv_biomass, dv_avg_age)
 
@@ -169,9 +174,10 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
         age = 3
     # Compute the abscission for Dead Vegetative part
     if temperature > 0:
-        return kldv * dv_biomass * temperature * age
+        abscission_biomass = kldv * dv_biomass * temperature * age
     else:
-        return 0
+        abscission_biomass = 0
+    return abscission_biomass
 
 
 # Dead Reproductive Functions
@@ -213,7 +219,6 @@ def dr_update(
         )
     else:
         dr_avg_age = 0
-
     dr_biomass += growthBiomass
     return (dr_biomass, dr_avg_age)
 
@@ -245,9 +250,10 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
     # Compute abscission for Dead Reproductive
     if temperature > 0:
         # print(kldr, dr_biomass, temperature,age)
-        return kldr * dr_biomass * temperature * age
+        abscission_biomass = kldr * dr_biomass * temperature * age
     else:
-        return 0
+        abscission_biomass = 0
+    return abscission_biomass
 
 
 # Green Vegetative Functions
@@ -281,7 +287,6 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
         growthBiomass = gro * (1 - a2r)
     else:
         growthBiomass = 0
-
     if gv_biomass + growthBiomass > 0:
         gv_avg_age = (
             (max(0, temperature) + gv_avg_age) *
@@ -289,7 +294,6 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
         )
     else:
         gv_avg_age = 0
-
     gv_biomass += growthBiomass
     return (gv_biomass, gv_avg_age, senescentBiomass)
 
@@ -321,11 +325,12 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
         age = 3
     # Compute senescence of GV
     if temperature > t0:
-        return kgv * gv_biomass * temperature * age
+        senescence_biomass = kgv * gv_biomass * temperature * age
     elif temperature < 0:
-        return kgv * gv_biomass * abs(temperature)
+        senescence_biomass = kgv * gv_biomass * abs(temperature)
     else:
-        return 0
+        senescence_biomass = 0
+    return senescence_biomass
 
 
 # Green Reproductive Functions
@@ -369,7 +374,6 @@ def gr_update(
     else:
         growthBiomass = 0
         # print("growthBiomass: t<t0 = %.2f" % (growthBiomass))
-
     if gr_biomass+growthBiomass > 0:
         gr_avg_age = (
             (max(0, temperature) + gr_avg_age) *
@@ -377,7 +381,6 @@ def gr_update(
         )
     else:
         gr_avg_age = 0
-
     gr_biomass += growthBiomass
     return (gr_biomass, gr_avg_age, senescentBiomass)
 
@@ -411,11 +414,12 @@ def mk_gr_senescence(
     # Compute senescence of GV
     if temperature > t0:
         # T=10C kdr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
-        return kdr * gr_biomass * temperature * age
+        senescence_biomass = kdr * gr_biomass * temperature * age
     elif temperature < 0:
-        return kdr * gr_biomass * abs(temperature)
+        senescence_biomass = kdr * gr_biomass * abs(temperature)
     else:
-        return 0
+        senescence_biomass = 0
+    return senescence_biomass
 
 #############################################################################
 # Nutrition Index                   # double ni
@@ -488,13 +492,10 @@ def cut(
     dv_h, dv_b = exeCut(rhodv, cutHeight, dvb)
     gr_h, gr_b = exeCut(rhogr, cutHeight, grb)
     dr_h, dr_b = exeCut(rhodr, cutHeight, drb)
-
     # sum of harvested biomass [kg DM m-2]
     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
-
     if sumBiomassHarvested > 0:
         isHarvested = True
-
     return (
         isHarvested, sumBiomassHarvested * cellSurface, gv_b, dv_b, gr_b, dr_b
     )
@@ -568,13 +569,14 @@ def fTemperature(meanTenDaysT, t0, t1, t2, sumT):
     - the value given by the temperature f
     """
     if meanTenDaysT < t0 or meanTenDaysT >= 40:
-        return 0
-    elif meanTenDaysT >= t0 and meanTenDaysT < t1:
-        return (meanTenDaysT - t0) / (t1 - t0)
-    elif meanTenDaysT >= t1 and meanTenDaysT < t2:
-        return 1
+        f_temp = 0
+    elif t1 > meanTenDaysT >= t0:
+        f_temp = (meanTenDaysT - t0) / (t1 - t0)
+    elif t2 > meanTenDaysT >= t1:
+        f_temp = 1
     else:
-        return (40 - meanTenDaysT) / (40 - t2)
+        f_temp = (40 - meanTenDaysT) / (40 - t2)
+    return f_temp
 
 
 def fsea(maxsea, minsea, sumT, st2, st1):
@@ -594,15 +596,16 @@ def fsea(maxsea, minsea, sumT, st2, st1):
     - the value given by the sea f
     """
     if sumT < 200 or sumT >= st2:
-        return minsea
+        f_sea = minsea
     elif sumT < st1 - 200:
-        return minsea + (maxsea - minsea) * (sumT - 200)/(st1 - 400)
+        f_sea = minsea + (maxsea - minsea) * (sumT - 200)/(st1 - 400)
     elif sumT < st1 - 100:
-        return maxsea
+        f_sea = maxsea
     else:
-        return (
+        f_sea = (
             maxsea + (minsea - maxsea) * (sumT - st1 + 100)/(st2 - st1 + 100)
         )
+    return f_sea
 
 
 def fPARi(pari, alphapar):
@@ -619,14 +622,15 @@ def fPARi(pari, alphapar):
     - the value given by the PARi [0-1]
     """
     if pari < 5:
-        return 1
+        f_pari = 1
     else:
-        return max(1 - alphapar * (pari - 5), 0)
+        f_pari = max(1 - alphapar * (pari - 5), 0)
+    return f_pari
 
 
 def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     """
-    f of water stess to compute ENV
+    f of water stress to compute ENV
 
     Parameters
     ----------
@@ -642,28 +646,27 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     waterStress = min(waterReserve/waterHoldingCapacity, 1)
     if pet <= 3.8:
         if waterStress <= 0.2:
-            return 4 * waterStress
+            f_waterstress = 4 * waterStress
         elif waterStress <= 0.4:
-            return 0.75 * waterStress + 0.65
+            f_waterstress = 0.75 * waterStress + 0.65
         elif waterStress <= 0.6:
-            return 0.25 * waterStress + 0.85
+            f_waterstress = 0.25 * waterStress + 0.85
         else:
-            return 1
-
+            f_waterstress = 1
     elif pet <= 6.5:
         if waterStress <= 0.2:
-            return 2 * waterStress
+            f_waterstress = 2 * waterStress
         elif waterStress <= 0.4:
-            return 1.5 * waterStress + 0.1
+            f_waterstress = 1.5 * waterStress + 0.1
         elif waterStress <= 0.6:
-            return waterStress + 0.3
+            f_waterstress = waterStress + 0.3
         elif waterStress <= 0.8:
-            return 0.5 * waterStress + 0.6
+            f_waterstress = 0.5 * waterStress + 0.6
         else:
-            return 1
-
+            f_waterstress = 1
     else:
-        return waterStress
+        f_waterstress = waterStress
+    return f_waterstress
 
 
 def rep(ni):
@@ -710,12 +713,11 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
         except:
             # In case of input malfunction
             lai = sla * pctlam * 1.0
-
     lightInterceptionByPlant = (1 - np.exp(-0.6 * lai))
     # print("pgro: LightInter.byPlant = %.2f" % (lightInterceptionByPlant))
-    pgro = (pari * ruemax * lightInterceptionByPlant * 10)
+    p_gro = (pari * ruemax * lightInterceptionByPlant * 10)
     # print("pgro: pgro = %.2f" % (pgro))
-    return pgro
+    return p_gro
 
 
 def fclai(pctlam, sla, gv_biomass):
@@ -755,7 +757,6 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     if int(lai) == 0:
         lai = sla * pctlam * (gv_biomass/10)
         # print("aet mk LAI: LAI = %.2f" %(lai))
-
     lightInterceptionByPlant = (1 - np.exp(-0.6 * lai))
     pt = pet * lightInterceptionByPlant
     pe = pet - pt
@@ -776,7 +777,7 @@ def updateSumTemperature(temperature, t0, sumT, tbase):
     sumT : actual sum of temperature
     tbase : base temperature (subtracted each day for the calculation of
         the ST)
-    currentDay : the current doy **CHECK WHY THIS ISN'T INCLUDED!
+    currentDay : the current DOY **CHECK WHY THIS ISN'T INCLUDED!
 
     Returns
     -------
@@ -850,7 +851,6 @@ def defoliation(
     avDefoliationBiomassDV = avDefoliationBiomass(dv_biomass, cutHeight, rhodv)
     avDefoliationBiomassGR = avDefoliationBiomass(gr_biomass, cutHeight, rhogr)
     avDefoliationBiomassDR = avDefoliationBiomass(dr_biomass, cutHeight, rhodr)
-
     sumAvailable = (
         avDefoliationBiomassGV + avDefoliationBiomassDV +
         avDefoliationBiomassGR + avDefoliationBiomassDR
@@ -885,7 +885,6 @@ def defoliation(
                     maxAmountToIngest
                 )
             )
-
     return sumBiomassIngested
 
 
@@ -967,7 +966,6 @@ def getSumTemperature(weather, doy, t0):
     for i in range(doy):
         if weather[i][1] > t0:
             sumTemperature += (weather[i][1] - t0)
-
     return sumTemperature
 
 

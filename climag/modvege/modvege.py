@@ -48,26 +48,31 @@ def modvege(params, weather, startdoy, enddoy):
     pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
     pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
 
-    :param params: parameters of this run
-    :param weather: weather data (and grass cut and grazing)
-    :param startdoy: day of year when the simulation starts
-    :param enddoy: day of year when simulation stops
-    :return Green Vegetative biomass (kg DM ha-1)
-    :return Dead Vegetative biomass (kg DM ha-1)
-    :return Green Reproductive biomass (kg DM ha-1)
-    :return Dead Reproductive biomass (kg DM ha-1)
-    :return Harvested biomass (kg DM ha-1)
-    :return Ingested biomass (kg DM ha-1)
-    :return GRO biomass (kg DM ha-1)
-    :return Available Biomass for (kg DM ha-1)
+    Parameters
+    ----------
+    params : parameters of this run
+    weather : weather data (and grass cut and grazing)
+    startdoy : day of year when the simulation starts
+    enddoy : day of year when simulation stops
+
+    Returns
+    -------
+    - Green Vegetative biomass (kg DM ha-1)
+    - Dead Vegetative biomass (kg DM ha-1)
+    - Green Reproductive biomass (kg DM ha-1)
+    - Dead Reproductive biomass (kg DM ha-1)
+    - Harvested biomass (kg DM ha-1)
+    - Ingested biomass (kg DM ha-1)
+    - GRO biomass (kg DM ha-1)
+    - Available Biomass for (kg DM ha-1)
     """
     #######################################################
     # Load input parameters into variables
     #######################################################
-    # Onset of reproductive growth (degreeday)
+    # Onset of reproductive growth (degree day)
     st1 = params[0]
     print("st1=%.2f (=600)" % (st1))
-    # End of reproductive growth (degreeday)
+    # End of reproductive growth (degree day)
     st2 = params[1]
     print("st2=%.2f (=1200)" % (st2))
     # Initial Nutritional index of cell
@@ -211,7 +216,7 @@ def modvege(params, weather, startdoy, enddoy):
     # This is an actionable flag modified by weather.grazing* presences
     isGrazed = False
     # permanently stop Reproduction after the first Cut (isCut is True)
-    # p116, Jouven et al., 2006
+    # p116, Jouven et al. (2006)
     a2rFlag = False
     # Harvested biomass
     harvestedBiomass = 0
@@ -416,13 +421,15 @@ def modvege(params, weather, startdoy, enddoy):
             pet, waterReserve, waterHoldingCapacity
         ))
         pgr.append(pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
-        gro = mk_env(
+        gro = (
+            mk_env(
                     meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
                     pet, waterReserve, waterHoldingCapacity
-            ) \
-            * pgro(pari, ruemax, pctlam, sla, gv_biomass, lai) \
-            * fsea(maxsea, minsea, sumT, st2, st1) \
+            )
+            * pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
+            * fsea(maxsea, minsea, sumT, st2, st1)
             * correctiveFactorForAn
+        )
         # egro = mk_env(
         #     meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar, pet,
         #     waterReserve, waterHoldingCapacity
