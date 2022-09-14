@@ -1,6 +1,6 @@
 # ClimAg
 
-This research was funded by the [Environment Protection Agency (EPA), Ireland][EPA]
+This research was funded by the [Environmental Protection Agency (EPA), Ireland][EPA]
 project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"][ClimAg]
 under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
@@ -58,8 +58,8 @@ Some parts of this repository were created with [Cookiecutter] and the
   in Virkajärvi, P. et al. (eds), *Meeting the future demands for grassland production*,
   Grassland Science in Europe, Helsinki, Finland, European Grassland Federation,
   vol. 25, pp. 716–718. [Online]. Available at
-  <https://web.archive.org/web/20201111201020/https://www.europeangrassland.org/fileadmin/documents/Infos/Printed_Matter/Proceedings/EGF2020.pdf>
-  (Accessed 25 August 2022).
+  <https://www.europeangrassland.org/fileadmin/documents/Infos/Printed_Matter/Proceedings/EGF2020.pdf>
+  (Accessed 13 September 2022).
 
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/
