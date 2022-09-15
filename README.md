@@ -60,11 +60,17 @@ Some parts of this repository were created with [Cookiecutter] and the
   vol. 25, pp. 716–718. [Online]. Available at
   <https://www.europeangrassland.org/fileadmin/documents/Infos/Printed_Matter/Proceedings/EGF2020.pdf>
   (Accessed 13 September 2022).
+- Hanrahan, L., Geoghegan, A., O'Donovan, M., Griffith, V., Ruelle, E.,
+  Wallace, M. and Shalloo, L. (2017). 'PastureBase Ireland: A grassland
+  decision support system and national database',
+  *Computers and Electronics in Agriculture*, vol. 136, pp. 193–201.
+  DOI: [10.1016/j.compag.2017.01.029][Hanrahan].
 
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/
 [ModVege]: https://github.com/YannChemin/modvege
 [Jouven]: https://doi.org/10.1111/j.1365-2494.2006.00515.x
+[Hanrahan]: https://doi.org/10.1016/j.compag.2017.01.029
 [GrassCheck]: https://agrisearch.org/grasscheck
 [Cookiecutter]: https://github.com/audreyr/cookiecutter
 [audreyr]: https://github.com/audreyr/cookiecutter-pypackage

@@ -11,6 +11,5 @@ dependencies:
   - intake-esm
   - cartopy
   - nc-time-axis
-  - jupyterlab
-  - flake8
-  - pylint
+  - aiohttp
+  - odfpy
