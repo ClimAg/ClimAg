@@ -7,6 +7,7 @@ model datasets, e.g. CORDEX
 from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from dateutil.parser import parse
 
 # configure plot styles
 plt.style.use("seaborn-whitegrid")
@@ -36,16 +37,22 @@ def rotated_pole_point(data, lon, lat):
     lon : longitude of the point
     lat : latitude of the point
     """
-    pole_latitude = (
-        data.rio.crs.to_dict(
-            projjson=True
-        )["conversion"]["parameters"][0]["value"]
-    )
-    pole_longitude = (
-        data.rio.crs.to_dict(
-            projjson=True
-        )["conversion"]["parameters"][1]["value"]
-    )
+    if data.rio.crs is None:
+        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
+        pole_longitude = (
+            data["rotated_pole"].attrs["grid_north_pole_longitude"]
+        )
+    else:
+        pole_latitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][0]["value"]
+        )
+        pole_longitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][1]["value"]
+        )
     rp_cds = ccrs.RotatedGeodetic(
         pole_latitude=pole_latitude, pole_longitude=pole_longitude,
     ).transform_point(x=lon, y=lat, src_crs=ccrs.Geodetic())
@@ -68,7 +75,7 @@ def cordex_plot_title(data, lon=None, lat=None):
         else:
             date_format = "%Y-%m-%d %H:%M:%S"
         end_str = datetime.strftime(
-            datetime.fromisoformat(str(data["time"].values)), date_format
+            parse(str(data["time"].values)), date_format
         )
     else:
         end_str = "(" + str(lon) + ", " + str(lat) + ")"
@@ -94,16 +101,22 @@ def rotated_pole_transform(data):
     ----------
     data : input CORDEX data
     """
-    pole_latitude = (
-        data.rio.crs.to_dict(
-            projjson=True
-        )["conversion"]["parameters"][0]["value"]
-    )
-    pole_longitude = (
-        data.rio.crs.to_dict(
-            projjson=True
-        )["conversion"]["parameters"][1]["value"]
-    )
+    if data.rio.crs is None:
+        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
+        pole_longitude = (
+            data["rotated_pole"].attrs["grid_north_pole_longitude"]
+        )
+    else:
+        pole_latitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][0]["value"]
+        )
+        pole_longitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][1]["value"]
+        )
     transform = ccrs.RotatedPole(
         pole_latitude=pole_latitude, pole_longitude=pole_longitude
     )
