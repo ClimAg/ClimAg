@@ -159,7 +159,7 @@ def rotated_pole_transform(data):
 #         vmax=vmax,
 #         x="rlon",
 #         y="rlat",
-#         cbar_kwargs={"label": cbar_label}
+#         cbar_kwargs=dict(label=cbar_label)
 #     )
 #     ax.coastlines(
 #         resolution=border_res, color=border_color, linewidth=border_width

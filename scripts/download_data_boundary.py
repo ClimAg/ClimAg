@@ -101,7 +101,7 @@ osi_counties = osi_counties[["CONTAE", "PROVINCE", "geometry"]]
 
 osi_counties.reset_index(inplace=True)
 
-osni_counties = osni.rename(columns={"CountyName": "COUNTY"})
+osni_counties = osni.rename(columns=dict(CountyName="COUNTY"))
 
 osni_counties = osni_counties[["geometry", "COUNTY"]]
 

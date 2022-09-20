@@ -132,3 +132,4 @@ dmypy.json
 draft/
 *.access*
 .vscode/
+tests/data

@@ -33,6 +33,7 @@ def download_data(
     # https://stackoverflow.com/a/53299682
     try:
         r = requests.get(server, params=params, stream=True, timeout=3000)
+        r.raise_for_status()  # raise exceptions in case of HTTP errors
         if (
             "Content-Disposition" in r.headers.keys() and
             "filename" in r.headers["Content-Disposition"]
@@ -50,4 +51,4 @@ def download_data(
             "\nLast downloaded:", datetime.now(tz=timezone.utc)
         )
     except requests.exceptions.RequestException as e:
-        print("Data download unsuccessful!\n", e)
+        print("Data download unsuccessful!", e)
