@@ -5,6 +5,7 @@ Download Ireland boundary data and save as layers in a GeoPackage file
 
 # import libraries
 import os
+from zipfile import BadZipFile, ZipFile
 import geopandas as gpd
 from climag.download_data import download_data
 
@@ -16,9 +17,12 @@ GPKG_BOUNDARY = os.path.join("data", "boundary", "boundaries.gpkg")
 ######################################################################
 # Administrative Areas - OSi National Statutory Boundaries - 2019
 
+SUB_DIR = os.path.join(DATA_DIR, "admin-osi", "raw")
+
+# download data if necessary
 URL = (
     "https://data-osi.opendata.arcgis.com/datasets/"
-    "d81188d16e804bde81548e982e80c53e_0.geojson"
+    "osi::counties-osi-national-statutory-boundaries-2019.zip"
 )
 
 payload = {
@@ -28,25 +32,27 @@ payload = {
     }
 }
 
-SUB_DIR = os.path.join(DATA_DIR, "admin-osi", "raw")
-
 download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
-DATA_FILE = os.path.join(
-    SUB_DIR,
-    "Administrative_Areas_-_OSi_National_Statutory_Boundaries_-_2019.geojson"
+ZIP_FILE = os.path.join(
+    SUB_DIR, "Counties_-_OSi_National_Statutory_Boundaries_-_2019.zip"
 )
 
-osi = gpd.read_file(DATA_FILE)
+osi = gpd.read_file(
+    f"zip://{ZIP_FILE}!Counties___OSi_National_Statutory_Boundaries_.shp"
+)
 
-osi.to_file(GPKG_BOUNDARY, layer="Admin_Areas_ROI_OSi")
+osi.to_file(GPKG_BOUNDARY, layer="OSi_Counties")
 
 ######################################################################
 # OSNI Open Data - Largescale Boundaries - County Boundaries
 
+SUB_DIR = os.path.join(DATA_DIR, "admin-osni", "raw")
+
+# download data if necessary
 URL = (
     "https://osni-spatialni.opendata.arcgis.com/datasets/spatialni::"
-    "osni-open-data-largescale-boundaries-county-boundaries-.geojson"
+    "osni-open-data-largescale-boundaries-county-boundaries-.zip"
 )
 
 payload = {
@@ -56,52 +62,25 @@ payload = {
     }
 }
 
-SUB_DIR = os.path.join(DATA_DIR, "admin-osni", "raw")
-
 download_data(server=URL, dl_dir=SUB_DIR, params=payload)
 
-DATA_FILE = os.path.join(
-    SUB_DIR,
-    "OSNI_Open_Data_-_Largescale_Boundaries_-_County_Boundaries_.geojson"
+ZIP_FILE = os.path.join(
+    SUB_DIR, "OSNI_Open_Data_-_Largescale_Boundaries_-_County_Boundaries_.zip"
 )
 
-osni = gpd.read_file(DATA_FILE)
+osni = gpd.read_file(
+    f"zip://{ZIP_FILE}!OSNI_Open_Data_-_Largescale_Boundaries_-_"
+    "County_Boundaries_.shp"
+)
 
-osni.to_file(GPKG_BOUNDARY, layer="Admin_Areas_NI_OSNI")
-
-######################################################################
-# OSi/OSNI boundaries
-
-osi_roi = osi[["geometry"]].copy()
-
-osi_roi["NAME"] = "Republic of Ireland"
-
-osi_roi = osi_roi.dissolve(by="NAME")
-
-osi_roi.reset_index(inplace=True)
-
-osni_ni = osni[["geometry"]].copy()
-
-osni_ni["NAME"] = "Northern Ireland"
-
-osni_ni = osni_ni.dissolve(by="NAME")
-
-osni_ni.reset_index(inplace=True)
-
-ie = osi_roi.merge(osni_ni, how="outer")
-
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_OS")
+osni.to_file(GPKG_BOUNDARY, layer="OSNI_Counties")
 
 ######################################################################
-# Island of Ireland counties
+# OS County boundaries - Island of Ireland
 
-osi_counties = osi.dissolve(by="COUNTY")
+osi_counties = osi[["CONTAE", "COUNTY", "PROVINCE", "geometry"]]
 
-osi_counties = osi_counties[["CONTAE", "PROVINCE", "geometry"]]
-
-osi_counties.reset_index(inplace=True)
-
-osni_counties = osni.rename(columns=dict(CountyName="COUNTY"))
+osni_counties = osni.rename(columns={"CountyName": "COUNTY"})
 
 osni_counties = osni_counties[["geometry", "COUNTY"]]
 
@@ -119,100 +98,103 @@ osni_counties["CONTAE"] = osni_counties["COUNTY"].map(contae)
 
 osni_counties["PROVINCE"] = "Ulster"
 
+# reproject to Irish Transverse Mercator
+osi_counties = osi_counties.to_crs(2157)
+
+osni_counties = osni_counties.to_crs(2157)
+
+# remove overlapping areas in OSi layer
+osi_counties = osi_counties.overlay(osni_counties, how="difference")
+
+# merge county layers
 ie_counties = osi_counties.merge(osni_counties, how="outer")
 
-ie_counties.to_file(GPKG_BOUNDARY, layer="Counties_IE_OS")
+ie_counties.to_file(GPKG_BOUNDARY, layer="OS_IE_Counties_ITM")
 
-# Island of Ireland boundary
+# reproject to EPSG:4326
+ie_counties = ie_counties.to_crs(4326)
 
-ie = ie_counties[["geometry"]].copy()
-
-ie["NAME"] = "Ireland"
-
-ie = ie.dissolve(by="NAME")
-
-ie.reset_index(inplace=True)
-
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_OS")
+ie_counties.to_file(GPKG_BOUNDARY, layer="OS_IE_Counties")
 
 ######################################################################
 # NUTS (Nomenclature of territorial units for statistics)
 
+SUB_DIR = os.path.join(DATA_DIR, "nuts-2021", "raw")
+
+# download data if necessary
 URL = (
     "https://gisco-services.ec.europa.eu/distribution/v2/nuts/download/"
-    "ref-nuts-2021-01m.geojson.zip"
+    "ref-nuts-2021-01m.shp.zip"
 )
-
-SUB_DIR = os.path.join(DATA_DIR, "nuts-2021", "raw")
 
 download_data(server=URL, dl_dir=SUB_DIR)
 
-DATA_FILE = os.path.join(SUB_DIR, "ref-nuts-2021-01m.geojson.zip")
+DATA_FILE = os.path.join(SUB_DIR, "ref-nuts-2021-01m.shp.zip")
+
+# extract the archive
+try:
+    z = ZipFile(DATA_FILE)
+    z.extractall(SUB_DIR)
+except BadZipFile:
+    print("There were issues with the file", DATA_FILE)
+
+# NUTS1
+
+DATA_FILE = os.path.join(SUB_DIR, "NUTS_RG_01M_2021_4326_LEVL_1.shp.zip")
+
+nuts1 = gpd.read_file(f"zip://{DATA_FILE}!NUTS_RG_01M_2021_4326_LEVL_1.shp")
+
+# filter for Ireland and Northern Ireland
+nuts1 = nuts1[nuts1["NUTS_ID"].isin(["IE0", "UKN"])]
+
+nuts1 = nuts1.drop(columns="FID")
+
+nuts1.to_file(GPKG_BOUNDARY, layer="NUTS1")
 
 # NUTS2
 
-nuts = gpd.read_file(
-    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_2.geojson"
-)
+DATA_FILE = os.path.join(SUB_DIR, "NUTS_RG_01M_2021_4326_LEVL_2.shp.zip")
 
-nuts = nuts[nuts["CNTR_CODE"].isin(["IE", "UK"])]
+nuts2 = gpd.read_file(f"zip://{DATA_FILE}!NUTS_RG_01M_2021_4326_LEVL_2.shp")
 
-nuts_ie = nuts[nuts["CNTR_CODE"].isin(["IE"])]
+nuts2 = nuts2[nuts2["NUTS_ID"].str.contains("IE|UKN")]
 
-nuts_ni = nuts[nuts["CNTR_CODE"].isin(["UK"])]
+nuts2 = nuts2.drop(columns="FID")
 
-nuts_ni = nuts[nuts["NUTS_NAME"].str.contains("Ireland")]
-
-nuts2 = nuts_ie.merge(nuts_ni, how="outer")
-
-nuts2.drop(columns="FID", inplace=True)
-
-nuts2.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS2")
+nuts2.to_file(GPKG_BOUNDARY, layer="NUTS2")
 
 # NUTS 3
 
-nuts = gpd.read_file(
-    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_3.geojson"
-)
+DATA_FILE = os.path.join(SUB_DIR, "NUTS_RG_01M_2021_4326_LEVL_3.shp.zip")
 
-nuts = nuts[nuts["CNTR_CODE"].isin(["IE", "UK"])]
+nuts3 = gpd.read_file(f"zip://{DATA_FILE}!NUTS_RG_01M_2021_4326_LEVL_3.shp")
 
-nuts_ie = nuts[nuts["CNTR_CODE"].isin(["IE"])]
+nuts3 = nuts3[nuts3["NUTS_ID"].str.contains("IE|UKN")]
 
-nuts_ni = nuts[nuts["NUTS_ID"].str.contains("UKN0")]
+nuts3 = nuts3.drop(columns="FID")
 
-nuts3 = nuts_ie.merge(nuts_ni, how="outer")
+nuts3.to_file(GPKG_BOUNDARY, layer="NUTS3")
 
-nuts3.drop(columns="FID", inplace=True)
+# Island of Ireland boundary
 
-nuts3.to_file(GPKG_BOUNDARY, layer="Admin_Areas_IE_NUTS3")
+ie = nuts1.copy()
 
-# Boundaries
-
-ie = gpd.read_file(
-    "zip://" + DATA_FILE + "!NUTS_RG_01M_2021_4326_LEVL_1.geojson"
-)
-
-ie = ie[ie["NUTS_ID"].str.contains("UKN|IE")]
-
-ie.reset_index(inplace=True)
-
-ie.drop(columns="FID", inplace=True)
-
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_ROI_NI_NUTS")
+ie = ie.dissolve(by="LEVL_CODE", as_index=False)
 
 ie = ie[["geometry"]]
 
-ie["NAME"] = "Ireland"
+ie = ie.assign(NAME="Ireland")
 
-ie = ie.dissolve(by="NAME")
+description = (
+    "Boundary for the Island of Ireland generated using NUTS1 boundaries"
+)
 
-ie.reset_index(inplace=True)
+ie = ie.assign(DESCRIPTION=description)
 
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS")
+ie.to_file(GPKG_BOUNDARY, layer="NUTS_Ireland")
 
-# Boundaries in Irish Transverse Mercator
+# Island of Ireland in Irish transverse mercator
 
 ie.to_crs(2157, inplace=True)
 
-ie.to_file(GPKG_BOUNDARY, layer="Boundary_IE_NUTS_ITM")
+ie.to_file(GPKG_BOUNDARY, layer="NUTS_Ireland_ITM")
