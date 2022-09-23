@@ -34,12 +34,11 @@ from lib_modvege import *
 # Define DEFAULT_CUT_HEIGHT 0.05
 DEFAULT_CUT_HEIGHT = 0.05
 
-# this function *should* be self sustaining, nothing else needed
-
 
 def modvege(params, weather, startdoy, enddoy):
     """**ModVege** model as a function
 
+    This function *should* be self sustaining, nothing else needed
     ! This model cannot regenerate reproductive growth after a cut !
 
     Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
@@ -113,7 +112,7 @@ def modvege(params, weather, startdoy, enddoy):
     # Specific leaf area (m2 g-1)
     sla = params[14]
     print("sla=%.2f (=0.033)" % (sla))
-    # Leaf lifespan (degreeday)
+    # Leaf lifespan (degree day)
     lls = params[15]
     print("lls=%.2f (=500)" % (lls))
     # Volume GV (g m-3)
@@ -137,10 +136,10 @@ def modvege(params, weather, startdoy, enddoy):
     # Biomass of DV (kg ha-1)
     wdv = params[22]
     print("wdv=%.2f (=1200)" % (wdv))
-    # Senescence coefficient DV (degreeday)
+    # Senescence coefficient DV (degree day)
     kdv = params[23]
     print("kdv=%.3f (=0.002)" % (kdv))
-    # Abscission coefficient DV (degreeday)
+    # Abscission coefficient DV (degree day)
     kldv = params[24]
     print("kldv=%.3f (=0.001)" % (kldv))
     # Volume DV (g m-3)
@@ -149,10 +148,10 @@ def modvege(params, weather, startdoy, enddoy):
     # Biomass of DR (kg ha-1)
     wdr = params[26]
     print("wdr=%.2f (=500)" % (wdr))
-    # Senescence coefficient DR (degreeday)
+    # Senescence coefficient DR (degree day)
     kdr = params[27]
     print("kdr=%.3f (=0.001)" % (kdr))
-    # Abscission coefficient DR (degreeday)
+    # Abscission coefficient DR (degree day)
     kldr = params[28]
     print("kldr=%.4f (=0.0005)" % (kldr))
     # Volume DR (g m-3)
@@ -372,12 +371,12 @@ def modvege(params, weather, startdoy, enddoy):
                 isCut = True
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
-                isHarvested, harvestedBiomassPart, gv_biomass,
-                dv_biomass, gr_biomass, dr_biomass = cut(
-                    cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
-                    dv_biomass, gr_biomass, dr_biomass, cellSurface,
-                    isHarvested
-                )
+                isHarvested, harvestedBiomassPart, gv_biomass, dv_biomass, \
+                    gr_biomass, dr_biomass = cut(
+                        cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
+                        dv_biomass, gr_biomass, dr_biomass, cellSurface,
+                        isHarvested
+                    )
 
             # Look for flags to indicate livestock ingestion
             if isGrazed:
