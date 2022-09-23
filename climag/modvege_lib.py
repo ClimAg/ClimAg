@@ -74,7 +74,7 @@ def exeCut(cutHeight, bulkDensity, biomass):
 
     Returns
     -------
-    - the biomass taken in kg DM m-2
+    - the biomass taken [kg DM m-2]
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
@@ -96,7 +96,7 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
 
     Returns
     -------
-    - the biomass left in kg DM m-2
+    - the biomass left [kg DM m-2]
     """
     biomass -= biomassToIngest
     return biomassToIngest
@@ -141,7 +141,7 @@ def dv_update(
     if dv_biomass + growthBiomass > 0:
         dv_avg_age = (
             (max(0, temperature) + dv_avg_age)
-            * (dv_biomass/(dv_biomass + growthBiomass))
+            * (dv_biomass / (dv_biomass + growthBiomass))
         )
     else:
         dv_avg_age = 0
@@ -155,8 +155,8 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
 
     Parameters
     ----------
-    lls : Leaf lifespan (degreeday)
-    kldv : Abscission coefficient DV (degree day) (Ducroq, 1996)
+    lls : Leaf lifespan [degree day]
+    kldv : Abscission coefficient DV (Ducroq, 1996) [degree day]
     temperature : temperature
     dv_biomass : av biomass
     dv_avg_age : the average DV age
@@ -166,9 +166,9 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     - the abscission biomass
     """
     # method to compute the age of DV for computing abcission of DV
-    if dv_avg_age/lls < 1.0/3.0:
+    if dv_avg_age / lls < 1.0 / 3.0:
         age = 1
-    elif dv_avg_age/lls < 2.0/3.0:
+    elif dv_avg_age / lls < 2.0 / 3.0:
         age = 2
     else:
         age = 3
@@ -186,7 +186,7 @@ def dr_update(
     temperature, kldr, dr_biomass, dr_avg_age
 ):
     """
-    Update Dead Reproductive compartment
+    Update dead reproductive compartment
 
     Parameters
     ----------
@@ -211,11 +211,11 @@ def dr_update(
     # at this point the biomass include cut, ingestion and abscission, not
     # growth
     growthBiomass = (1 - gr_gamma) * gr_senescent_biomass
-    if dr_biomass+growthBiomass > 0:
+    if dr_biomass + growthBiomass > 0:
         # print(temperature, dr_avg_age, dr_biomass, growthBiomass)
         dr_avg_age = (
             max(0, temperature) +
-            dr_avg_age * dr_biomass/(dr_biomass + growthBiomass)
+            dr_avg_age * dr_biomass / (dr_biomass + growthBiomass)
         )
     else:
         dr_avg_age = 0
@@ -241,9 +241,9 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
     - the abscission biomass
     """
     # method to compute the age of DR for computing abscission of DR
-    if dr_avg_age/(st2 - st1) < 1.0/3.0:
+    if dr_avg_age / (st2 - st1) < 1.0 / 3.0:
         age = 1
-    elif dr_avg_age/(st2 - st1) < 2.0/3.0:
+    elif dr_avg_age / (st2 - st1) < 2.0 / 3.0:
         age = 2
     else:
         age = 3
@@ -259,16 +259,16 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 # Green Vegetative Functions
 def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     """
-    Update Green Vegetation
+    Update green vegetation
 
     Parameters
     ----------
     gro : in Jouven et al. (2006), total growth
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
-    lls : Leaf lifespan (degree day)
+    lls : Leaf lifespan [degree day]
     temperature : temperature
-    kdv : Senescence coefficient DV (degreeday)
+    kdv : Senescence coefficient DV [degree day]
     t0 : minimum temperature for growth
     gv_biomass : Updated biomass
     gv_avg_age : the average GV age
@@ -290,7 +290,7 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     if gv_biomass + growthBiomass > 0:
         gv_avg_age = (
             (max(0, temperature) + gv_avg_age) *
-            (gv_biomass/(gv_biomass+growthBiomass))
+            (gv_biomass / (gv_biomass + growthBiomass))
         )
     else:
         gv_avg_age = 0
@@ -305,11 +305,11 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
     Parameters
     ----------
-    kgv : Senescence coefficient (degree day) (Ducroq, 1996)
-    gv_biomass : the Green Vegetation biomass
+    kgv : Senescence coefficient (Ducroq, 1996) [degree day]
+    gv_biomass : the green vegetation biomass
     temperature : Temperature
     t0 : minimum temperature for growth
-    lls : Leaf lifespan (degree day)
+    lls : Leaf lifespan [degree day]
     gv_avg_age : the average GV age
 
     Returns
@@ -317,9 +317,9 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     - the biomass that is senescent
     """
     # method to compute the age of GV for computing senescence of GV
-    if gv_avg_age/lls < 1.0/3.0:
+    if gv_avg_age / lls < 1.0 / 3.0:
         age = 1
-    elif gv_avg_age/lls < 1:
+    elif gv_avg_age / lls < 1:
         age = 3 * gv_avg_age / lls
     else:
         age = 3
@@ -347,11 +347,11 @@ def gr_update(
     a2r : allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
     gro : in Jouven et al. (2006), total growth
-    st1 : Onset of reproductive growth (degree day)
-    st2 : End of reproductive growth (degree day)
+    st1 : Onset of reproductive growth [degree day]
+    st2 : End of reproductive growth [degree day]
     kdr : basic rates of  in compartment GR
-    lls : Leaf lifespan (degreeday)
-    rhogr : Volume GR (g m-3)
+    lls : Leaf lifespan [degree day]
+    rhogr : Volume GR [g m-3]
     t0 : minimum temperature for growth
     gr_biomass : the av GR biomass
     gr_avg_age : the average GR age
@@ -369,15 +369,15 @@ def gr_update(
     # at this point the biomass include cut, ingestion and senescence, not
     # growth
     if temperature > t0:
-        growthBiomass = gro*(a2r)
+        growthBiomass = gro * a2r
         # print("growthBiomass: t>t0 = %.2f" % (growthBiomass))
     else:
         growthBiomass = 0
         # print("growthBiomass: t<t0 = %.2f" % (growthBiomass))
-    if gr_biomass+growthBiomass > 0:
+    if gr_biomass + growthBiomass > 0:
         gr_avg_age = (
             (max(0, temperature) + gr_avg_age) *
-            (gr_biomass/(gr_biomass + growthBiomass))
+            (gr_biomass / (gr_biomass + growthBiomass))
         )
     else:
         gr_avg_age = 0
@@ -391,24 +391,24 @@ def mk_gr_senescence(
     """
     Parameters
     ----------
-    kdr : Senescence coefficient DV (degree day) **CHECK PARAM NAME!
+    kdr : Senescence coefficient DV [degree day] **CHECK PARAM NAME!
     gr_biomass : the biomass available for GR
     temperature : Temperature
     t0 : minimum temperature for growth
-    lls : Leaf lifespan (degreeday)
+    lls : Leaf lifespan [degree day]
     gr_avg_age : the average GR age
-    st1 : Onset of reproductive growth (degreeday)
-    st2 : End of reproductive growth (degreeday)
+    st1 : Onset of reproductive growth [degree day]
+    st2 : End of reproductive growth [degree day]
 
     Returns
     -------
     - the senescent biomass
     """
     # method to compute the age of GR for computing senescence of GR
-    if gr_avg_age/(st2 - st1) < 1.0/3.0:
+    if gr_avg_age / (st2 - st1) < 1.0 / 3.0:
         age = 1
-    elif gr_avg_age/(st2 - st1) < 1.0:
-        age = 3 * gr_avg_age/(st2 - st1)
+    elif gr_avg_age / (st2 - st1) < 1.0:
+        age = 3 * gr_avg_age / (st2 - st1)
     else:
         age = 3
     # Compute senescence of GV
@@ -471,21 +471,21 @@ def cut(
     rhodv : rho dry vegetation
     rhogr : rho green reproduction
     rhodr : rho dry reproduction
-    gvb : the biomass of Green Vegetation
-    dvb : the biomass of Dry Vegetation
-    grb : the biomass of Green Reproductive
-    drb : the biomass of Dry Reproductive
+    gvb : the biomass of green vegetation
+    dvb : the biomass of dry vegetation
+    grb : the biomass of green reproductive
+    drb : the biomass of dry reproductive
     cellSurface : Surface of the pixel [ha]
     isHarvested : Status flag indicating harvest happened
 
     Returns
     -------
     - Status flag indicating harvest happened
-    - the total amount of biomass cut (in kg DM)
-    - the amount of GV biomass cut (in kg DM)
-    - the amount of DV biomass cut (in kg DM)
-    - the amount of GR biomass cut (in kg DM)
-    - the amount of DR biomass cut (in kg DM)
+    - the total amount of biomass cut [kg DM]
+    - the amount of GV biomass cut [kg DM]
+    - the amount of DV biomass cut [kg DM]
+    - the amount of GR biomass cut [kg DM]
+    - the amount of DR biomass cut [kg DM]
     """
     # exeCut returns harvested biomass in [kg DM m-2]
     gv_h, gv_b = exeCut(rhogv, cutHeight, gvb)
@@ -540,10 +540,10 @@ def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
 
     Parameters
     ----------
-    gv_biomass : the Green Vegetation biomass
-    dv_biomass : the Dry Vegetation biomass
-    gr_biomass : the Green Reproduction biomass
-    dr_biomass : the Dry Reproduction biomass
+    gv_biomass : the green vegetation biomass
+    dv_biomass : the dry vegetation biomass
+    gr_biomass : the green reproduction biomass
+    dr_biomass : the dry reproduction biomass
 
     Returns
     -------
@@ -581,7 +581,7 @@ def fTemperature(meanTenDaysT, t0, t1, t2, sumT):
 
 def fsea(maxsea, minsea, sumT, st2, st1):
     """
-    Function for seasonality (SEA) to compute the Potential Growth
+    Function for seasonality (SEA) to compute the potential growth
 
     Parameters
     ----------
@@ -598,12 +598,12 @@ def fsea(maxsea, minsea, sumT, st2, st1):
     if sumT < 200 or sumT >= st2:
         f_sea = minsea
     elif sumT < st1 - 200:
-        f_sea = minsea + (maxsea - minsea) * (sumT - 200)/(st1 - 400)
+        f_sea = minsea + (maxsea - minsea) * (sumT - 200) / (st1 - 400)
     elif sumT < st1 - 100:
         f_sea = maxsea
     else:
         f_sea = (
-            maxsea + (minsea - maxsea) * (sumT - st1 + 100)/(st2 - st1 + 100)
+            maxsea + (minsea - maxsea) * (sumT - st1 + 100) / (st2 - st1 + 100)
         )
     return f_sea
 
@@ -671,7 +671,7 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
 
 def rep(ni):
     """
-    Replace the value of NI (Nutrition Index (Belanger et al., 1992))
+    Replace the value of NI (Nutrition Index (Belanger et al. 1992))
 
     Parameters
     ----------
@@ -691,15 +691,15 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     Parameters
     ----------
     pari : the incident PAR
-    ruemax : the maximum Radiation Use Efficiency
-    pctlam : % leaf of laminae in Green Vegetation
-    sla : the specific leaf area (m2 g-1)
-    gv_biomass : the Green Vegetation biomass
+    ruemax : the maximum radiation use efficiency
+    pctlam : % leaf of laminae in green vegetation
+    sla : the specific leaf area [m2 g-1]
+    gv_biomass : the green vegetation biomass
     lai : the LAI from remote sensing (if available)
 
     Returns
     -------
-    - the calculated pGRO (kg DM ha-1)
+    - the calculated pGRO [kg DM ha-1]
     """
     # print("pgro**************************")
     # print("pgro: pariIn = %.2f" % (pari))
@@ -709,7 +709,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     # print("pgro: gv_biomassIn = %.2f" % (gv_biomass))
     if int(lai) == 0:
         try:
-            lai = sla * pctlam * (gv_biomass/10)
+            lai = sla * pctlam * (gv_biomass / 10)
         except:
             # In case of input malfunction
             lai = sla * pctlam * 1.0
@@ -726,15 +726,15 @@ def fclai(pctlam, sla, gv_biomass):
 
     Parameters
     ----------
-    pctlam : % leaf of laminae in Green Vegetation
-    sla : the specific leaf area (m2 g-1)
-    gv_biomass : the Green Vegetation biomass
+    pctlam : % leaf of laminae in green vegetation
+    sla : the specific leaf area [m2 g-1]
+    gv_biomass : the green vegetation biomass
 
     Returns
     -------
     - the calculated LAI
     """
-    return sla * (gv_biomass/10) * pctlam
+    return sla * (gv_biomass / 10) * pctlam
 
 
 def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
@@ -742,9 +742,9 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     Return the actual evapotranspiration (AET)
 
     pet : the daily potential evapotranspiration (PET)
-    pctlam : % leaf of laminae in Green Vegetation
-    sla : the specific leaf area (m2 g-1)
-    gv_biomass : the Green Vegetation biomass
+    pctlam : % leaf of laminae in green vegetation
+    sla : the specific leaf area [m2 g-1]
+    gv_biomass : the green vegetation biomass
     waterReserve : reserve of water in the soil
     waterHoldingCapacity : capacity of the soil to hold a certain volume
         of water
@@ -755,13 +755,13 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     - the actual evapotranspiration (AET)
     """
     if int(lai) == 0:
-        lai = sla * pctlam * (gv_biomass/10)
+        lai = sla * pctlam * (gv_biomass / 10)
         # print("aet mk LAI: LAI = %.2f" %(lai))
     lightInterceptionByPlant = (1 - np.exp(-0.6 * lai))
     pt = pet * lightInterceptionByPlant
     pe = pet - pt
     ta = pt * fWaterStress(waterReserve, waterHoldingCapacity, pet)
-    ea = pe * min(waterReserve/waterHoldingCapacity, 1)
+    ea = pe * min(waterReserve / waterHoldingCapacity, 1)
     return ta + ea
 
 
@@ -798,15 +798,15 @@ def getAvailableBiomassForCut(
 
     Parameters
     ----------
-    gv_biomass : biomass of Green Vegetation
-    dv_biomass : biomass of Dry Vegetation
-    gr_biomass : biomass of Green Reproduction
-    dr_biomass : biomass of Dry Reproduction
+    gv_biomass : biomass of green vegetation
+    dv_biomass : biomass of dry vegetation
+    gr_biomass : biomass of green reproduction
+    dr_biomass : biomass of dry reproduction
     cutHeight : height of the cut
-    rhogv : Volume VV (g m-3)
-    rhodv : Volume DV (g m-3)
-    rhogr : Volume GR (g m-3)
-    rhodr : Volume DR (g m-3)
+    rhogv : Volume VV [g m-3]
+    rhodv : Volume DV [g m-3]
+    rhogr : Volume GR [g m-3]
+    rhodr : Volume DR [g m-3]
 
     Returns
     -------
@@ -831,15 +831,15 @@ def defoliation(
 
     Parameters
     ----------
-    gv_biomass : biomass of Green Vegetation
-    dv_biomass : biomass of Dry Vegetation
-    gr_biomass : biomass of Green Reproduction
-    dr_biomass : biomass of Dry Reproduction
+    gv_biomass : biomass of green vegetation
+    dv_biomass : biomass of dry vegetation
+    gr_biomass : biomass of green reproduction
+    dr_biomass : biomass of dry reproduction
     cutHeight : height of the cut
-    rhogv : Volume VV (g m-3)
-    rhodv : Volume DV (g m-3)
-    rhogr : Volume GR (g m-3)
-    rhodr : Volume DR (g m-3)
+    rhogv : Volume VV [g m-3]
+    rhodv : Volume DV [g m-3]
+    rhogr : Volume GR [g m-3]
+    rhodr : Volume DR [g m-3]
     maxAmountToIngest : The maximum amount of ingest
 
     Returns
@@ -895,7 +895,7 @@ def greenLimbsMass(gv_gamma, gv_biomass):
 
     Parameters
     ----------
-    gv_biomass : biomass of Green Vegetation
+    gv_biomass : biomass of green vegetation
     gv_gamma : ?
 
     Returns
@@ -907,44 +907,44 @@ def greenLimbsMass(gv_gamma, gv_biomass):
 
 def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
     """
-    Compute the Green Vegetation actual Organic Matter Digestibility
+    Compute the green vegetation actual organic matter digestibility
 
     Parameters
     ----------
-    gv_min_omd : The minimum Green Vegetation Org. Mat. Digestibility
-    gv_max_omd : The maximum Green Vegetation Org. Mat. Digestibility
-    gv_avg_age : The average age of the Green Vegetation
-    lls : the leaf lifespan (degree Celsius per day-1)
+    gv_min_omd : The minimum green vegetation organic matter digestibility
+    gv_max_omd : The maximum green vegetation organic matter digestibility
+    gv_avg_age : The average age of the green vegetation
+    lls : the leaf lifespan [°C day-1]
 
     Returns
     -------
-    - the Green Vegetation Organic Matter Digestibility
+    - the green vegetation organic matter digestibility
     """
     return max(
         gv_min_omd, gv_max_omd - gv_avg_age *
-        (gv_max_omd - gv_min_omd)/lls
+        (gv_max_omd - gv_min_omd) / lls
     )
 
 
 def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
     """
-    Compute the Green Reproduction actual Organic Matter Digestibility
+    Compute the green reproduction actual organic matter digestibility
 
     Parameters
     ----------
-    gr_min_omd : The minimum Green Reproduction Org. Mat. Digestibility
-    gr_max_omd : The maximum Green Reproduction Org. Mat. Digestibility
-    gr_avg_age : The average age of the Green Reproduction
+    gr_min_omd : The minimum green reproduction organic matter digestibility
+    gr_max_omd : The maximum green reproduction organic matter digestibility
+    gr_avg_age : The average age of the green reproduction
     st1 sum : of temperature to begin vegeative activity
     st2 sum : of temperature to end vegetative activity
 
     Returns
     -------
-    - the Green Vegetation Organic Matter Digestibility
+    - the green vegetation organic matter digestibility
     """
     return max(
         gr_min_omd,
-        gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd)/(st2 - st1)
+        gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
     )
 
 

@@ -86,8 +86,8 @@ def read_weather(filename):
     PARi           photosynthetic radiation incident [MJ m-2]
     PP             Precipitation [mm]
     PET            Potential ET [mm/day]
-    ETA            Actual ET from Remote Sensing [mm/day]
-    LAI            Leaf Area Index from Remote Sensing
+    ETA            Actual ET from remote sensing [mm/day]
+    LAI            Leaf Area Index from remote sensing
     gcut           Grass cut event cutHeight [m]
     grazing        Grazing animal count
     grazingw       Grazing average animal weight [kg]
