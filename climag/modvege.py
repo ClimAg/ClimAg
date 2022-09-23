@@ -1,15 +1,16 @@
 """modvege.py
 
-Original code by Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
-https://github.com/YannChemin/modvege (Accessed 6 September 2022).
 This is the Python implementation of the ModVege pasture model, translated
 from Java to Python by Chemin (2022).
 The Java model was provided by Raphael Martin, INRAE UREP Clermont-Ferrand
 for the original Python implementation.
 The original ModVege pasture model was developed by Jouven et al. (2006).
 
-References:
------------
+Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
+https://github.com/YannChemin/modvege (Accessed 6 September 2022).
+
+References
+----------
 
 - Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
@@ -34,6 +35,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     """**ModVege** model as a function
 
     This function *should* be self sustaining, nothing else needed
+
     ! This model cannot regenerate reproductive growth after a cut !
 
     Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
@@ -47,6 +49,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     weather : weather data (and grass cut and grazing)
     startdoy : day of year when the simulation starts
     enddoy : day of year when simulation stops
+    default_cut_height : defined as 0.05
 
     Returns
     -------
