@@ -55,150 +55,150 @@ def modvege(params, weather, startdoy, enddoy):
 
     Returns
     -------
-    - Green Vegetative biomass (kg DM ha-1)
-    - Dead Vegetative biomass (kg DM ha-1)
-    - Green Reproductive biomass (kg DM ha-1)
-    - Dead Reproductive biomass (kg DM ha-1)
-    - Harvested biomass (kg DM ha-1)
-    - Ingested biomass (kg DM ha-1)
-    - GRO biomass (kg DM ha-1)
-    - Available Biomass for (kg DM ha-1)
+    - Green vegetative biomass [kg DM ha-1]
+    - Dead vegetative biomass [kg DM ha-1]
+    - Green reproductive biomass [kg DM ha-1]
+    - Dead reproductive biomass [kg DM ha-1]
+    - Harvested biomass [kg DM ha-1]
+    - Ingested biomass [kg DM ha-1]
+    - GRO biomass [kg DM ha-1]
+    - Available biomass for [kg DM ha-1]
     """
     #######################################################
     # Load input parameters into variables
     #######################################################
     # Onset of reproductive growth (degree day)
     st1 = params[0]
-    print("st1=%.2f (=600)" % (st1))
+    # print("st1=%.2f (=600)" % (st1))
     # End of reproductive growth (degree day)
     st2 = params[1]
-    print("st2=%.2f (=1200)" % (st2))
+    # print("st2=%.2f (=1200)" % (st2))
     # Initial Nutritional index of cell
     ni = params[2]
-    print("ni=%.2f (=0.9)" % (ni))
+    # print("ni=%.2f (=0.9)" % (ni))
     # Soil water-holding capacity (mm)
     waterHoldingCapacity = params[3]
-    print("whc=%.2f (=200)" % (waterHoldingCapacity))
+    # print("whc=%.2f (=200)" % (waterHoldingCapacity))
     # Soil water reserve (mm)
     waterReserve = params[4]
-    print("wr=%.2f (=60)" % (waterReserve))
+    # print("wr=%.2f (=60)" % (waterReserve))
     # Growth increase in winter
     minsea = params[5]
-    print("minsea=%.2f (=0.8)" % (minsea))
+    # print("minsea=%.2f (=0.8)" % (minsea))
     # Growth increase in summer
     maxsea = params[6]
-    print("maxsea=%.2f (=1.2)" % (maxsea))
+    # print("maxsea=%.2f (=1.2)" % (maxsea))
     # Biomass of GV (kg ha-1)
     wgv = params[7]
-    print("ibgv=%.2f (=750)" % (wgv))
+    # print("ibgv=%.2f (=750)" % (wgv))
     # Light Use Interception
     alphapar = params[8]
-    print("alphapar=%.2f (=0.044)" % (alphapar))
+    # print("alphapar=%.2f (=0.044)" % (alphapar))
     # Temperature threshold: photosynthesis activation (degC)
     t0 = params[9]
-    print("t0=%.2f (=4)" % (t0))
+    # print("t0=%.2f (=4)" % (t0))
     # Temp threshold: stable growth (degC)
     t1 = params[10]
-    print("t1=%.2f (=10)" % (t1))
+    # print("t1=%.2f (=10)" % (t1))
     # Temp threshold: growth decline (degC)
     t2 = params[11]
-    print("t2=%.2f (=20)" % (t2))
+    # print("t2=%.2f (=20)" % (t2))
     # beta_T
     betaT = params[12]
-    print("betaT=%.2f (=0.05)" % (betaT))
+    # print("betaT=%.2f (=0.05)" % (betaT))
     # b_IN
     b_IN = params[13]
-    print("b_IN=%.2f (=0.025)" % (b_IN))
+    # print("b_IN=%.2f (=0.025)" % (b_IN))
     # Specific leaf area (m2 g-1)
     sla = params[14]
-    print("sla=%.2f (=0.033)" % (sla))
+    # print("sla=%.2f (=0.033)" % (sla))
     # Leaf lifespan (degree day)
     lls = params[15]
-    print("lls=%.2f (=500)" % (lls))
+    # print("lls=%.2f (=500)" % (lls))
     # Volume GV (g m-3)
     rhogv = params[16]
-    print("rhogv=%.2f (=850)" % (rhogv))
+    # print("rhogv=%.2f (=850)" % (rhogv))
     # % leaf of laminae in GV
     pctlam = params[17]
-    print("pctlam=%.2f (=0.68)" % (pctlam))
+    # print("pctlam=%.2f (=0.68)" % (pctlam))
     # Biomass of GR (kg ha-1)
     wgr = params[18]
-    print("wgr=%.2f (=0)" % (wgr))
+    # print("wgr=%.2f (=0)" % (wgr))
     # Value of ALLOC at NI=0
     allocNI = params[19]
-    print("allocni=%.2f (=0.2)" % (allocNI))
+    # print("allocni=%.2f (=0.2)" % (allocNI))
     # max of fNI
     maxFNI = params[20]
-    print("maxFNI=%.2f (=0.9)" % (maxFNI))
+    # print("maxFNI=%.2f (=0.9)" % (maxFNI))
     # Volume GR (g m-3)
     rhogr = params[21]
-    print("rhogr=%.2f (=300)" % (rhogr))
+    # print("rhogr=%.2f (=300)" % (rhogr))
     # Biomass of DV (kg ha-1)
     wdv = params[22]
-    print("wdv=%.2f (=1200)" % (wdv))
+    # print("wdv=%.2f (=1200)" % (wdv))
     # Senescence coefficient DV (degree day)
     kdv = params[23]
-    print("kdv=%.3f (=0.002)" % (kdv))
+    # print("kdv=%.3f (=0.002)" % (kdv))
     # Abscission coefficient DV (degree day)
     kldv = params[24]
-    print("kldv=%.3f (=0.001)" % (kldv))
+    # print("kldv=%.3f (=0.001)" % (kldv))
     # Volume DV (g m-3)
     rhodv = params[25]
-    print("rhodv=%.2f (=500)" % (rhodv))
+    # print("rhodv=%.2f (=500)" % (rhodv))
     # Biomass of DR (kg ha-1)
     wdr = params[26]
-    print("wdr=%.2f (=500)" % (wdr))
+    # print("wdr=%.2f (=500)" % (wdr))
     # Senescence coefficient DR (degree day)
     kdr = params[27]
-    print("kdr=%.3f (=0.001)" % (kdr))
+    # print("kdr=%.3f (=0.001)" % (kdr))
     # Abscission coefficient DR (degree day)
     kldr = params[28]
-    print("kldr=%.4f (=0.0005)" % (kldr))
+    # print("kldr=%.4f (=0.0005)" % (kldr))
     # Volume DR (g m-3)
     rhodr = params[29]
-    print("rhodr=%.2f (=150)" % (rhodr))
+    # print("rhodr=%.2f (=150)" % (rhodr))
     # Initial value of age of compartment GV
     gv_init_age = params[30]
-    print("initagegv=%.2f (=100)" % (gv_init_age))
+    # print("initagegv=%.2f (=100)" % (gv_init_age))
     # Initial value of age of compartment GR
     gr_init_age = params[31]
-    print("initagegr=%.2f (=2000)" % (gr_init_age))
+    # print("initagegr=%.2f (=2000)" % (gr_init_age))
     # Initial value of age of compartment DV
     dv_init_age = params[32]
-    print("initagedv=%.2f (=300)" % (dv_init_age))
+    # print("initagedv=%.2f (=300)" % (dv_init_age))
     # Initial value of age of compartment DR
     dr_init_age = params[33]
-    print("initagedr=%.2f (=500)" % (dr_init_age))
+    # print("initagedr=%.2f (=500)" % (dr_init_age))
     # Max of R.U.E.
     ruemax = params[34]
-    print("ruemax=%.2f (=3)" % (ruemax))
+    # print("ruemax=%.2f (=3)" % (ruemax))
     # Respiration of green vegetative
     gv_gamma = params[35]
-    print("gv_gamma=%.2f (=0.4)" % (gv_gamma))
+    # print("gv_gamma=%.2f (=0.4)" % (gv_gamma))
     # Respiration of green reproductive
     gr_gamma = params[36]
-    print("gr_gamma=%.2f (=0.2)" % (gr_gamma))
+    # print("gr_gamma=%.2f (=0.2)" % (gr_gamma))
     # maximum OMD green veg
     maxOMDgv = params[37]
-    print("maxOMDgv=%.2f (=0.9)" % (maxOMDgv))
+    # print("maxOMDgv=%.2f (=0.9)" % (maxOMDgv))
     # minimum OMD green veg
     minOMDgv = params[38]
-    print("minOMDgv=%.2f (=0.75)" % (minOMDgv))
+    # print("minOMDgv=%.2f (=0.75)" % (minOMDgv))
     # maximum OMD green rep
     maxOMDgr = params[39]
-    print("maxOMDgr=%.2f (=0.9)" % (maxOMDgr))
+    # print("maxOMDgr=%.2f (=0.9)" % (maxOMDgr))
     # minimum OMD green rep
     minOMDgr = params[40]
-    print("minOMDgr=%.2f (=0.65)" % (minOMDgr))
+    # print("minOMDgr=%.2f (=0.65)" % (minOMDgr))
     # mean OMD dry veg
     meanOMDdv = params[41]
-    print("meanOMDdv=%.2f (=0.45)" % (meanOMDdv))
+    # print("meanOMDdv=%.2f (=0.45)" % (meanOMDdv))
     # mean OMD dry rep
     meanOMDdr = params[42]
-    print("meanOMDdr=%.2f (=0.4)" % (meanOMDdr))
+    # print("meanOMDdr=%.2f (=0.4)" % (meanOMDdr))
     # Pixel area [Ha]
     cellSurface = params[43]
-    print("cellSurface=%.2f (=0.01)" % (cellSurface))
+    # print("cellSurface=%.2f (=0.01)" % (cellSurface))
 
     # Pixel area [m2]
     cellSurfaceMeter = 10000 * cellSurface

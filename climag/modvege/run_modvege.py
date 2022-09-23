@@ -9,27 +9,23 @@ to do on a grid)
 This function *should* be self sustaining, nothing else needed.
 """
 
-# import numpy as np
-import matplotlib.pyplot as plt
-
-# import the model function
-from modvege import modvege
-
+import pandas as pd
 # import ModVege read input files library
 #   params.csv
 #   weather.csv
 from lib_read_input_files import read_params, read_weather
-
 # ONLY FOR DEV
 from lib_read_output_files import read_out
+# import the model function
+from modvege import modvege
 
 # define the name of the input params file
-params_file = "params.csv"
+PARAMS_FILE = "params.csv"
 # define the name of the input environment file
-weather_file = "weather.csv"
+WEATHER_FILE = "weather.csv"
 
 # ONLY FOR DEV
-out_file = "out_cut.csv"
+OUT_FILE = "out_cut.csv"
 
 
 def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
@@ -67,6 +63,22 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
     gv_b, dv_b, gr_b, dr_b, h_b, i_b, gro, abc, sumT, gva, gra, dva, dra, \
         sea, ftm, env, pgr, atr = modvege(params, weather, startdoy, enddoy)
 
+    # convert output to dataframe and save as CSV
+    colnames = [
+        "doy", "gv_b", "dv_b", "gr_b", "dr_b", "h_b", "i_b", "gro", "abc",
+        "sumT", "gva", "gra", "dva", "dra", "sea", "ftm", "env", "pgr", "atr"
+    ]
+
+    output_df = pd.DataFrame(
+        zip(
+            list(range(1, len(gv_b) + 1)), gv_b, dv_b, gr_b, dr_b, h_b, i_b,
+            gro, abc, sumT, gva, gra, dva, dra, sea, ftm, env, pgr, atr
+        ),
+        columns=colnames
+    )
+
+    output_df.to_csv("output.csv", index=False)
+
     # Print the output
     # print(output)
 
@@ -84,8 +96,10 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
     # 8 Mean GRO biomass                   (kg DM/ha)  gro
     # 9 Mean available biomass for cut     (kg DM/ha)  abc
 
+    # ONLY FOR DEV
     if out_csv is not None:
-        # ONLY FOR DEV
+        import matplotlib.pyplot as plt
+
         out = read_out(out_csv)
 
         # PLOT
@@ -177,7 +191,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
 
 # run the main function
 run_modvege(
-    input_params_csv=params_file,
-    input_weather_csv=weather_file,
-    out_csv=out_file
+    input_params_csv=PARAMS_FILE,
+    input_weather_csv=WEATHER_FILE,
+    # out_csv=OUT_FILE  # ONLY FOR DEV
 )
