@@ -12,14 +12,14 @@ def getAverageHeight(biomass, bulkDensity):
 
     Parameters
     ----------
-    biomass : biomass
+    biomass : biomass (kg DM ha-1)
     bulkDensity : bulk density
 
     Returns
     -------
     - the average height
     """
-    return biomass/(bulkDensity)
+    return biomass/bulkDensity
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
@@ -932,11 +932,11 @@ def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
 
     Parameters
     ----------
-    @param gr_min_omd The minimum Green Reproduction Org. Mat. Digestibility
-    @param gr_max_omd The maximum Green Reproduction Org. Mat. Digestibility
-    @param gr_avg_age The average age of the Green Reproduction
-    @param st1 sum of temperature to begin vegeative activity
-    @param st2 sum of temperature to end vegetative activity
+    gr_min_omd : The minimum Green Reproduction Org. Mat. Digestibility
+    gr_max_omd : The maximum Green Reproduction Org. Mat. Digestibility
+    gr_avg_age : The average age of the Green Reproduction
+    st1 sum : of temperature to begin vegeative activity
+    st2 sum : of temperature to end vegetative activity
 
     Returns
     -------

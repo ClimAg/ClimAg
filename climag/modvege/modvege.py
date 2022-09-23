@@ -38,8 +38,7 @@ DEFAULT_CUT_HEIGHT = 0.05
 
 
 def modvege(params, weather, startdoy, enddoy):
-    """
-    **ModVege** model as a function
+    """**ModVege** model as a function
 
     ! This model cannot regenerate reproductive growth after a cut !
 
