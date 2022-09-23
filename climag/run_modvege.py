@@ -13,19 +13,11 @@ import pandas as pd
 # import ModVege read input files library
 #   params.csv
 #   weather.csv
-from lib_read_input_files import read_params, read_weather
+from climag.modvege_lib_read_input_files import read_params, read_weather
 # ONLY FOR DEV
-from lib_read_output_files import read_out
+from climag.modvege_lib_read_output_files import read_out
 # import the model function
-from modvege import modvege
-
-# define the name of the input params file
-PARAMS_FILE = "params.csv"
-# define the name of the input environment file
-WEATHER_FILE = "weather.csv"
-
-# ONLY FOR DEV
-OUT_FILE = "out_cut.csv"
+from climag.modvege import modvege
 
 
 def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
@@ -64,18 +56,17 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
         sea, ftm, env, pgr, atr = modvege(params, weather, startdoy, enddoy)
 
     # convert output to dataframe and save as CSV
+    data = zip(
+        list(range(1, len(gv_b) + 1)), gv_b, dv_b, gr_b, dr_b, h_b, i_b,
+        gro, abc, sumT, gva, gra, dva, dra, sea, ftm, env, pgr, atr
+    )
+
     colnames = [
         "doy", "gv_b", "dv_b", "gr_b", "dr_b", "h_b", "i_b", "gro", "abc",
         "sumT", "gva", "gra", "dva", "dra", "sea", "ftm", "env", "pgr", "atr"
     ]
 
-    output_df = pd.DataFrame(
-        zip(
-            list(range(1, len(gv_b) + 1)), gv_b, dv_b, gr_b, dr_b, h_b, i_b,
-            gro, abc, sumT, gva, gra, dva, dra, sea, ftm, env, pgr, atr
-        ),
-        columns=colnames
-    )
+    output_df = pd.DataFrame(data, columns=colnames)
 
     output_df.to_csv("output.csv", index=False)
 
@@ -86,15 +77,15 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
     # Definition of columns in out_cut.csv             Eq. from output run
     # ###############################################  ###################
     # 0 day
-    # 1 Mean biomass                       (kg DM/ha)  gv_b+gr_b+dv_b+dr_b
-    # 2 Mean green vegetative biomass      (kg DM/ha)  gv_b
-    # 3 Mean green reproductive biomass    (kg DM/ha)  gr_b
-    # 4 Mean dry vegetative biomass        (kg DM/ha)  dv_b
-    # 5 Mean dry reproductive biomass      (kg DM/ha)  dr_b
-    # 6 Harvested Biomass                  (kg DM/ha)  h_b
-    # 7 Ingested Biomass                   (kg DM/ha)  i_b
-    # 8 Mean GRO biomass                   (kg DM/ha)  gro
-    # 9 Mean available biomass for cut     (kg DM/ha)  abc
+    # 1 Mean biomass                     [kg DM ha-1]  gv_b+gr_b+dv_b+dr_b
+    # 2 Mean green vegetative biomass    [kg DM ha-1]  gv_b
+    # 3 Mean green reproductive biomass  [kg DM ha-1]  gr_b
+    # 4 Mean dry vegetative biomass      [kg DM ha-1]  dv_b
+    # 5 Mean dry reproductive biomass    [kg DM ha-1]  dr_b
+    # 6 Harvested Biomass                [kg DM ha-1]  h_b
+    # 7 Ingested Biomass                 [kg DM ha-1]  i_b
+    # 8 Mean GRO biomass                 [kg DM ha-1]  gro
+    # 9 Mean available biomass for cut   [kg DM ha-1]  abc
 
     # ONLY FOR DEV
     if out_csv is not None:
@@ -187,11 +178,3 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
 
         plt.tight_layout()
         plt.show()
-
-
-# run the main function
-run_modvege(
-    input_params_csv=PARAMS_FILE,
-    input_weather_csv=WEATHER_FILE,
-    # out_csv=OUT_FILE  # ONLY FOR DEV
-)

@@ -29,7 +29,8 @@ import numpy as np
 # import copy
 
 # Import libraries of ModVege
-from lib_modvege import *
+# from lib_modvege import *
+import climag.modvege_lib as lm
 
 # Define DEFAULT_CUT_HEIGHT 0.05
 DEFAULT_CUT_HEIGHT = 0.05
@@ -312,11 +313,11 @@ def modvege(params, weather, startdoy, enddoy):
         # Prepare additional variables
         #######################################################
         # mk sumTemperature Uses t0=0 and not t0
-        sumT = getSumTemperature(weather, i, 0.55)
+        sumT = lm.getSumTemperature(weather, i, 0.55)
         # fSEA array for graphs
-        sea.append(fsea(maxsea, minsea, sumT, st2, st1))
+        sea.append(lm.fsea(maxsea, minsea, sumT, st2, st1))
         # fTemperature the array for graphs
-        ftm.append(fTemperature(meanTenDaysT, t0, t1, t2, sumT))
+        ftm.append(lm.fTemperature(meanTenDaysT, t0, t1, t2, sumT))
 
         # Grass cut flag modification if weather file has grass cut for that
         # day
@@ -348,8 +349,8 @@ def modvege(params, weather, startdoy, enddoy):
         if int(eta) == 0:
             # If LAI from remote sensing not available, then compute it
             if int(lai) == 0:
-                lai = fclai(pctlam, sla, gv_biomass)
-            eta = aet(
+                lai = lm.fclai(pctlam, sla, gv_biomass)
+            eta = lm.aet(
                 pet, pctlam, sla, gv_biomass, waterReserve,
                 waterHoldingCapacity, lai
             )
@@ -372,7 +373,7 @@ def modvege(params, weather, startdoy, enddoy):
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
                 isHarvested, harvestedBiomassPart, gv_biomass, dv_biomass, \
-                    gr_biomass, dr_biomass = cut(
+                    gr_biomass, dr_biomass = lm.cut(
                         cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
                         dv_biomass, gr_biomass, dr_biomass, cellSurface,
                         isHarvested
@@ -384,12 +385,12 @@ def modvege(params, weather, startdoy, enddoy):
                 isCut = True
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
-                isGrazed, ingestedBiomassPart = defoliation(
+                isGrazed, ingestedBiomassPart = lm.defoliation(
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
                     rhogv, rhodv, rhogr, rhodr, maxAmountToIngest, isGrazed
                 )
             # Allocation to reproductive
-            a2r = rep(ni)
+            a2r = lm.rep(ni)
             # TO-DO When to change NI, and by how much?
             # NI        A2R     NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
@@ -414,25 +415,25 @@ def modvege(params, weather, startdoy, enddoy):
 
         atr.append(a2r)
         # Compute biomass growth
-        env.append(mk_env(
+        env.append(lm.mk_env(
             meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
             pet, waterReserve, waterHoldingCapacity
         ))
-        pgr.append(pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
+        pgr.append(lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
         gro = (
-            mk_env(
+            lm.mk_env(
                     meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
                     pet, waterReserve, waterHoldingCapacity
             )
-            * pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
-            * fsea(maxsea, minsea, sumT, st2, st1)
+            * lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
+            * lm.fsea(maxsea, minsea, sumT, st2, st1)
             * correctiveFactorForAn
         )
-        # egro = mk_env(
+        # egro = lm.mk_env(
         #     meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar, pet,
         #     waterReserve, waterHoldingCapacity
         # )
-        # ggro = pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
+        # ggro = lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
         # sgro = fsea(maxsea, minsea, sumT, st2, st1)
         # cgro = correctiveFactorForAn
         # gro = egro * ggro * sgro * cgro
@@ -440,19 +441,19 @@ def modvege(params, weather, startdoy, enddoy):
 
         # Update the state of the Vegetative parts
         # Used t0 = 0 instead of t0 to match output data!
-        gv_biomass, gv_avg_age, gv_senescent_biomass = gv_update(
+        gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
             gro, a2r, lls, temperature, kdv, 0, gv_biomass, gv_avg_age
         )
-        dv_biomass, dv_avg_age = dv_update(
+        dv_biomass, dv_avg_age = lm.dv_update(
             gv_gamma, gv_senescent_biomass, lls, kldv,
             temperature, dv_biomass, dv_avg_age
         )
         # Start the Reproductive phase of the vegetation
-        gr_biomass, gr_avg_age, gr_senescent_biomass = gr_update(
+        gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
             temperature, a2r, gro, st1, st2, kdr,
             lls, rhogr, t0, gr_biomass, gr_avg_age
         )
-        dr_biomass, dr_avg_age = dr_update(
+        dr_biomass, dr_avg_age = lm.dr_update(
             gr_gamma, gr_senescent_biomass, st1, st2,
             temperature, kldr, dr_biomass, dr_avg_age
         )
@@ -460,7 +461,7 @@ def modvege(params, weather, startdoy, enddoy):
         if not isCut:
             cutHeight = DEFAULT_CUT_HEIGHT
         # Compute available biomass for cut (output comparison requirement)
-        avBiom4cut = getAvailableBiomassForCut(
+        avBiom4cut = lm.getAvailableBiomassForCut(
             gv_biomass, dv_biomass, gr_biomass, dr_biomass,
             cutHeight, rhogv, rhodv, rhogr, rhodr
         )

@@ -1,4 +1,4 @@
-"""lib_read_input_files.py
+"""modvege_lib_read_input_files.py
 
 https://github.com/YannChemin/modvege
 

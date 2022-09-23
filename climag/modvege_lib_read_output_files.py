@@ -1,4 +1,4 @@
-"""lib_read_output_files.py
+"""modvege_lib_read_output_files.py
 
 https://github.com/YannChemin/modvege
 

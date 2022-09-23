@@ -1,4 +1,4 @@
-"""lib_modvege.py
+"""modvege_lib.py
 
 https://github.com/YannChemin/modvege
 """
