@@ -12,7 +12,7 @@ def getAverageHeight(biomass, bulkDensity):
 
     Parameters
     ----------
-    biomass : biomass (kg DM ha-1)
+    biomass : biomass
     bulkDensity : bulk density
 
     Returns
@@ -74,7 +74,7 @@ def exeCut(cutHeight, bulkDensity, biomass):
 
     Returns
     -------
-    - the biomass taken in kg DM / m²
+    - the biomass taken in kg DM m-2
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
@@ -96,7 +96,7 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
 
     Returns
     -------
-    - the biomass left in kg DM / m²
+    - the biomass left in kg DM m-2
     """
     biomass -= biomassToIngest
     return biomassToIngest
@@ -466,7 +466,7 @@ def cut(
 
     Parameters
     ----------
-    cutHeight : the height of the cut (m)
+    cutHeight : the height of the cut [m]
     rhogv : rho green vegetation
     rhodv : rho dry vegetation
     rhogr : rho green reproduction
@@ -475,7 +475,7 @@ def cut(
     dvb : the biomass of Dry Vegetation
     grb : the biomass of Green Reproductive
     drb : the biomass of Dry Reproductive
-    cellSurface : Surface of the pixel (Ha)
+    cellSurface : Surface of the pixel [ha]
     isHarvested : Status flag indicating harvest happened
 
     Returns

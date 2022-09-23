@@ -9,34 +9,38 @@ to do on a grid)
 This function *should* be self sustaining, nothing else needed.
 """
 
-import numpy as np
+# import numpy as np
 import matplotlib.pyplot as plt
 
-# Import the model function
-from modvege import *
+# import the model function
+from modvege import modvege
 
-# Import ModVege read input files library:
+# import ModVege read input files library
 #   params.csv
 #   weather.csv
-from lib_read_input_files import *
+from lib_read_input_files import read_params, read_weather
 
 # ONLY FOR DEV
-from lib_read_output_files import *
+from lib_read_output_files import read_out
 
-# Define the name of the input params file
-input_params_csv = "params.csv"
-# Define the name of the input environment file
-input_weather_csv = "weather.csv"
+# define the name of the input params file
+params_file = "params.csv"
+# define the name of the input environment file
+weather_file = "weather.csv"
+
+# ONLY FOR DEV
+out_file = "out_cut.csv"
 
 
-def run_modvege(input_params_csv, input_weather_csv):
+def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
     """
-    Pre-Process the inputs to run ModVege model as a function
+    Preprocess the inputs to run ModVege model as a function
 
     Parameters
     ----------
-    input_params_csv : Filename of the csv input parameters
-    input_weather_csv : Filename of the csv input weather file
+    input_params_csv : Filename of the CSV input parameters
+    input_weather_csv : Filename of the CSV input weather file
+    out_csv : Sample output filename (FOR DEV ONLY)
     """
 
     # Read Parameter files into array
@@ -80,95 +84,100 @@ def run_modvege(input_params_csv, input_weather_csv):
     # 8 Mean GRO biomass                   (kg DM/ha)  gro
     # 9 Mean available biomass for cut     (kg DM/ha)  abc
 
-    # ONLY FOR DEV
-    out = read_out(out_csv)
+    if out_csv is not None:
+        # ONLY FOR DEV
+        out = read_out(out_csv)
 
-    # PLOT
-    out_doy = [out[i][0] for i in range(len(out)-1)]
-    out_gvb = [out[i][2] for i in range(len(out)-1)]
-    out_grb = [out[i][3] for i in range(len(out)-1)]
-    out_dvb = [out[i][4] for i in range(len(out)-1)]
-    out_drb = [out[i][5] for i in range(len(out)-1)]
-    out_hb = [out[i][6] for i in range(len(out)-1)]
-    out_ib = [out[i][7] for i in range(len(out)-1)]
-    out_gro = [out[i][8] for i in range(len(out)-1)]
-    out_abc = [out[i][9] for i in range(len(out)-1)]
+        # PLOT
+        out_doy = [out[i][0] for i in range(len(out)-1)]
+        out_gvb = [out[i][2] for i in range(len(out)-1)]
+        out_grb = [out[i][3] for i in range(len(out)-1)]
+        out_dvb = [out[i][4] for i in range(len(out)-1)]
+        out_drb = [out[i][5] for i in range(len(out)-1)]
+        out_hb = [out[i][6] for i in range(len(out)-1)]
+        out_ib = [out[i][7] for i in range(len(out)-1)]
+        out_gro = [out[i][8] for i in range(len(out)-1)]
+        out_abc = [out[i][9] for i in range(len(out)-1)]
 
-    plt.figure(figsize=(15, 7))
+        plt.figure(figsize=(15, 7))
 
-    plt.subplot(331)
-    plt.plot(out_doy, gv_b, "g-", label="gv_b")
-    plt.plot(out_doy, out_gvb, "b-", label="out_gvb")
-    plt.title("Green Vegetative biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(331)
+        plt.plot(out_doy, gv_b, "g-", label="gv_b")
+        plt.plot(out_doy, out_gvb, "b-", label="out_gvb")
+        plt.title("Green Vegetative biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(332)
-    plt.plot(out_doy, gr_b, "g-", label="gr_b")
-    plt.plot(out_doy, out_grb, "b-", label="out_grb")
-    plt.title("Green Reproductive biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(332)
+        plt.plot(out_doy, gr_b, "g-", label="gr_b")
+        plt.plot(out_doy, out_grb, "b-", label="out_grb")
+        plt.title("Green Reproductive biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(333)
-    plt.plot(out_doy, sumT, "g-", label="sumT")
-    plt.plot(out_doy, gva, "b-", label="gv_age")
-    plt.plot(out_doy, gra, "y-", label="gr_age")
-    plt.plot(out_doy, dva, "c-", label="dv_age")
-    plt.plot(out_doy, dra, "r-", label="dr_age")
-    plt.title("Sum of Temperature (Celsius)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(333)
+        plt.plot(out_doy, sumT, "g-", label="sumT")
+        plt.plot(out_doy, gva, "b-", label="gv_age")
+        plt.plot(out_doy, gra, "y-", label="gr_age")
+        plt.plot(out_doy, dva, "c-", label="dv_age")
+        plt.plot(out_doy, dra, "r-", label="dr_age")
+        plt.title("Sum of Temperature (Celsius)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(334)
-    plt.plot(out_doy, dv_b, "g-", label="dv_b")
-    plt.plot(out_doy, out_dvb, "b-", label="out_dvb")
-    plt.title("Dead Vegetative biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(334)
+        plt.plot(out_doy, dv_b, "g-", label="dv_b")
+        plt.plot(out_doy, out_dvb, "b-", label="out_dvb")
+        plt.title("Dead Vegetative biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(335)
-    plt.plot(out_doy, dr_b, "g-", label="dr_b")
-    plt.plot(out_doy, out_drb, "b-", label="out_drb")
-    plt.title("Dead Reproductive biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(335)
+        plt.plot(out_doy, dr_b, "g-", label="dr_b")
+        plt.plot(out_doy, out_drb, "b-", label="out_drb")
+        plt.title("Dead Reproductive biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(336)
-    plt.plot(out_doy, pgr, "m-", label="Pot. Growth")
-    plt.plot(out_doy, gro, "g-", label="gro")
-    plt.plot(out_doy, out_gro, "b-", label="out_gro")
-    plt.title("GRO biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(336)
+        plt.plot(out_doy, pgr, "m-", label="Pot. Growth")
+        plt.plot(out_doy, gro, "g-", label="gro")
+        plt.plot(out_doy, out_gro, "b-", label="out_gro")
+        plt.title("GRO biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(337)
-    plt.plot(out_doy, abc, "g-", label="abc")
-    plt.plot(out_doy, out_abc, "b-", label="out_abc")
-    plt.title("Mean available biomass for cut (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        plt.subplot(337)
+        plt.plot(out_doy, abc, "g-", label="abc")
+        plt.plot(out_doy, out_abc, "b-", label="out_abc")
+        plt.title("Mean available biomass for cut (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    # Harvested Biomass Plot
-    plt.subplot(338)
-    plt.plot(out_doy, h_b, "g-", label="h_b")
-    plt.plot(out_doy, out_hb, "b-", label="out_hb")
-    plt.title("Harvested biomass (kg DM/ha)")
-    plt.legend()
-    plt.grid()
+        # Harvested Biomass Plot
+        plt.subplot(338)
+        plt.plot(out_doy, h_b, "g-", label="h_b")
+        plt.plot(out_doy, out_hb, "b-", label="out_hb")
+        plt.title("Harvested biomass (kg DM/ha)")
+        plt.legend()
+        plt.grid()
 
-    plt.subplot(339)
-    plt.plot(out_doy, atr, "c-", label="a2r")
-    plt.plot(out_doy, sea, "g-", label="Season")
-    plt.plot(out_doy, ftm, "r-", label="Temperature")
-    plt.plot(out_doy, env, "y-", label="Environmental")
-    plt.title("ENV and other Factors")
-    plt.legend()
-    plt.grid()
+        plt.subplot(339)
+        plt.plot(out_doy, atr, "c-", label="a2r")
+        plt.plot(out_doy, sea, "g-", label="Season")
+        plt.plot(out_doy, ftm, "r-", label="Temperature")
+        plt.plot(out_doy, env, "y-", label="Environmental")
+        plt.title("ENV and other Factors")
+        plt.legend()
+        plt.grid()
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
 
 # run the main function
-run_modvege(input_params_csv, input_weather_csv)
+run_modvege(
+    input_params_csv=params_file,
+    input_weather_csv=weather_file,
+    out_csv=out_file
+)

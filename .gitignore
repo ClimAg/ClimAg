@@ -133,4 +133,4 @@ draft/
 *.access*
 .vscode/
 tests/data
-*.csv
+climag/modvege/*.csv

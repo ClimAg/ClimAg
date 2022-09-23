@@ -26,7 +26,7 @@ References:
 """
 
 import numpy as np
-import copy
+# import copy
 
 # Import libraries of ModVege
 from lib_modvege import *
