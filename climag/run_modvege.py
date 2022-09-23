@@ -10,17 +10,17 @@ This function *should* be self sustaining, nothing else needed.
 """
 
 import pandas as pd
+# import the model function
+from climag.modvege import modvege
 # import ModVege read input files library
 #   params.csv
 #   weather.csv
 from climag.modvege_lib_read_input_files import read_params, read_weather
 # ONLY FOR DEV
 from climag.modvege_lib_read_output_files import read_out
-# import the model function
-from climag.modvege import modvege
 
 
-def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
+def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
     """
     Preprocess the inputs to run ModVege model as a function
 
@@ -68,7 +68,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
 
     output_df = pd.DataFrame(data, columns=colnames)
 
-    output_df.to_csv("output.csv", index=False)
+    output_df.to_csv(out_csv, index=False)
 
     # Print the output
     # print(output)
@@ -88,10 +88,10 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv=None):
     # 9 Mean available biomass for cut   [kg DM ha-1]  abc
 
     # ONLY FOR DEV
-    if out_csv is not None:
+    if out_dev is not None:
         import matplotlib.pyplot as plt
 
-        out = read_out(out_csv)
+        out = read_out(out_dev)
 
         # PLOT
         out_doy = [out[i][0] for i in range(len(out)-1)]

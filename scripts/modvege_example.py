@@ -15,14 +15,17 @@ DATA_PATH = os.path.join("data", "grass-growth", "modvege")
 PARAMS_FILE = os.path.join(DATA_PATH, "params.csv")
 # define the name of the input environment file
 WEATHER_FILE = os.path.join(DATA_PATH, "weather.csv")
+# outputs
+OUT_FILE = os.path.join(DATA_PATH, "output.csv")
 
 # ONLY FOR DEV
-OUT_FILE = os.path.join(DATA_PATH, "out_cut.csv")
+OUT_DEV = os.path.join(DATA_PATH, "out_cut.csv")
 
 # %%
 # run the main function
 run_modvege(
     input_params_csv=PARAMS_FILE,
     input_weather_csv=WEATHER_FILE,
-    out_csv=OUT_FILE  # ONLY FOR DEV
+    out_csv=OUT_FILE,
+    out_dev=OUT_DEV  # ONLY FOR DEV
 )
