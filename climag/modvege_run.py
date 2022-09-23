@@ -1,4 +1,4 @@
-"""run_modvege.py
+"""modvege_run.py
 
 https://github.com/YannChemin/modvege
 
@@ -152,7 +152,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
         plt.title("Mean available biomass for cut (kg DM/ha)")
         plt.legend()
 
-        # Harvested Biomass Plot
+        # harvested biomass plot
         plt.subplot(338)
         plt.plot(out_doy, h_b, label="h_b")
         plt.plot(out_doy, out_hb, label="out_hb")

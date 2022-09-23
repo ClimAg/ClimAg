@@ -6,7 +6,7 @@ https://github.com/YannChemin/modvege
 
 # %%
 import os
-from climag.run_modvege import run_modvege
+from climag.modvege_run import run_modvege
 
 # %%
 DATA_PATH = os.path.join("data", "grass-growth", "modvege")
