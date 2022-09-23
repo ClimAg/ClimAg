@@ -26,16 +26,11 @@ References:
 """
 
 import numpy as np
-
-# Import libraries of ModVege
-# from lib_modvege import *
+# import ModVege libraries
 import climag.modvege_lib as lm
 
-# Define DEFAULT_CUT_HEIGHT 0.05
-DEFAULT_CUT_HEIGHT = 0.05
 
-
-def modvege(params, weather, startdoy, enddoy):
+def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     """**ModVege** model as a function
 
     This function *should* be self sustaining, nothing else needed
@@ -338,8 +333,7 @@ def modvege(params, weather, startdoy, enddoy):
         correctiveFactorForAn = 1
         # If the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
         # (Belanger et al., 1994)
-        if ni < 0.35:
-            ni = 0.35
+        ni = max(ni, 0.35)
 
         #####################################################################
         # The model starts here really
@@ -371,12 +365,14 @@ def modvege(params, weather, startdoy, enddoy):
                 isCut = True
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
-                isHarvested, harvestedBiomassPart, gv_biomass, dv_biomass, \
-                    gr_biomass, dr_biomass = lm.cut(
-                        cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
-                        dv_biomass, gr_biomass, dr_biomass, cellSurface,
-                        isHarvested
-                    )
+                (
+                    isHarvested, harvestedBiomassPart,
+                    gv_biomass, dv_biomass, gr_biomass, dr_biomass
+                ) = lm.cut(
+                    cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
+                    dv_biomass, gr_biomass, dr_biomass, cellSurface,
+                    isHarvested
+                )
 
             # Look for flags to indicate livestock ingestion
             if isGrazed:
@@ -414,15 +410,17 @@ def modvege(params, weather, startdoy, enddoy):
 
         atr.append(a2r)
         # Compute biomass growth
-        env.append(lm.mk_env(
-            meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
-            pet, waterReserve, waterHoldingCapacity
-        ))
+        env.append(
+            lm.mk_env(
+                meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
+                pet, waterReserve, waterHoldingCapacity
+            )
+        )
         pgr.append(lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
         gro = (
             lm.mk_env(
-                    meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
-                    pet, waterReserve, waterHoldingCapacity
+                meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
+                pet, waterReserve, waterHoldingCapacity
             )
             * lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
             * lm.fsea(maxsea, minsea, sumT, st2, st1)
@@ -433,7 +431,7 @@ def modvege(params, weather, startdoy, enddoy):
         #     waterReserve, waterHoldingCapacity
         # )
         # ggro = lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
-        # sgro = fsea(maxsea, minsea, sumT, st2, st1)
+        # sgro = lm.fsea(maxsea, minsea, sumT, st2, st1)
         # cgro = correctiveFactorForAn
         # gro = egro * ggro * sgro * cgro
         # print(gro, egro, ggro, sgro, cgro)
@@ -458,7 +456,7 @@ def modvege(params, weather, startdoy, enddoy):
         )
         # If we do not cut the grass, ensure default estimation is created
         if not isCut:
-            cutHeight = DEFAULT_CUT_HEIGHT
+            cutHeight = default_cut_height
         # Compute available biomass for cut (output comparison requirement)
         avBiom4cut = lm.getAvailableBiomassForCut(
             gv_biomass, dv_biomass, gr_biomass, dr_biomass,
