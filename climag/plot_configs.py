@@ -38,23 +38,23 @@ def rotated_pole_point(data, lon, lat):
     lat : latitude of the point
     """
     if data.rio.crs is None:
-        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
         pole_longitude = (
             data["rotated_pole"].attrs["grid_north_pole_longitude"]
         )
+        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
     else:
-        pole_latitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][0]["value"]
-        )
         pole_longitude = (
             data.rio.crs.to_dict(
                 projjson=True
             )["conversion"]["parameters"][1]["value"]
         )
+        pole_latitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][0]["value"]
+        )
     rp_cds = ccrs.RotatedGeodetic(
-        pole_latitude=pole_latitude, pole_longitude=pole_longitude,
+        pole_longitude=pole_longitude, pole_latitude=pole_latitude,
     ).transform_point(x=lon, y=lat, src_crs=ccrs.Geodetic())
     return rp_cds[0], rp_cds[1]
 
@@ -102,23 +102,23 @@ def rotated_pole_transform(data):
     data : input CORDEX data
     """
     if data.rio.crs is None:
-        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
         pole_longitude = (
             data["rotated_pole"].attrs["grid_north_pole_longitude"]
         )
+        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
     else:
-        pole_latitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][0]["value"]
-        )
         pole_longitude = (
             data.rio.crs.to_dict(
                 projjson=True
             )["conversion"]["parameters"][1]["value"]
         )
+        pole_latitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][0]["value"]
+        )
     transform = ccrs.RotatedPole(
-        pole_latitude=pole_latitude, pole_longitude=pole_longitude
+        pole_longitude=pole_longitude, pole_latitude=pole_latitude
     )
     return transform
 
