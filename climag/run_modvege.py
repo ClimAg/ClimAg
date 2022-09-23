@@ -12,12 +12,8 @@ This function *should* be self sustaining, nothing else needed.
 import pandas as pd
 # import the model function
 from climag.modvege import modvege
-# import ModVege read input files library
-#   params.csv
-#   weather.csv
-from climag.modvege_lib_read_input_files import read_params, read_weather
-# ONLY FOR DEV
-from climag.modvege_lib_read_output_files import read_out
+# file reading (read_out is ONLY FOR DEV)
+from climag.modvege_read_files import read_params, read_weather, read_out
 
 
 def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
@@ -26,12 +22,13 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
 
     Parameters
     ----------
-    input_params_csv : Filename of the CSV input parameters
-    input_weather_csv : Filename of the CSV input weather file
-    out_csv : Sample output filename (FOR DEV ONLY)
+    input_params_csv : File name for the input parameters CSV
+    input_weather_csv : File name for the input weather CSV
+    out_csv : File name for the output CSV
+    out_dev : Test output data (FOR DEV ONLY)
     """
 
-    # Read Parameter files into array
+    # Read parameter files into array
     params = read_params(input_params_csv)
 
     # Read weather file into array
@@ -90,6 +87,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
     # ONLY FOR DEV
     if out_dev is not None:
         import matplotlib.pyplot as plt
+        import climag.plot_configs
 
         out = read_out(out_dev)
 
@@ -109,14 +107,14 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
         plt.subplot(331)
         plt.plot(out_doy, gv_b, "g-", label="gv_b")
         plt.plot(out_doy, out_gvb, "b-", label="out_gvb")
-        plt.title("Green Vegetative biomass (kg DM/ha)")
+        plt.title("Green vegetative biomass (kg DM/ha)")
         plt.legend()
         plt.grid()
 
         plt.subplot(332)
         plt.plot(out_doy, gr_b, "g-", label="gr_b")
         plt.plot(out_doy, out_grb, "b-", label="out_grb")
-        plt.title("Green Reproductive biomass (kg DM/ha)")
+        plt.title("Green reproductive biomass (kg DM/ha)")
         plt.legend()
         plt.grid()
 
@@ -126,21 +124,21 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
         plt.plot(out_doy, gra, "y-", label="gr_age")
         plt.plot(out_doy, dva, "c-", label="dv_age")
         plt.plot(out_doy, dra, "r-", label="dr_age")
-        plt.title("Sum of Temperature (Celsius)")
+        plt.title("Sum of temperatures (°C)")
         plt.legend()
         plt.grid()
 
         plt.subplot(334)
         plt.plot(out_doy, dv_b, "g-", label="dv_b")
         plt.plot(out_doy, out_dvb, "b-", label="out_dvb")
-        plt.title("Dead Vegetative biomass (kg DM/ha)")
+        plt.title("Dead vegetative biomass (kg DM/ha)")
         plt.legend()
         plt.grid()
 
         plt.subplot(335)
         plt.plot(out_doy, dr_b, "g-", label="dr_b")
         plt.plot(out_doy, out_drb, "b-", label="out_drb")
-        plt.title("Dead Reproductive biomass (kg DM/ha)")
+        plt.title("Dead reproductive biomass (kg DM/ha)")
         plt.legend()
         plt.grid()
 
@@ -172,7 +170,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv, out_dev=None):
         plt.plot(out_doy, sea, "g-", label="Season")
         plt.plot(out_doy, ftm, "r-", label="Temperature")
         plt.plot(out_doy, env, "y-", label="Environmental")
-        plt.title("ENV and other Factors")
+        plt.title("ENV and other factors")
         plt.legend()
         plt.grid()
 
