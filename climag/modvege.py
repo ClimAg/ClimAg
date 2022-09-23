@@ -26,7 +26,6 @@ References:
 """
 
 import numpy as np
-# import copy
 
 # Import libraries of ModVege
 # from lib_modvege import *
@@ -205,7 +204,7 @@ def modvege(params, weather, startdoy, enddoy):
     cellSurfaceMeter = 10000 * cellSurface
 
     # distance minimum between center of the cell and border of the cell
-    r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter)/6
+    r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter) / 6
 
     # Initialize state parameters
     # This is a status flag changed in lib_cell.updateCell()
@@ -281,34 +280,34 @@ def modvege(params, weather, startdoy, enddoy):
         #######################################################
         # arr[0][0] = DOY[0] = 1
         # arr[0][1] = Temperature[0] = -0.84125
-        temperature = weather[i-1][1]
+        temperature = weather[i - 1][1]
         # mean Ten Days Temperature
         if i < 10:
-            listA = [weather[i-j][1] for j in range(1, 10, 1)]
+            listA = [weather[i - j][1] for j in range(1, 10, 1)]
             meanTenDaysT = np.mean(listA)
             # print(i, listA, meanTenDaysT)
         else:
-            listA = [weather[i-j][1] for j in range(10, 1, -1)]
+            listA = [weather[i - j][1] for j in range(10, 1, -1)]
             meanTenDaysT = np.mean(listA)
             # print(i,listA,meanTenDaysT)
 
         # arr[0][2] = PARi[0] = 2.22092475
-        pari = weather[i-1][2]
+        pari = weather[i - 1][2]
         # print("PARi = %.2f" % (pari))
         # arr[0][3] = PP[0] = 0.119
-        pmm = weather[i-1][3]
+        pmm = weather[i - 1][3]
         # arr[0][4] = PET[0] = 0.602689848
-        pet = weather[i-1][4]
+        pet = weather[i - 1][4]
         # arr[0][5] = ETA[0] = 0.4 [RS data, optional]
-        eta = weather[i-1][5]
+        eta = weather[i - 1][5]
         # arr[0][6] = LAI[0] = 0.02 [RS data, optional]
-        lai = weather[i-1][6]
+        lai = weather[i - 1][6]
         # arr[0][7] = gcut_height[0] = 0.0 [default is 0.05 if cut]
-        cutHeight = weather[i-1][7]
+        cutHeight = weather[i - 1][7]
         # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test ]
-        grazing_animal_count = weather[i-1][8]
+        grazing_animal_count = weather[i - 1][8]
         # arr[0][9] = grazing_avg_animal_weight[0] = 0 [default is 400 for cow]
-        grazing_avg_animal_weight = weather[i-1][9]
+        grazing_avg_animal_weight = weather[i - 1][9]
         #######################################################
         # Prepare additional variables
         #######################################################

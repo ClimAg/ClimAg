@@ -19,7 +19,7 @@ def getAverageHeight(biomass, bulkDensity):
     -------
     - the average height
     """
-    return biomass/bulkDensity
+    return biomass / bulkDensity
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
@@ -54,7 +54,7 @@ def exeDefoliation(biomass, cut_biomass, area):
     -------
     - updated biomass after defoliation
     """
-    biomass = biomass - cut_biomass/area
+    biomass = biomass - cut_biomass / area
     if biomass < 0 | np.isnan(biomass):
         biomass = 0
     return biomass
@@ -104,13 +104,8 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
 
 # Dry Vegetative Functions
 def dv_update(
-    gv_gamma,
-    gv_senescent_biomass,
-    lls,
-    kldv,
-    temperature,
-    dv_biomass,
-    dv_avg_age
+    gv_gamma, gv_senescent_biomass, lls, kldv, temperature,
+    dv_biomass, dv_avg_age
 ):
     """
     Update DV
@@ -139,9 +134,8 @@ def dv_update(
     # growth
     growthBiomass = (1.0 - gv_gamma) * gv_senescent_biomass
     if dv_biomass + growthBiomass > 0:
-        dv_avg_age = (
-            (max(0, temperature) + dv_avg_age)
-            * (dv_biomass / (dv_biomass + growthBiomass))
+        dv_avg_age = (max(0, temperature) + dv_avg_age) * (
+            dv_biomass / (dv_biomass + growthBiomass)
         )
     else:
         dv_avg_age = 0
@@ -213,9 +207,8 @@ def dr_update(
     growthBiomass = (1 - gr_gamma) * gr_senescent_biomass
     if dr_biomass + growthBiomass > 0:
         # print(temperature, dr_avg_age, dr_biomass, growthBiomass)
-        dr_avg_age = (
-            max(0, temperature) +
-            dr_avg_age * dr_biomass / (dr_biomass + growthBiomass)
+        dr_avg_age = max(0, temperature) + dr_avg_age * dr_biomass / (
+            dr_biomass + growthBiomass
         )
     else:
         dr_avg_age = 0
@@ -288,9 +281,8 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     else:
         growthBiomass = 0
     if gv_biomass + growthBiomass > 0:
-        gv_avg_age = (
-            (max(0, temperature) + gv_avg_age) *
-            (gv_biomass / (gv_biomass + growthBiomass))
+        gv_avg_age = (max(0, temperature) + gv_avg_age) * (
+            gv_biomass / (gv_biomass + growthBiomass)
         )
     else:
         gv_avg_age = 0
@@ -375,9 +367,8 @@ def gr_update(
         growthBiomass = 0
         # print("growthBiomass: t<t0 = %.2f" % (growthBiomass))
     if gr_biomass + growthBiomass > 0:
-        gr_avg_age = (
-            (max(0, temperature) + gr_avg_age) *
-            (gr_biomass / (gr_biomass + growthBiomass))
+        gr_avg_age = (max(0, temperature) + gr_avg_age) * (
+            gr_biomass / (gr_biomass + growthBiomass)
         )
     else:
         gr_avg_age = 0
@@ -420,6 +411,7 @@ def mk_gr_senescence(
     else:
         senescence_biomass = 0
     return senescence_biomass
+
 
 #############################################################################
 # Nutrition Index                   # double ni
@@ -528,9 +520,10 @@ def mk_env(
     - the environmental stress
     """
     return (
-        fTemperature(meanTenDaysT, t0, t1, t2, sumT) *
-        ni * fPARi(pari, alphapar) *
-        fWaterStress(waterReserve, waterHoldingCapacity, pet)
+        fTemperature(meanTenDaysT, t0, t1, t2, sumT)
+        * ni
+        * fPARi(pari, alphapar)
+        * fWaterStress(waterReserve, waterHoldingCapacity, pet)
     )
 
 
@@ -643,7 +636,7 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     -------
     - the value given by the waterstress f
     """
-    waterStress = min(waterReserve/waterHoldingCapacity, 1)
+    waterStress = min(waterReserve / waterHoldingCapacity, 1)
     if pet <= 3.8:
         if waterStress <= 0.2:
             f_waterstress = 4 * waterStress
@@ -713,9 +706,9 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
         except:
             # In case of input malfunction
             lai = sla * pctlam * 1.0
-    lightInterceptionByPlant = (1 - np.exp(-0.6 * lai))
+    lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
     # print("pgro: LightInter.byPlant = %.2f" % (lightInterceptionByPlant))
-    p_gro = (pari * ruemax * lightInterceptionByPlant * 10)
+    p_gro = pari * ruemax * lightInterceptionByPlant * 10
     # print("pgro: pgro = %.2f" % (pgro))
     return p_gro
 
@@ -757,7 +750,7 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     if int(lai) == 0:
         lai = sla * pctlam * (gv_biomass / 10)
         # print("aet mk LAI: LAI = %.2f" %(lai))
-    lightInterceptionByPlant = (1 - np.exp(-0.6 * lai))
+    lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
     pt = pet * lightInterceptionByPlant
     pe = pet - pt
     ta = pt * fWaterStress(waterReserve, waterHoldingCapacity, pet)
@@ -817,8 +810,10 @@ def getAvailableBiomassForCut(
     avDefoliationBiomassGR = avDefoliationBiomass(gr_biomass, cutHeight, rhogr)
     avDefoliationBiomassDR = avDefoliationBiomass(dr_biomass, cutHeight, rhodr)
     return (
-        avDefoliationBiomassGV + avDefoliationBiomassDV +
-        avDefoliationBiomassGR + avDefoliationBiomassDR
+        avDefoliationBiomassGV
+        + avDefoliationBiomassDV
+        + avDefoliationBiomassGR
+        + avDefoliationBiomassDR
     )
 
 
@@ -852,8 +847,10 @@ def defoliation(
     avDefoliationBiomassGR = avDefoliationBiomass(gr_biomass, cutHeight, rhogr)
     avDefoliationBiomassDR = avDefoliationBiomass(dr_biomass, cutHeight, rhodr)
     sumAvailable = (
-        avDefoliationBiomassGV + avDefoliationBiomassDV +
-        avDefoliationBiomassGR + avDefoliationBiomassDR
+        avDefoliationBiomassGV
+        + avDefoliationBiomassDV
+        + avDefoliationBiomassGR
+        + avDefoliationBiomassDR
     )
     sumBiomassIngested = 0
     if sumAvailable > 0:
@@ -872,16 +869,16 @@ def defoliation(
         else:
             sumBiomassIngested = (
                 exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassGV/sumAvailable,
+                    maxAmountToIngest * avDefoliationBiomassGV / sumAvailable,
                     maxAmountToIngest
                 ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassDV/sumAvailable,
+                    maxAmountToIngest * avDefoliationBiomassDV / sumAvailable,
                     maxAmountToIngest
                 ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassGR/sumAvailable,
+                    maxAmountToIngest * avDefoliationBiomassGR / sumAvailable,
                     maxAmountToIngest
                 ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassDR/sumAvailable,
+                    maxAmountToIngest * avDefoliationBiomassDR / sumAvailable,
                     maxAmountToIngest
                 )
             )
@@ -965,7 +962,7 @@ def getSumTemperature(weather, doy, t0):
     sumTemperature = 0
     for i in range(doy):
         if weather[i][1] > t0:
-            sumTemperature += (weather[i][1] - t0)
+            sumTemperature += weather[i][1] - t0
     return sumTemperature
 
 
