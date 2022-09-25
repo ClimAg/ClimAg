@@ -102,47 +102,6 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
     return biomassToIngest
 
 
-# Dry Vegetative Functions
-def dv_update(
-    gv_gamma, gv_senescent_biomass, lls, kldv, temperature,
-    dv_biomass, dv_avg_age
-):
-    """
-    Update DV
-
-    Parameters
-    ----------
-    gv_gamma : Respiratory C loss during senescence (DV)
-        (1 - gv_gamma = dv_gamma)
-    gv_senescent_biomass : senescence of compartment GV
-    lls : Leaf lifespan (degree day)
-    kldv : Abscission coefficient DV (degree day)
-    temperature : temperature
-    dv_biomass : av DV biomass
-    dv_avg_age : the average DV age
-
-    Returns
-    -------
-    - the Dry Vegetation biomass
-    - the average DV age
-    """
-    abscissionBiomass = mk_dv_abscission(
-        kldv, dv_biomass, temperature, dv_avg_age, lls
-    )
-    dv_biomass -= abscissionBiomass
-    # at this point the biomass include cut, ingestion, and abscission, not
-    # growth
-    growthBiomass = (1.0 - gv_gamma) * gv_senescent_biomass
-    if dv_biomass + growthBiomass > 0:
-        dv_avg_age = (max(0, temperature) + dv_avg_age) * (
-            dv_biomass / (dv_biomass + growthBiomass)
-        )
-    else:
-        dv_avg_age = 0
-    dv_biomass += growthBiomass
-    return (dv_biomass, dv_avg_age)
-
-
 def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     """
     Compute abscission biomass
@@ -169,6 +128,80 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     # Compute the abscission for Dead Vegetative part
     if temperature > 0:
         abscission_biomass = kldv * dv_biomass * temperature * age
+    else:
+        abscission_biomass = 0
+    return abscission_biomass
+
+
+# Dry Vegetative Functions
+def dv_update(
+    gv_gamma, gv_senescent_biomass, lls, kldv, temperature,
+    dv_biomass, dv_avg_age
+):
+    """
+    Update DV
+
+    Parameters
+    ----------
+    gv_gamma : Respiratory C loss during senescence (DV)
+        (1 - gv_gamma = dv_gamma)
+    gv_senescent_biomass : senescence of compartment GV
+    lls : Leaf lifespan (degree day)
+    kldv : Abscission coefficient DV (degree day)
+    temperature : temperature
+    dv_biomass : av DV biomass
+    dv_avg_age : the average DV age
+
+    Returns
+    -------
+    - the dry vegetation biomass
+    - the average DV age
+    """
+    abscissionBiomass = mk_dv_abscission(
+        kldv, dv_biomass, temperature, dv_avg_age, lls
+    )
+    dv_biomass -= abscissionBiomass
+    # at this point the biomass include cut, ingestion, and abscission, not
+    # growth
+    growthBiomass = (1.0 - gv_gamma) * gv_senescent_biomass
+    if dv_biomass + growthBiomass > 0:
+        dv_avg_age = (max(0, temperature) + dv_avg_age) * (
+            dv_biomass / (dv_biomass + growthBiomass)
+        )
+    else:
+        dv_avg_age = 0
+    dv_biomass += growthBiomass
+    return (dv_biomass, dv_avg_age)
+
+
+def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
+    """
+    Compute abscission biomass
+
+    Parameters
+    ----------
+    kldr : basic rates of abscission in DR (Ducroq, 1996)
+    dr_biomass : av biomass
+    temperature : temperature
+    dr_avg_age : the average DR age
+    st1 : sum of temperature at the beginning
+    st2 : sum of temperature in the end
+
+    Returns
+    -------
+    - the abscission biomass
+    """
+    # method to compute the age of DR for computing abscission of DR
+    if dr_avg_age / (st2 - st1) < 1.0 / 3.0:
+        age = 1
+    elif dr_avg_age / (st2 - st1) < 2.0 / 3.0:
+        age = 2
+    else:
+        age = 3
+    # Compute abscission for Dead Reproductive
+    if temperature > 0:
+        # print(kldr, dr_biomass, temperature,age)
+        abscission_biomass = kldr * dr_biomass * temperature * age
     else:
         abscission_biomass = 0
     return abscission_biomass
@@ -216,37 +249,39 @@ def dr_update(
     return (dr_biomass, dr_avg_age)
 
 
-def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
+def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     """
-    Compute abscission biomass
+    Extract about 2-6% (kDV=0.002, T=10C, gv_fAge=[1-3]) of gv_biomass as
+    senescent
 
     Parameters
     ----------
-    kldr : basic rates of abscission in DR (Ducroq, 1996)
-    dr_biomass : av biomass
-    temperature : temperature
-    dr_avg_age : the average DR age
-    st1 : sum of temperature at the beginning
-    st2 : sum of temperature in the end
+    kgv : Senescence coefficient (Ducroq 1996) [degree day]
+    gv_biomass : the green vegetation biomass
+    temperature : Temperature
+    t0 : minimum temperature for growth
+    lls : Leaf lifespan [degree day]
+    gv_avg_age : the average GV age
 
     Returns
     -------
-    - the abscission biomass
+    - the biomass that is senescent
     """
-    # method to compute the age of DR for computing abscission of DR
-    if dr_avg_age / (st2 - st1) < 1.0 / 3.0:
+    # method to compute the age of GV for computing senescence of GV
+    if gv_avg_age / lls < 1.0 / 3.0:
         age = 1
-    elif dr_avg_age / (st2 - st1) < 2.0 / 3.0:
-        age = 2
+    elif gv_avg_age / lls < 1:
+        age = 3 * gv_avg_age / lls
     else:
         age = 3
-    # Compute abscission for Dead Reproductive
-    if temperature > 0:
-        # print(kldr, dr_biomass, temperature,age)
-        abscission_biomass = kldr * dr_biomass * temperature * age
+    # Compute senescence of GV
+    if temperature > t0:
+        senescence_biomass = kgv * gv_biomass * temperature * age
+    elif temperature < 0:
+        senescence_biomass = kgv * gv_biomass * abs(temperature)
     else:
-        abscission_biomass = 0
-    return abscission_biomass
+        senescence_biomass = 0
+    return senescence_biomass
 
 
 # Green Vegetative Functions
@@ -290,36 +325,38 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     return (gv_biomass, gv_avg_age, senescentBiomass)
 
 
-def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
+def mk_gr_senescence(
+    kdr, gr_biomass, temperature, t0, lls, gr_avg_age, st1, st2
+):
     """
-    Extract about 2-6% (kDV=0.002, T=10C, gv_fAge=[1-3]) of gv_biomass as
-    senescent
-
     Parameters
     ----------
-    kgv : Senescence coefficient (Ducroq, 1996) [degree day]
-    gv_biomass : the green vegetation biomass
+    kdr : Senescence coefficient DV [degree day] **CHECK PARAM NAME!
+    gr_biomass : the biomass available for GR
     temperature : Temperature
     t0 : minimum temperature for growth
     lls : Leaf lifespan [degree day]
-    gv_avg_age : the average GV age
+    gr_avg_age : the average GR age
+    st1 : Onset of reproductive growth [degree day]
+    st2 : End of reproductive growth [degree day]
 
     Returns
     -------
-    - the biomass that is senescent
+    - the senescent biomass
     """
-    # method to compute the age of GV for computing senescence of GV
-    if gv_avg_age / lls < 1.0 / 3.0:
+    # method to compute the age of GR for computing senescence of GR
+    if gr_avg_age / (st2 - st1) < 1.0 / 3.0:
         age = 1
-    elif gv_avg_age / lls < 1:
-        age = 3 * gv_avg_age / lls
+    elif gr_avg_age / (st2 - st1) < 1.0:
+        age = 3 * gr_avg_age / (st2 - st1)
     else:
         age = 3
     # Compute senescence of GV
     if temperature > t0:
-        senescence_biomass = kgv * gv_biomass * temperature * age
+        # T=10C kdr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
+        senescence_biomass = kdr * gr_biomass * temperature * age
     elif temperature < 0:
-        senescence_biomass = kgv * gv_biomass * abs(temperature)
+        senescence_biomass = kdr * gr_biomass * abs(temperature)
     else:
         senescence_biomass = 0
     return senescence_biomass
@@ -331,7 +368,7 @@ def gr_update(
     rhogr, t0, gr_biomass, gr_avg_age
 ):
     """
-    Update Green Reproductive
+    Update green reproductive
 
     Parameters
     ----------
@@ -374,43 +411,6 @@ def gr_update(
         gr_avg_age = 0
     gr_biomass += growthBiomass
     return (gr_biomass, gr_avg_age, senescentBiomass)
-
-
-def mk_gr_senescence(
-    kdr, gr_biomass, temperature, t0, lls, gr_avg_age, st1, st2
-):
-    """
-    Parameters
-    ----------
-    kdr : Senescence coefficient DV [degree day] **CHECK PARAM NAME!
-    gr_biomass : the biomass available for GR
-    temperature : Temperature
-    t0 : minimum temperature for growth
-    lls : Leaf lifespan [degree day]
-    gr_avg_age : the average GR age
-    st1 : Onset of reproductive growth [degree day]
-    st2 : End of reproductive growth [degree day]
-
-    Returns
-    -------
-    - the senescent biomass
-    """
-    # method to compute the age of GR for computing senescence of GR
-    if gr_avg_age / (st2 - st1) < 1.0 / 3.0:
-        age = 1
-    elif gr_avg_age / (st2 - st1) < 1.0:
-        age = 3 * gr_avg_age / (st2 - st1)
-    else:
-        age = 3
-    # Compute senescence of GV
-    if temperature > t0:
-        # T=10C kdr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
-        senescence_biomass = kdr * gr_biomass * temperature * age
-    elif temperature < 0:
-        senescence_biomass = kdr * gr_biomass * abs(temperature)
-    else:
-        senescence_biomass = 0
-    return senescence_biomass
 
 
 #############################################################################
@@ -704,7 +704,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
         try:
             lai = sla * pctlam * (gv_biomass / 10)
         except:
-            # In case of input malfunction
+            # in case of input malfunction
             lai = sla * pctlam * 1.0
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
     # print("pgro: LightInter.byPlant = %.2f" % (lightInterceptionByPlant))
@@ -835,7 +835,7 @@ def defoliation(
     rhodv : Volume DV [g m-3]
     rhogr : Volume GR [g m-3]
     rhodr : Volume DR [g m-3]
-    maxAmountToIngest : The maximum amount of ingest
+    maxAmountToIngest : The maximum amount of biomass to ingest
 
     Returns
     -------

@@ -102,10 +102,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     t2 = params[11]
     # print("t2=%.2f (=20)" % (t2))
     # beta_T
-    betaT = params[12]
+    # betaT = params[12]
     # print("betaT=%.2f (=0.05)" % (betaT))
     # b_IN
-    b_IN = params[13]
+    # b_IN = params[13]
     # print("b_IN=%.2f (=0.025)" % (b_IN))
     # Specific leaf area (m2 g-1)
     sla = params[14]
@@ -123,10 +123,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     wgr = params[18]
     # print("wgr=%.2f (=0)" % (wgr))
     # Value of ALLOC at NI=0
-    allocNI = params[19]
+    # allocNI = params[19]
     # print("allocni=%.2f (=0.2)" % (allocNI))
     # max of fNI
-    maxFNI = params[20]
+    # maxFNI = params[20]
     # print("maxFNI=%.2f (=0.9)" % (maxFNI))
     # Volume GR (g m-3)
     rhogr = params[21]
@@ -177,34 +177,34 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     gr_gamma = params[36]
     # print("gr_gamma=%.2f (=0.2)" % (gr_gamma))
     # maximum OMD green veg
-    maxOMDgv = params[37]
+    # maxOMDgv = params[37]
     # print("maxOMDgv=%.2f (=0.9)" % (maxOMDgv))
     # minimum OMD green veg
-    minOMDgv = params[38]
+    # minOMDgv = params[38]
     # print("minOMDgv=%.2f (=0.75)" % (minOMDgv))
     # maximum OMD green rep
-    maxOMDgr = params[39]
+    # maxOMDgr = params[39]
     # print("maxOMDgr=%.2f (=0.9)" % (maxOMDgr))
     # minimum OMD green rep
-    minOMDgr = params[40]
+    # minOMDgr = params[40]
     # print("minOMDgr=%.2f (=0.65)" % (minOMDgr))
     # mean OMD dry veg
-    meanOMDdv = params[41]
+    # meanOMDdv = params[41]
     # print("meanOMDdv=%.2f (=0.45)" % (meanOMDdv))
     # mean OMD dry rep
-    meanOMDdr = params[42]
+    # meanOMDdr = params[42]
     # print("meanOMDdr=%.2f (=0.4)" % (meanOMDdr))
     # Pixel area [Ha]
     cellSurface = params[43]
     # print("cellSurface=%.2f (=0.01)" % (cellSurface))
 
     # Pixel area [m2]
-    cellSurfaceMeter = 10000 * cellSurface
+    # cellSurfaceMeter = 10000 * cellSurface
 
     # distance minimum between center of the cell and border of the cell
-    r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter) / 6
+    # r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter) / 6
 
-    # Initialize state parameters
+    # Initialise state parameters
     # This is a status flag changed in lib_cell.updateCell()
     isCut = False
     # This is an actionable flag modified by weather.gcut_height presence
@@ -224,13 +224,13 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     dv_biomass = wdv
     dr_biomass = wdr
     # an==gro: biomass growth
-    an = 0.0
-    # Allocate to reproductive
+    # an = 0.0
+    # allocate to reproductive
     a2r = 0.0
     # senescent biomass for compartments
     gv_senescent_biomass = 0.0
     gr_senescent_biomass = 0.0
-    # Average age of grass
+    # average age of grass
     gv_avg_age = gv_init_age
     dv_avg_age = dv_init_age
     gr_avg_age = gr_init_age
@@ -358,7 +358,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # print("water reserve: %f"%(waterReserve))
 
         # Compute CUT
-        harvestedBiomassPart = 0
+        # harvestedBiomassPart = 0
         ingestedBiomassPart = 0
         # Are we in vegetative growth period?
         if sumT > st1 and sumT < st2:
@@ -405,14 +405,14 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
             a2r = 0
 
         if isCut:
-            # permanently stop Reproduction
+            # permanently stop reproduction
             a2rFlag = True
 
         if a2rFlag:
             a2r = 0
 
         atr.append(a2r)
-        # Compute biomass growth
+        # compute biomass growth
         env.append(
             lm.mk_env(
                 meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
@@ -448,7 +448,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
             gv_gamma, gv_senescent_biomass, lls, kldv,
             temperature, dv_biomass, dv_avg_age
         )
-        # Start the Reproductive phase of the vegetation
+        # Start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
             temperature, a2r, gro, st1, st2, kdr,
             lls, rhogr, t0, gr_biomass, gr_avg_age

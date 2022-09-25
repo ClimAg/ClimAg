@@ -3,9 +3,9 @@
 https://github.com/YannChemin/modvege
 
 ModVege main code, had to rewrite most of the functions as the Java code
-was a complete mess
-This code runs a single geographical "Cell" (as the Java code was trying
-to do on a grid)
+was a complete mess.
+This code runs a single geographical "cell" (as the Java code was trying
+to do on a grid).
 This function *should* be self sustaining, nothing else needed.
 """
 
@@ -19,11 +19,7 @@ from climag.modvege_read_files import read_params, read_weather
 
 
 def run_modvege(
-    input_params_csv,
-    input_weather_csv,
-    out_csv,
-    startdoy=1,
-    enddoy=365
+    input_params_csv, input_weather_csv, out_csv, startdoy=1, enddoy=365
 ):
     """
     Preprocess the inputs to run ModVege as a function and save the results
@@ -38,10 +34,10 @@ def run_modvege(
     enddoy : end day of the year (default 365)
     """
 
-    # Read parameter files into array
+    # read parameter files into array
     params = read_params(input_params_csv)
 
-    # Read weather file into array
+    # read weather file into array
     # arr[0][0] = DOY[0] = 1
     # arr[0][1] = Temperature[0] = -0.84125
     # arr[0][2] = PARi[0] = 2.22092475
@@ -55,7 +51,7 @@ def run_modvege(
 
     weather = read_weather(input_weather_csv)
 
-    # initialize the run and return arrays
+    # initialise the run and return arrays
     mod_out = modvege(params, weather, startdoy, enddoy)
 
     # convert output to dataframe and save as CSV
