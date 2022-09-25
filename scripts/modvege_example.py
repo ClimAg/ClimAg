@@ -26,6 +26,5 @@ OUT_DEV = os.path.join(DATA_PATH, "out_cut.csv")
 run_modvege(
     input_params_csv=PARAMS_FILE,
     input_weather_csv=WEATHER_FILE,
-    out_csv=OUT_FILE,
-    out_dev=OUT_DEV  # ONLY FOR DEV
+    out_csv=OUT_FILE
 )
