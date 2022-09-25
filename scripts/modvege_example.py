@@ -18,9 +18,6 @@ WEATHER_FILE = os.path.join(DATA_PATH, "weather.csv")
 # outputs
 OUT_FILE = os.path.join(DATA_PATH, "output.csv")
 
-# ONLY FOR DEV
-OUT_DEV = os.path.join(DATA_PATH, "out_cut.csv")
-
 # %%
 # run the main function
 run_modvege(
