@@ -326,16 +326,16 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
 
 
 def mk_gr_senescence(
-    kdr, gr_biomass, temperature, t0, lls, gr_avg_age, st1, st2
+    kdr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
 ):
     """
     Parameters
     ----------
-    kdr : Senescence coefficient DV [degree day] **CHECK PARAM NAME!
+    kdr : Senescence coefficient DV [degree day] ** CHECK PARAM NAME!
     gr_biomass : the biomass available for GR
     temperature : Temperature
     t0 : minimum temperature for growth
-    lls : Leaf lifespan [degree day]
+    lls : Leaf lifespan [degree day] (** UNUSED ARGUMENT!)
     gr_avg_age : the average GR age
     st1 : Onset of reproductive growth [degree day]
     st2 : End of reproductive growth [degree day]
@@ -364,8 +364,7 @@ def mk_gr_senescence(
 
 # Green Reproductive Functions
 def gr_update(
-    temperature, a2r, gro, st1, st2, kdr, lls,
-    rhogr, t0, gr_biomass, gr_avg_age
+    temperature, a2r, gro, st1, st2, kdr, t0, gr_biomass, gr_avg_age
 ):
     """
     Update green reproductive
@@ -379,8 +378,8 @@ def gr_update(
     st1 : Onset of reproductive growth [degree day]
     st2 : End of reproductive growth [degree day]
     kdr : basic rates of  in compartment GR
-    lls : Leaf lifespan [degree day]
-    rhogr : Volume GR [g m-3]
+    lls : Leaf lifespan [degree day] (** UNUSED ARGUMENT!)
+    rhogr : Volume GR [g m-3] (** UNUSED ARGUMENT!)
     t0 : minimum temperature for growth
     gr_biomass : the av GR biomass
     gr_avg_age : the average GR age
@@ -391,8 +390,8 @@ def gr_update(
     - the average GR age
     """
     senescentBiomass = mk_gr_senescence(
-        kdr, gr_biomass, temperature, t0, lls, gr_avg_age, st1, st2
-    )
+        kdr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
+    )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
     # print("senescentBiomass: = %.2f" % (senescentBiomass))
     # at this point the biomass include cut, ingestion and senescence, not
@@ -494,7 +493,7 @@ def cut(
 
 
 def mk_env(
-    meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
+    meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
     pet, waterReserve, waterHoldingCapacity
 ):
     """
@@ -506,7 +505,7 @@ def mk_env(
     t0 : minimum temperature for growth
     t1 : sum of temperature at the beginning (growth activation threshold)
     t2 : sum of temperature in the end (growth decline threshold)
-    sumT : sum of temperatures
+    sumT : sum of temperatures (** UNUSED ARGUMENT!)
     ni : Nutritional index of pixel
     pari : incident photosynthetic active radiation (PARi)
     alphapar : the Light Use Interception
@@ -520,7 +519,7 @@ def mk_env(
     - the environmental stress
     """
     return (
-        fTemperature(meanTenDaysT, t0, t1, t2, sumT)
+        fTemperature(meanTenDaysT, t0, t1, t2)  # ** UNUSED ARGUMENT REMOVED!
         * ni
         * fPARi(pari, alphapar)
         * fWaterStress(waterReserve, waterHoldingCapacity, pet)
@@ -545,7 +544,7 @@ def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
-def fTemperature(meanTenDaysT, t0, t1, t2, sumT):
+def fTemperature(meanTenDaysT, t0, t1, t2):
     """
     f of temperature to compute ENV
 
@@ -555,7 +554,7 @@ def fTemperature(meanTenDaysT, t0, t1, t2, sumT):
     t0 : minimum temperature for growth
     t1 : sum of temperature at the beginning (growth activation threshold)
     t2 : sum of temperature in the end (growth decline threshold)
-    sumT : sum of temperatures
+    sumT : sum of temperatures (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -770,7 +769,7 @@ def updateSumTemperature(temperature, t0, sumT, tbase):
     sumT : actual sum of temperature
     tbase : base temperature (subtracted each day for the calculation of
         the ST)
-    currentDay : the current DOY **CHECK WHY THIS ISN'T INCLUDED!
+    currentDay : the current DOY (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -819,7 +818,7 @@ def getAvailableBiomassForCut(
 
 def defoliation(
     gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-    rhogv, rhodv, rhogr, rhodr, maxAmountToIngest
+    rhogv, rhodv, rhogr, rhodr, maxAmountToIngest=9999
 ):
     """
     Defoliation method
@@ -836,6 +835,7 @@ def defoliation(
     rhogr : Volume GR [g m-3]
     rhodr : Volume DR [g m-3]
     maxAmountToIngest : The maximum amount of biomass to ingest
+        (** USING A DEFAULT OF 9999 - NEED TO CHECK!)
 
     Returns
     -------

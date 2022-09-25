@@ -313,21 +313,17 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         sumT = lm.getSumTemperature(weather, i, 0.55)
         # fSEA array for graphs
         sea.append(lm.fsea(maxsea, minsea, sumT, st2, st1))
-        # fTemperature the array for graphs
-        ftm.append(lm.fTemperature(meanTenDaysT, t0, t1, t2, sumT))
+        # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
+        ftm.append(lm.fTemperature(meanTenDaysT, t0, t1, t2))
 
         # Grass cut flag modification if weather file has grass cut for that
         # day
-        if cutHeight != 0.0:
-            isHarvested = True
-        else:
-            isHarvested = False
-        # Grazing flag modification if weather file has BOTH animal related
+        isHarvested = bool(cutHeight != 0.0)
+        # grazing flag modification if weather file has BOTH animal related
         # values
-        if grazing_animal_count != 0 and grazing_avg_animal_weight != 0:
-            isGrazed = True
-        else:
-            isGrazed = False
+        isGrazed = bool(
+            grazing_animal_count != 0 and grazing_avg_animal_weight != 0
+        )
         # Reset the flag isCut
         if isGrazed is False and isHarvested is False:
             isCut = False
@@ -361,7 +357,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # harvestedBiomassPart = 0
         ingestedBiomassPart = 0
         # Are we in vegetative growth period?
-        if sumT > st1 and sumT < st2:
+        if st2 > sumT > st1:
             # Look for flags to indicate mechanical cut
             if isHarvested:
                 # Change status flag
@@ -379,15 +375,15 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
 
             # Look for flags to indicate livestock ingestion
             if isGrazed:
-                # Change status flag
+                # change status flag
                 isCut = True
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
-                isGrazed, ingestedBiomassPart = lm.defoliation(
+                ingestedBiomassPart = lm.defoliation(
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-                    rhogv, rhodv, rhogr, rhodr, maxAmountToIngest, isGrazed
-                )
-            # Allocation to reproductive
+                    rhogv, rhodv, rhogr, rhodr
+                )  # ** MODIFIED -- NEED TO CHECK!
+            # allocation to reproductive
             a2r = lm.rep(ni)
             # TO-DO When to change NI, and by how much?
             # NI        A2R     NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
@@ -415,16 +411,16 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # compute biomass growth
         env.append(
             lm.mk_env(
-                meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
+                meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
                 pet, waterReserve, waterHoldingCapacity
-            )
+            )  # ** UNUSED ARGUMENT REMOVED!
         )
         pgr.append(lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
         gro = (
             lm.mk_env(
-                meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar,
+                meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
                 pet, waterReserve, waterHoldingCapacity
-            )
+            )  # ** UNUSED ARGUMENT REMOVED!
             * lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
             * lm.fsea(maxsea, minsea, sumT, st2, st1)
             * correctiveFactorForAn
@@ -451,8 +447,8 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # Start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
             temperature, a2r, gro, st1, st2, kdr,
-            lls, rhogr, t0, gr_biomass, gr_avg_age
-        )
+            t0, gr_biomass, gr_avg_age
+        )  # ** UNUSED ARGUMENTS REMOVED!
         dr_biomass, dr_avg_age = lm.dr_update(
             gr_gamma, gr_senescent_biomass, st1, st2,
             temperature, kldr, dr_biomass, dr_avg_age
