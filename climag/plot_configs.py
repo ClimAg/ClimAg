@@ -1,28 +1,11 @@
 """plot_configs.py
 
-Matplotlib plot style configurations and additional functions to plot climate
-model datasets, e.g. CORDEX
+Functions to plot climate model datasets, e.g. CORDEX
 """
 
 from datetime import datetime
 import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
 from dateutil.parser import parse
-
-# configure plot styles
-plt.style.use("seaborn-whitegrid")
-plt.rcParams["font.family"] = "Source Sans 3"
-plt.rcParams["figure.dpi"] = 96
-plt.rcParams["axes.grid"] = False
-plt.rcParams["text.color"] = "darkslategrey"
-plt.rcParams["axes.labelcolor"] = "darkslategrey"
-plt.rcParams["xtick.labelcolor"] = "darkslategrey"
-plt.rcParams["ytick.labelcolor"] = "darkslategrey"
-plt.rcParams["figure.titleweight"] = "semibold"
-plt.rcParams["axes.titleweight"] = "semibold"
-plt.rcParams["figure.titlesize"] = "13"
-plt.rcParams["axes.titlesize"] = "12"
-plt.rcParams["axes.labelsize"] = "10"
 
 
 # convert lat/lon to rotated pole coordinates

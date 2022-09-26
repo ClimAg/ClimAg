@@ -11,7 +11,6 @@ This function *should* be self sustaining, nothing else needed.
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import climag.plot_configs
 # import the model function
 from climag.modvege import modvege
 # file reading
