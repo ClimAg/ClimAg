@@ -201,7 +201,6 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
         age = 3
     # Compute abscission for dead reproductive
     if temperature > 0:
-        # print(kldr, dr_biomass, temperature,age)
         abscission_biomass = kldr * dr_biomass * temperature * age
     else:
         abscission_biomass = 0
@@ -239,7 +238,6 @@ def dr_update(
     # growth
     growthBiomass = (1 - gr_gamma) * gr_senescent_biomass
     if dr_biomass + growthBiomass > 0:
-        # print(temperature, dr_avg_age, dr_biomass, growthBiomass)
         dr_avg_age = max(0, temperature) + dr_avg_age * dr_biomass / (
             dr_biomass + growthBiomass
         )
@@ -393,15 +391,12 @@ def gr_update(
         kdr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
     )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
-    # print("senescentBiomass: = %.2f" % (senescentBiomass))
     # at this point the biomass include cut, ingestion and senescence, not
     # growth
     if temperature > t0:
         growthBiomass = gro * a2r
-        # print("growthBiomass: t>t0 = %.2f" % (growthBiomass))
     else:
         growthBiomass = 0
-        # print("growthBiomass: t<t0 = %.2f" % (growthBiomass))
     if gr_biomass + growthBiomass > 0:
         gr_avg_age = (max(0, temperature) + gr_avg_age) * (
             gr_biomass / (gr_biomass + growthBiomass)
@@ -693,12 +688,6 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     -------
     - the calculated pGRO [kg DM ha⁻¹]
     """
-    # print("pgro**************************")
-    # print("pgro: pariIn = %.2f" % (pari))
-    # print("pgro: ruemaxIn = %.2f" % (ruemax))
-    # print("pgro: pctlamIn = %.2f" % (pctlam))
-    # print("pgro: SLAIn = %.2f" % (sla))
-    # print("pgro: gv_biomassIn = %.2f" % (gv_biomass))
     if int(lai) == 0:
         try:
             lai = sla * pctlam * (gv_biomass / 10)
@@ -706,9 +695,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
             # in case of input malfunction
             lai = sla * pctlam * 1.0
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
-    # print("pgro: LightInter.byPlant = %.2f" % (lightInterceptionByPlant))
     p_gro = pari * ruemax * lightInterceptionByPlant * 10
-    # print("pgro: pgro = %.2f" % (pgro))
     return p_gro
 
 
@@ -748,7 +735,6 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     """
     if int(lai) == 0:
         lai = sla * pctlam * (gv_biomass / 10)
-        # print("aet mk LAI: LAI = %.2f" %(lai))
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
     pt = pet * lightInterceptionByPlant
     pe = pet - pt

@@ -31,6 +31,7 @@ ytick.major.size: 0
 xtick.minor.size: 0
 ytick.minor.size: 0
 
+# Custom settings
 figure.dpi: 96
 font.sans-serif: Source Sans 3, Noto Sans, Segoe UI, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
 axes.grid: False

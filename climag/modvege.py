@@ -67,136 +67,92 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     #######################################################
     # Onset of reproductive growth (degree day)
     st1 = params[0]
-    # print("st1=%.2f (=600)" % (st1))
     # End of reproductive growth (degree day)
     st2 = params[1]
-    # print("st2=%.2f (=1200)" % (st2))
     # Initial Nutritional index of cell
     ni = params[2]
-    # print("ni=%.2f (=0.9)" % (ni))
     # Soil water-holding capacity (mm)
     waterHoldingCapacity = params[3]
-    # print("whc=%.2f (=200)" % (waterHoldingCapacity))
     # Soil water reserve (mm)
     waterReserve = params[4]
-    # print("wr=%.2f (=60)" % (waterReserve))
     # Growth increase in winter
     minsea = params[5]
-    # print("minsea=%.2f (=0.8)" % (minsea))
     # Growth increase in summer
     maxsea = params[6]
-    # print("maxsea=%.2f (=1.2)" % (maxsea))
     # Biomass of GV (kg ha-1)
     wgv = params[7]
-    # print("ibgv=%.2f (=750)" % (wgv))
     # Light Use Interception
     alphapar = params[8]
-    # print("alphapar=%.2f (=0.044)" % (alphapar))
     # Temperature threshold: photosynthesis activation (degC)
     t0 = params[9]
-    # print("t0=%.2f (=4)" % (t0))
     # Temp threshold: stable growth (degC)
     t1 = params[10]
-    # print("t1=%.2f (=10)" % (t1))
     # Temp threshold: growth decline (degC)
     t2 = params[11]
-    # print("t2=%.2f (=20)" % (t2))
     # beta_T
     # betaT = params[12]
-    # print("betaT=%.2f (=0.05)" % (betaT))
     # b_IN
     # b_IN = params[13]
-    # print("b_IN=%.2f (=0.025)" % (b_IN))
     # Specific leaf area (m2 g-1)
     sla = params[14]
-    # print("sla=%.2f (=0.033)" % (sla))
     # Leaf lifespan (degree day)
     lls = params[15]
-    # print("lls=%.2f (=500)" % (lls))
     # Volume GV (g m-3)
     rhogv = params[16]
-    # print("rhogv=%.2f (=850)" % (rhogv))
     # % leaf of laminae in GV
     pctlam = params[17]
-    # print("pctlam=%.2f (=0.68)" % (pctlam))
     # Biomass of GR (kg ha-1)
     wgr = params[18]
-    # print("wgr=%.2f (=0)" % (wgr))
     # Value of ALLOC at NI=0
     # allocNI = params[19]
-    # print("allocni=%.2f (=0.2)" % (allocNI))
     # max of fNI
     # maxFNI = params[20]
-    # print("maxFNI=%.2f (=0.9)" % (maxFNI))
     # Volume GR (g m-3)
     rhogr = params[21]
-    # print("rhogr=%.2f (=300)" % (rhogr))
     # Biomass of DV (kg ha-1)
     wdv = params[22]
-    # print("wdv=%.2f (=1200)" % (wdv))
     # Senescence coefficient DV (degree day)
     kdv = params[23]
-    # print("kdv=%.3f (=0.002)" % (kdv))
     # Abscission coefficient DV (degree day)
     kldv = params[24]
-    # print("kldv=%.3f (=0.001)" % (kldv))
     # Volume DV (g m-3)
     rhodv = params[25]
-    # print("rhodv=%.2f (=500)" % (rhodv))
     # Biomass of DR (kg ha-1)
     wdr = params[26]
-    # print("wdr=%.2f (=500)" % (wdr))
     # Senescence coefficient DR (degree day)
     kdr = params[27]
-    # print("kdr=%.3f (=0.001)" % (kdr))
     # Abscission coefficient DR (degree day)
     kldr = params[28]
-    # print("kldr=%.4f (=0.0005)" % (kldr))
     # Volume DR (g m-3)
     rhodr = params[29]
-    # print("rhodr=%.2f (=150)" % (rhodr))
     # Initial value of age of compartment GV
     gv_init_age = params[30]
-    # print("initagegv=%.2f (=100)" % (gv_init_age))
     # Initial value of age of compartment GR
     gr_init_age = params[31]
-    # print("initagegr=%.2f (=2000)" % (gr_init_age))
     # Initial value of age of compartment DV
     dv_init_age = params[32]
-    # print("initagedv=%.2f (=300)" % (dv_init_age))
     # Initial value of age of compartment DR
     dr_init_age = params[33]
-    # print("initagedr=%.2f (=500)" % (dr_init_age))
     # Max of R.U.E.
     ruemax = params[34]
-    # print("ruemax=%.2f (=3)" % (ruemax))
     # Respiration of green vegetative
     gv_gamma = params[35]
-    # print("gv_gamma=%.2f (=0.4)" % (gv_gamma))
     # Respiration of green reproductive
     gr_gamma = params[36]
-    # print("gr_gamma=%.2f (=0.2)" % (gr_gamma))
     # maximum OMD green veg
     # maxOMDgv = params[37]
-    # print("maxOMDgv=%.2f (=0.9)" % (maxOMDgv))
     # minimum OMD green veg
     # minOMDgv = params[38]
-    # print("minOMDgv=%.2f (=0.75)" % (minOMDgv))
     # maximum OMD green rep
     # maxOMDgr = params[39]
-    # print("maxOMDgr=%.2f (=0.9)" % (maxOMDgr))
     # minimum OMD green rep
     # minOMDgr = params[40]
-    # print("minOMDgr=%.2f (=0.65)" % (minOMDgr))
     # mean OMD dry veg
     # meanOMDdv = params[41]
-    # print("meanOMDdv=%.2f (=0.45)" % (meanOMDdv))
     # mean OMD dry rep
     # meanOMDdr = params[42]
-    # print("meanOMDdr=%.2f (=0.4)" % (meanOMDdr))
     # Pixel area [Ha]
     cellSurface = params[43]
-    # print("cellSurface=%.2f (=0.01)" % (cellSurface))
 
     # Pixel area [m2]
     # cellSurfaceMeter = 10000 * cellSurface
@@ -211,7 +167,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     isHarvested = False
     # This is an actionable flag modified by weather.grazing* presences
     isGrazed = False
-    # permanently stop Reproduction after the first Cut (isCut is True)
+    # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
     a2rFlag = False
     # Harvested biomass
@@ -237,19 +193,19 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     dr_avg_age = dr_init_age
 
     # Outputs
-    # Green Vegetation biomass
+    # Green vegetation biomass
     gvb = []
-    # Dry Vegetation biomass
+    # Dry vegetation biomass
     dvb = []
-    # Green Reproductive biomass
+    # Green reproductive biomass
     grb = []
     # Dry Reproductive biomass
     drb = []
     # GRO biomass
     g = []
-    # harvested Biomass
+    # harvested biomass
     hb = []
-    # ingested Biomass
+    # ingested biomass
     ib = []
     # available biomass for cut
     abc = []
@@ -282,16 +238,12 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # mean Ten Days Temperature
         if i < 10:
             listA = [weather[i - j][1] for j in range(1, 10, 1)]
-            meanTenDaysT = np.mean(listA)
-            # print(i, listA, meanTenDaysT)
         else:
             listA = [weather[i - j][1] for j in range(10, 1, -1)]
-            meanTenDaysT = np.mean(listA)
-            # print(i,listA,meanTenDaysT)
+        meanTenDaysT = np.mean(listA)
 
         # arr[0][2] = PARi[0] = 2.22092475
         pari = weather[i - 1][2]
-        # print("PARi = %.2f" % (pari))
         # arr[0][3] = PP[0] = 0.119
         pmm = weather[i - 1][3]
         # arr[0][4] = PET[0] = 0.602689848
@@ -302,7 +254,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         lai = weather[i - 1][6]
         # arr[0][7] = gcut_height[0] = 0.0 [default is 0.05 if cut]
         cutHeight = weather[i - 1][7]
-        # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test ]
+        # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test]
         grazing_animal_count = weather[i - 1][8]
         # arr[0][9] = grazing_avg_animal_weight[0] = 0 [default is 400 for cow]
         grazing_avg_animal_weight = weather[i - 1][9]
@@ -327,11 +279,11 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # Reset the flag isCut
         if isGrazed is False and isHarvested is False:
             isCut = False
-        # TO-DO This variable is not found in the manual/sourcecode, yet is
+        # TO-DO: This variable is not found in the manual/sourcecode, yet is
         # used widely
         correctiveFactorForAn = 1
         # If the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
-        # (Belanger et al., 1994)
+        # (Belanger et al. 1994)
         ni = max(ni, 0.35)
 
         #####################################################################
@@ -346,12 +298,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
                 pet, pctlam, sla, gv_biomass, waterReserve,
                 waterHoldingCapacity, lai
             )
-            # print("ETa computed: %f" % (eta))
         # Compute WR
         waterReserve = min(
             max(0, waterReserve + pmm - eta), waterHoldingCapacity
         )
-        # print("water reserve: %f"%(waterReserve))
 
         # Compute CUT
         # harvestedBiomassPart = 0
@@ -385,8 +335,8 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
                 )  # ** MODIFIED -- NEED TO CHECK!
             # allocation to reproductive
             a2r = lm.rep(ni)
-            # TO-DO When to change NI, and by how much?
-            # NI        A2R     NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+            # TO-DO: When to change NI, and by how much?
+            # NI        A2R        NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
             # 0.5       0.42307
             # 0.6       0.53846
@@ -433,9 +383,8 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # sgro = lm.fsea(maxsea, minsea, sumT, st2, st1)
         # cgro = correctiveFactorForAn
         # gro = egro * ggro * sgro * cgro
-        # print(gro, egro, ggro, sgro, cgro)
 
-        # Update the state of the Vegetative parts
+        # Update the state of the vegetative parts
         # Used t0 = 0 instead of t0 to match output data!
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
             gro, a2r, lls, temperature, kdv, 0, gv_biomass, gv_avg_age
