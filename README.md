@@ -26,9 +26,8 @@ limitations under the License.
 
 ## Credits
 
-Pasture model ([ModVege]): Original code by Chemin (2022). This is the
-Python implementation of the ModVege pasture model, translated from Java to
-Python by Chemin (2022).
+Pasture model ([ModVege]): This is the Python implementation of the ModVege
+pasture model, translated from Java to Python by Chemin (2022).
 The Java model was provided by R. Martin of INRAE UREP Clermont-Ferrand
 for the original Python implementation.
 The original ModVege pasture model was developed by

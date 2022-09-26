@@ -1,4 +1,8 @@
-"""Console script for climag."""
+"""cli.py
+
+Console script for ClimAg.
+"""
+
 import sys
 import click
 
