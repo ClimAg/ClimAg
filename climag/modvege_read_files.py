@@ -15,6 +15,10 @@ import numpy as np
 def read_params(filename):
     """Read the input parameters CSV file
 
+    See Tables 2 and 3 in Jouven (2006), The functional group is A for
+    perennial ryegrass.
+    The nutritional index (NI) is site-specific.
+
     Definition of input parameters
     ------------------------------
     - ST1         : Onset of reproductive growth [degree day]
@@ -24,51 +28,51 @@ def read_params(filename):
     - WR          : Soil water reserve [mm]
     - minSEA      : Growth increase in winter
     - maxSEA      : Growth increase in summer
-    - W_GV        : Initial Biomass of GV [kg ha-1]
-    - alpha_PAR   : Light Extinction Coefficient
+    - W_GV        : Initial Biomass of GV [kg ha⁻¹]
+    - alpha_PAR   : Light extinction coefficient
     - T0          : Temperature threshold: photosynthesis activation [°C]
     - T1          : Temp threshold: stable growth [°C]
     - T2          : Temp threshold: growth decline [°C]
     - beta_T      : Decrease in LUE after T2
     - b_IN        : Impact of IN on LUE at IN=0
-    - SLA         : Specific leaf area [m2 g-1]
+    - SLA         : Specific leaf area [m² g⁻¹]
     - LLS         : Leaf lifespan [degree day]
-    - rho_GV      : Volume GV [g m-3]
+    - rho_GV      : Volume GV [g m⁻³]
     - percentLAM  : Fraction of leaf of laminae in GV
-    - W_GR        : Biomass of GR [kg ha-1]
+    - W_GR        : Biomass of GR [kg ha⁻¹]
     - a_IN        : Value of ALLOC at IN=0
     - max_fIN     : Max of fNI
-    - rho_GR      : Volume GR [g m-3]
-    - W_DV        : Biomass of DV [kg ha-1]
+    - rho_GR      : Volume GR [g m⁻³]
+    - W_DV        : Biomass of DV [kg ha⁻¹]
     - K_DV        : Senescence coefficient DV [degree day]
     - Kl_DV       : Abscission coefficient DV [degree day]
-    - rho_DV      : Volume DV [g m-3]
-    - W_DR        : Biomass of DR [kg ha-1]
+    - rho_DV      : Volume DV [g m⁻³]
+    - W_DR        : Biomass of DR [kg DM ha⁻¹]
     - K_DR        : Senescence coefficient DR [degree day]
     - Kl_DR       : Abscission coefficient DR [degree day]
-    - rho_DR      : Volume DR [g m-3]
+    - rho_DR      : Volume DR [g m⁻³]
     - init_AGE_GV : Initial value of age GV
     - init_AGE_GR : Initial value of age VR
     - init_AGE_DV : Initial value of age DV
     - init_AGE_DR : Initial value of age DR
-    - RUEmax      : Maximum radiation use efficiency [g MJ-1]
+    - RUEmax      : Maximum radiation use efficiency [g MJ⁻¹]
     - gammaGV     : Respiratory C loss during senescence (DV)
     - gammaGR     : Respiratory C loss during senescence (DR)
-    - maxOMDgv    : maximum OMD green veg
-    - minOMDgv    : minimum OMD green veg
-    - maxOMDgr    : maximum OMD green rep
-    - minOMDgr    : minimum OMD green rep
-    - meanOMDdv   : mean OMD dry veg (digestibility of dead part is constant)
-    - meanOMDdr   : mean OMD dry rep (digestibility of dead part constant)
+    - maxOMDgv    : Maximum OMD green veg
+    - minOMDgv    : Minimum OMD green veg
+    - maxOMDgr    : Maximum OMD green rep
+    - minOMDgr    : Minimum OMD green rep
+    - meanOMDdv   : Mean OMD dry veg (digestibility of dead part is constant)
+    - meanOMDdr   : Mean OMD dry rep (digestibility of dead part constant)
     - cellSurface : Pixel area [ha]
 
     Parameters
     ----------
-    file : path to the parameter input file
+    filename : path to the parameter input file
 
     Returns
     -------
-    arr : the returning array of [DOY, Temperature, PARi, PP, PET]
+    - an array of the input parameters
     """
     arr = np.genfromtxt(filename, delimiter=",", dtype=float, usecols=(-1))
     return arr
@@ -79,24 +83,24 @@ def read_weather(filename):
 
     Definition of input parameters
     ------------------------------
-    - DOY         : day of year
-    - Temperature : temperature [°C]
-    - PARi        : photosynthetic radiation incident [MJ m-2]
+    - DOY         : Day of year
+    - Temperature : Temperature [°C]
+    - PARi        : Photosynthetic radiation incident [MJ m⁻²]
     - PP          : Precipitation [mm]
-    - PET         : Potential ET [mm/day]
+    - PET         : Potential evapotranspiration [mm/day]
     - ETA         : Actual ET from remote sensing [mm/day]
-    - LAI         : Leaf Area Index from remote sensing
+    - LAI         : Leaf area index from remote sensing
     - gcut        : Grass cut event cutHeight [m]
     - grazing     : Grazing animal count
     - grazingw    : Grazing average animal weight [kg]
 
     Parameters
     ----------
-    file : path to the input weather data file
+    filename : path to the input weather data file
 
     Returns
     -------
-    arr : the returning array of [DOY, Temperature, PARi, PP, PET]
+    - an array of the input weather data
     """
     arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
     return arr
@@ -109,16 +113,16 @@ def read_out(filename):
 
     Definition of columns
     ---------------------
-    - day
-    - Mean biomass                      [kg DM ha-1]
-    - Mean green vegetative biomass     [kg DM ha-1]
-    - Mean green reproductive biomass   [kg DM ha-1]
-    - Mean dry vegetative biomass       [kg DM ha-1]
-    - Mean dry reproductive biomass     [kg DM ha-1]
-    - Harvested Biomass                 [kg DM ha-1]
-    - Ingested Biomass                  [kg DM ha-1]
-    - Mean GRO biomass                  [kg DM ha-1]
-    - Mean available biomass for cut    [kg DM ha-1]
+    - Day
+    - Mean biomass                      [kg DM ha⁻¹]
+    - Mean green vegetative biomass     [kg DM ha⁻¹]
+    - Mean green reproductive biomass   [kg DM ha⁻¹]
+    - Mean dry vegetative biomass       [kg DM ha⁻¹]
+    - Mean dry reproductive biomass     [kg DM ha⁻¹]
+    - Harvested biomass                 [kg DM ha⁻¹]
+    - Ingested biomass                  [kg DM ha⁻¹]
+    - Mean GRO biomass                  [kg DM ha⁻¹]
+    - Mean available biomass for cut    [kg DM ha⁻¹]
     """
     arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
     return arr

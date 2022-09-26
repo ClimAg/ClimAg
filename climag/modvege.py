@@ -53,14 +53,14 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
 
     Returns
     -------
-    - Green vegetative biomass [kg DM ha-1]
-    - Dead vegetative biomass [kg DM ha-1]
-    - Green reproductive biomass [kg DM ha-1]
-    - Dead reproductive biomass [kg DM ha-1]
-    - Harvested biomass [kg DM ha-1]
-    - Ingested biomass [kg DM ha-1]
-    - GRO biomass [kg DM ha-1]
-    - Available biomass for [kg DM ha-1]
+    - Green vegetative biomass [kg DM ha⁻¹]
+    - Dead vegetative biomass [kg DM ha⁻¹]
+    - Green reproductive biomass [kg DM ha⁻¹]
+    - Dead reproductive biomass [kg DM ha⁻¹]
+    - Harvested biomass [kg DM ha⁻¹]
+    - Ingested biomass [kg DM ha⁻¹]
+    - GRO biomass [kg DM ha⁻¹]
+    - Available biomass for [kg DM ha⁻¹]
     """
     #######################################################
     # Load input parameters into variables

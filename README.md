@@ -4,6 +4,8 @@ This research was funded by the [Environmental Protection Agency (EPA), Ireland]
 project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"][ClimAg]
 under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
+![ClimAg project logos](https://raw.githubusercontent.com/ClimAg/.github/main/images/logos.png)
+
 ## Features
 
 WIP
