@@ -6,20 +6,20 @@ https://github.com/YannChemin/modvege
 import numpy as np
 
 
-def getAverageHeight(biomass, bulkDensity):
-    """
-    Return the height based on biomass and bulk density
+# def getAverageHeight(biomass, bulkDensity):
+#     """
+#     Return the height based on biomass and bulk density
 
-    Parameters
-    ----------
-    biomass : biomass
-    bulkDensity : bulk density
+#     Parameters
+#     ----------
+#     biomass : biomass (BM)
+#     bulkDensity : bulk density
 
-    Returns
-    -------
-    - the average height
-    """
-    return biomass / bulkDensity
+#     Returns
+#     -------
+#     - the average height
+#     """
+#     return biomass / bulkDensity
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
@@ -62,7 +62,7 @@ def exeDefoliation(biomass, cut_biomass, area):
 
 def exeCut(cutHeight, bulkDensity, biomass):
     """
-    Realize a cut in order that the average height is under cutHeight.
+    Realise a cut in order that the average height is under cutHeight.
     This height is calculated by using the bulkDensity given in parameter
 
     Parameters
@@ -74,7 +74,7 @@ def exeCut(cutHeight, bulkDensity, biomass):
 
     Returns
     -------
-    - the biomass taken [kg DM m-2]
+    - the biomass taken [kg DM m⁻²]
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
@@ -109,8 +109,8 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
 
     Parameters
     ----------
-    lls : Leaf lifespan [degree day]
-    kldv : Abscission coefficient DV (Ducroq, 1996) [degree day]
+    lls : Leaf lifespan (LLS) [°C d]
+    kldv : Abscission coefficient DV (Ducroq 1996) [degree day]
     temperature : temperature
     dv_biomass : av biomass
     dv_avg_age : the average DV age
@@ -146,8 +146,8 @@ def dv_update(
     gv_gamma : Respiratory C loss during senescence (DV)
         (1 - gv_gamma = dv_gamma)
     gv_senescent_biomass : senescence of compartment GV
-    lls : Leaf lifespan (degree day)
-    kldv : Abscission coefficient DV (degree day)
+    lls : Leaf lifespan (LLS) [°C d]
+    kldv : Abscission coefficient DV [°C d]
     temperature : temperature
     dv_biomass : av DV biomass
     dv_avg_age : the average DV age
@@ -181,7 +181,7 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 
     Parameters
     ----------
-    kldr : basic rates of abscission in DR (Ducroq, 1996)
+    kldr : basic rates of abscission in DR (Ducroq 1996)
     dr_biomass : av biomass
     temperature : temperature
     dr_avg_age : the average DR age
@@ -296,7 +296,7 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     temperature : temperature
     kdv : Senescence coefficient DV [degree day]
     t0 : minimum temperature for growth
-    gv_biomass : Updated biomass (BMᴳⱽ)
+    gv_biomass : Updated biomass (BM_GV)
     gv_avg_age : the average GV age
 
     Returns
@@ -369,18 +369,18 @@ def gr_update(
 
     Parameters
     ----------
-    temperature : temperature
-    a2r : allocate to reproductive
+    temperature : Temperature
+    a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
-    gro : in Jouven et al. (2006), total growth
+    gro : Total growth; in Jouven et al. (2006)
     st1 : Onset of reproductive growth [degree day]
     st2 : End of reproductive growth [degree day]
     kdr : basic rates of  in compartment GR
     lls : Leaf lifespan [degree day] (** UNUSED ARGUMENT!)
     rhogr : Volume GR [g m⁻³] (** UNUSED ARGUMENT!)
-    t0 : minimum temperature for growth
-    gr_biomass : the av GR biomass
-    gr_avg_age : the average GR age
+    t0 : Minimum temperature for growth
+    gr_biomass : The av GR biomass
+    gr_avg_age : The average GR age
 
     Returns
     -------
@@ -502,7 +502,7 @@ def mk_env(
     t2 : sum of temperature in the end (growth decline threshold)
     sumT : sum of temperatures (** UNUSED ARGUMENT!)
     ni : Nutritional index of pixel
-    pari : incident photosynthetic active radiation (PARᵢ)
+    pari : incident photosynthetic active radiation (PAR_i)
     alphapar : the Light Use Interception
     pet : potential evapotranspiration
     waterReserve : reserve of water in the soil
@@ -597,16 +597,16 @@ def fsea(maxsea, minsea, sumT, st2, st1):
 
 def fPARi(pari, alphapar):
     """
-    Function of PAR interception (PARᵢ) to compute ENV
+    Function of PAR interception (PAR_i) to compute ENV
 
     Parameters
     ----------
-    pari : Photosynthetic radiation incident (PARᵢ)
+    pari : Photosynthetic radiation incident (PAR_i)
     alphapar : the light use interception
 
     Returns
     -------
-    - the value given by the PARᵢ [0-1]
+    - the value given by the PAR_i [0-1]
     """
     if pari < 5:
         f_pari = 1
@@ -677,11 +677,11 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
 
     Parameters
     ----------
-    pari : the incident PAR (PARᵢ)
-    ruemax : the maximum radiation use efficiency
-    pctlam : % leaf of laminae in green vegetation
-    sla : the specific leaf area [m² g⁻¹]
-    gv_biomass : the green vegetation biomass
+    pari : Incident PAR (PAR_i) [MJ m⁻²]
+    ruemax : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
+    pctlam : Percentage of laminae in GV (%LAM)
+    sla : Specific leaf area (SLA) [m² g⁻¹]
+    gv_biomass : Green vegetation biomass (BM_GV) [kg DM ha⁻¹]
     lai : the LAI from remote sensing (if available)
 
     Returns
@@ -691,7 +691,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     if int(lai) == 0:
         try:
             lai = sla * pctlam * (gv_biomass / 10)
-        except (IOError, ValueError, ZeroDivisionError):
+        except (IOError, ValueError):
             # in case of input malfunction
             lai = sla * pctlam * 1.0
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
@@ -705,9 +705,9 @@ def fclai(pctlam, sla, gv_biomass):
 
     Parameters
     ----------
-    pctlam : % leaf of laminae in green vegetation
-    sla : the specific leaf area [m² g⁻¹]
-    gv_biomass : the green vegetation biomass
+    pctlam : Percentage of laminae in GV (%LAM)
+    sla : Specific leaf area (SLA) [m² g⁻¹]
+    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
 
     Returns
     -------
@@ -720,18 +720,17 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     """
     Return the actual evapotranspiration (AET)
 
-    pet : the daily potential evapotranspiration (PET)
-    pctlam : % leaf of laminae in green vegetation
-    sla : the specific leaf area [m² g⁻¹]
-    gv_biomass : the green vegetation biomass
-    waterReserve : reserve of water in the soil
-    waterHoldingCapacity : capacity of the soil to hold a certain volume
-        of water
-    lai : ?
+    pet : Potential evapotranspiration (PET) [mm]
+    pctlam : Percentage of laminae in GV (%LAM)
+    sla : Specific leaf area (SLA) [m² g⁻¹]
+    gv_biomass : GV biomass
+    waterReserve : Water reserves (WR) [mm]
+    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    lai : Leaf area index
 
     Returns
     -------
-    - the actual evapotranspiration (AET)
+    - Actual evapotranspiration (AET) [mm]
     """
     if int(lai) == 0:
         lai = sla * pctlam * (gv_biomass / 10)
@@ -761,7 +760,7 @@ def updateSumTemperature(temperature, t0, sumT, tbase):
     -------
     - sum T
     """
-    # TO-DO return DOY in doc, but return sumT in code O_O ?????
+    # TO-DO: return DOY in doc, but return sumT in code O_O?????
     if temperature >= t0:
         sumT += np.max(temperature - tbase, 0)
     return sumT
@@ -826,7 +825,6 @@ def defoliation(
     Returns
     -------
     - the sum of ingested biomass
-    - isGrazed = True
     """
     avDefoliationBiomassGV = avDefoliationBiomass(gv_biomass, cutHeight, rhogv)
     avDefoliationBiomassDV = avDefoliationBiomass(dv_biomass, cutHeight, rhodv)
@@ -838,7 +836,6 @@ def defoliation(
         + avDefoliationBiomassGR
         + avDefoliationBiomassDR
     )
-    sumBiomassIngested = 0
     if sumAvailable > 0:
         if sumAvailable <= maxAmountToIngest:
             sumBiomassIngested = (
@@ -868,6 +865,8 @@ def defoliation(
                     maxAmountToIngest
                 )
             )
+    else:
+        sumBiomassIngested = 0
     return sumBiomassIngested
 
 
@@ -944,13 +943,14 @@ def getSumTemperature(weather, doy, t0):
     -------
     - the sum temperature above t0 corresponding to the DOY
     """
-    sumTemperature = 0
     for i in range(doy):
         if weather[i][1] > t0:
-            sumTemperature += weather[i][1] - t0
+            sumTemperature = weather[i][1] - t0
+        else:
+            sumTemperature = 0
     return sumTemperature
 
 
-# TO-DO This set of functions are either not used or not useful
-def addNI(ni, amountToIncrease):
-    return max(0, min(amountToIncrease + ni, 1.2))
+# TO-DO: This set of functions are either not used or not useful
+# def addNI(ni, amountToIncrease):
+#     return max(0, min(amountToIncrease + ni, 1.2))

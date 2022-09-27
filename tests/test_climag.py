@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-"""Tests for `climag` package."""
+"""test_climag.py
+
+Tests for the `climag` package
+"""
 
 import pytest
 

@@ -11,7 +11,7 @@ from dateutil.parser import parse
 # convert lat/lon to rotated pole coordinates
 def rotated_pole_point(data, lon, lat):
     """
-    Convert the latitude and longitude of a specific point to rotated pole
+    Convert the longitude and latitude of a specific point to rotated pole
     coordinates used in the input data.
 
     Parameters
@@ -19,6 +19,10 @@ def rotated_pole_point(data, lon, lat):
     data : input climate data which uses rotated pole coordinates
     lon : longitude of the point
     lat : latitude of the point
+
+    Returns
+    -------
+    - transformed longitude and latitude in rotated pole coordinates
     """
     if data.rio.crs is None:
         pole_longitude = (
@@ -49,6 +53,10 @@ def cordex_plot_title(data, lon=None, lat=None):
     Parameters
     ----------
     data : input CORDEX data
+
+    Returns
+    -------
+    - plot title
     """
     if lon is None and lat is None:
         if data.attrs["frequency"] == "mon":
@@ -83,6 +91,10 @@ def rotated_pole_transform(data):
     Parameters
     ----------
     data : input CORDEX data
+
+    Returns
+    -------
+    - rotated pole transform
     """
     if data.rio.crs is None:
         pole_longitude = (

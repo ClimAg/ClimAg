@@ -33,7 +33,7 @@ ytick.minor.size: 0
 
 # Custom settings
 figure.dpi: 96
-font.sans-serif: Source Sans 3, Noto Sans, Segoe UI, Liberation Sans, DejaVu Sans, Bitstream Vera Sans, sans-serif
+font.sans-serif: Source Sans 3, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica Neue, sans-serif
 axes.grid: False
 text.color: darkslategrey
 axes.labelcolor: darkslategrey

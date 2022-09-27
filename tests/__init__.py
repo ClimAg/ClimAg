@@ -1,1 +1,3 @@
-"""Unit test package for climag."""
+"""Unit test package for ClimAg
+
+"""
