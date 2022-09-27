@@ -64,8 +64,8 @@ def read_params(filename):
     - init_AGE_DV : Initial DV age [°C d]
     - init_AGE_DR : Initial DR age [°C d]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [g MJ⁻¹]
-    - sigmaGV     : Respiratory C loss during senescence (GV) (σ_GV)
-    - sigmaGR     : Respiratory C loss during senescence (GR) (σ_GR)
+    - sigmaGV     : Respiratory C loss during senescence for GV (σ_GV)
+    - sigmaGR     : Respiratory C loss during senescence for GR (σ_GR)
     - maxOMDgv    : Maximum OMD green veg
     - minOMDgv    : Minimum OMD green veg
     - maxOMDgr    : Maximum OMD green rep
@@ -92,7 +92,7 @@ def read_weather(filename):
     Definition of input parameters
     ------------------------------
     - DOY         : Day of the year
-    - Temperature : Temperature [°C]
+    - Temperature : Temperature (T) [°C]
     - PARi        : Incident photosynthetically active radiation
         (PAR_i) [MJ m⁻²]
     - PP          : Precipitation (PP) [mm]

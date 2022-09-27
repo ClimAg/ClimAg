@@ -135,10 +135,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     dr_init_age = params[33]
     # Max of R.U.E.
     ruemax = params[34]
-    # Respiration of green vegetative
-    gv_gamma = params[35]
-    # Respiration of green reproductive
-    gr_gamma = params[36]
+    # rates of biomass loss with respiration for GV
+    sigma_gv = params[35]
+    # rates of biomass loss with respiration for GR
+    sigma_gr = params[36]
     # maximum OMD green veg
     # maxOMDgv = params[37]
     # minimum OMD green veg
@@ -390,7 +390,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
             gro, a2r, lls, temperature, kdv, 0, gv_biomass, gv_avg_age
         )
         dv_biomass, dv_avg_age = lm.dv_update(
-            gv_gamma, gv_senescent_biomass, lls, kldv,
+            sigma_gv, gv_senescent_biomass, lls, kldv,
             temperature, dv_biomass, dv_avg_age
         )
         # Start the reproductive phase of the vegetation
@@ -399,7 +399,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
             t0, gr_biomass, gr_avg_age
         )  # ** UNUSED ARGUMENTS REMOVED!
         dr_biomass, dr_avg_age = lm.dr_update(
-            gr_gamma, gr_senescent_biomass, st1, st2,
+            sigma_gr, gr_senescent_biomass, st1, st2,
             temperature, kldr, dr_biomass, dr_avg_age
         )
         # If we do not cut the grass, ensure default estimation is created
