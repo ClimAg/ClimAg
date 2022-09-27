@@ -2,8 +2,7 @@
 
 https://github.com/YannChemin/modvege
 
-ModVege main code, had to rewrite most of the functions as the Java code
-was a complete mess.
+ModVege main code.
 This code runs a single geographical "cell" (as the Java code was trying
 to do on a grid).
 This function *should* be self sustaining, nothing else needed.
@@ -42,11 +41,11 @@ def run_modvege(
     # arr[0][2] = PARi[0] = 2.22092475
     # arr[0][3] = PP[0] = 0.119
     # arr[0][4] = PET[0] = 0.602689848
-    # arr[0][5] = ETA[0] = 0.301344 # RS simulated
-    # arr[0][6] = LAI[0] = 0.864162 # RS simulated
-    # arr[0][7] = gcut_height[0] = 0.0 [default is 0.05 if cut]
-    # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test]
-    # arr[0][9] = grazing_avg_animal_weight[0] = 0 [default is 400 for cow]
+    # arr[0][5] = ETA[0] = 0.301344  # RS simulated
+    # arr[0][6] = LAI[0] = 0.864162  # RS simulated
+    # arr[0][7] = gcut_height[0] = 0.0  # [default is 0.05 if cut]
+    # arr[0][8] = grazing_animal_count[0] = 0  # [default is 1 for test]
+    # arr[0][9] = grazing_avg_animal_weight[0] = 0  # [default is 400 for cow]
 
     weather = read_weather(input_weather_csv)
 
@@ -69,20 +68,61 @@ def run_modvege(
     # Definition of columns in out_cut.csv             Eq. from output run
     # ###############################################  ###################
     # 0 day
-    # 1 Mean biomass                     [kg DM ha-1]  gv_b+gr_b+dv_b+dr_b
-    # 2 Mean green vegetative biomass    [kg DM ha-1]  gv_b
-    # 3 Mean green reproductive biomass  [kg DM ha-1]  gr_b
-    # 4 Mean dry vegetative biomass      [kg DM ha-1]  dv_b
-    # 5 Mean dry reproductive biomass    [kg DM ha-1]  dr_b
-    # 6 Harvested Biomass                [kg DM ha-1]  h_b
-    # 7 Ingested Biomass                 [kg DM ha-1]  i_b
-    # 8 Mean GRO biomass                 [kg DM ha-1]  gro
-    # 9 Mean available biomass for cut   [kg DM ha-1]  abc
+    # 1 Mean biomass                     [kg DM ha⁻¹]  gv_b+gr_b+dv_b+dr_b
+    # 2 Mean green vegetative biomass    [kg DM ha⁻¹]  gv_b
+    # 3 Mean green reproductive biomass  [kg DM ha⁻¹]  gr_b
+    # 4 Mean dry vegetative biomass      [kg DM ha⁻¹]  dv_b
+    # 5 Mean dry reproductive biomass    [kg DM ha⁻¹]  dr_b
+    # 6 Harvested Biomass                [kg DM ha⁻¹]  h_b
+    # 7 Ingested Biomass                 [kg DM ha⁻¹]  i_b
+    # 8 Mean GRO biomass                 [kg DM ha⁻¹]  gro
+    # 9 Mean available biomass for cut   [kg DM ha⁻¹]  abc
 
     # PLOT
+    # plot all columns
     output_df.set_index("doy", inplace=True)
-
-    output_df.plot(subplots=True, layout=(6, 3), figsize=(15, 12))
-
+    plot_title = [
+        "GV biomass [kg DM ha⁻¹]",
+        "DV biomass [kg DM ha⁻¹]",
+        "GR biomass [kg DM ha⁻¹]",
+        "DR biomass [kg DM ha⁻¹]",
+        "Harvested biomass [kg DM ha⁻¹]",
+        "Ingested biomass [kg DM ha⁻¹]",
+        "Biomass growth [kg DM ha⁻¹]",
+        "Available biomass for cut [kg DM ha⁻¹]",
+        "Sum of temperatures [°C d]",
+        "GV biomass age [°C d]",
+        "GR biomass age [°C d]",
+        "DV biomass age [°C d]",
+        "DR biomass age [°C d]",
+        "Seasonal effect*",
+        "Temperature function*",
+        "Environmental limitation of growth*",
+        "Potential growth [kg DM ha⁻¹]",
+        "Reproductive function*"
+    ]
+    output_df.plot(
+        subplots=True, layout=(6, 3), figsize=(15, 14),
+        xlabel="Day of the year", title=plot_title, legend=False
+    )
     plt.tight_layout()
+
+    # # biomass compartments
+    # output_df.plot(y=["gv_b", "dv_b", "gr_b", "dr_b"], figsize=(15, 4))
+    # plt.title("Biomass compartments")
+    # plt.xlabel("Day of the year")
+    # plt.ylabel("[kg DM ha⁻¹]")
+
+    # # growth
+    # output_df.plot(y=["pgr", "gro"], figsize=(15, 4))
+    # plt.title("Potential growth and growth of biomass")
+    # plt.xlabel("Day of the year")
+    # plt.ylabel("[kg DM ha⁻¹]")
+
+    # # age and sum of temperatures
+    # output_df.plot(y=["sumT", "gva", "dva", "gra", "dra"], figsize=(15, 4))
+    # plt.title("Sum of temperatures and age of biomass compartments")
+    # plt.xlabel("Day of the year")
+    # plt.ylabel("Degree day [°C d]")
+
     plt.show()

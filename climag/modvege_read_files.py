@@ -2,7 +2,7 @@
 
 https://github.com/YannChemin/modvege
 
-ModVege is using four parts:
+ModVege has four compartments:
 Green Vegetative      (GV)
 Green Reproductive    (GR)
 Dead Vegetative       (DV)
@@ -15,8 +15,16 @@ import numpy as np
 def read_params(filename):
     """Read the input parameters CSV file
 
-    See Tables 2 and 3 in Jouven (2006), The functional group is A for
-    perennial ryegrass.
+    See Tables 2 and 3 in Jouven (2006). Temperate grasses have been
+    classified into four groups based on their functional traits. The four
+    groups have been parameterised and the estimates are given in these
+    tables.
+
+    Functional group A is relevant to Ireland: Species found in fertile sites,
+    adapted to frequent defoliation **perennial ryegrass (*Lolium perenne*)**;
+    has high specific leaf area, high digestibility, short leaf lifespan,
+    early reproductive growth and flowering.
+
     The nutritional index (NI) is site-specific.
 
     Definition of input parameters
@@ -30,7 +38,7 @@ def read_params(filename):
     - maxSEA      : Growth increase in summer
     - W_GV        : Initial biomass of GV [kg ha⁻¹]
     - alpha_PAR   : Light extinction coefficient
-    - T0          : Temperature threshold: photosynthesis activation [°C]
+    - T0          : Temperature threshold: photosynthesis activation (T₀) [°C]
     - T1          : Temp threshold: stable growth [°C]
     - T2          : Temp threshold: growth decline [°C]
     - beta_T      : Decrease in LUE after T2
@@ -51,13 +59,13 @@ def read_params(filename):
     - K_DR        : Senescence coefficient DR [°C d]
     - Kl_DR       : Abscission coefficient DR [°C d]
     - rho_DR      : Volume DR [g m⁻³]
-    - init_AGE_GV : Initial value of age GV
-    - init_AGE_GR : Initial value of age VR
-    - init_AGE_DV : Initial value of age DV
-    - init_AGE_DR : Initial value of age DR
+    - init_AGE_GV : Initial GV age [°C d]
+    - init_AGE_GR : Initial GR age [°C d]
+    - init_AGE_DV : Initial DV age [°C d]
+    - init_AGE_DR : Initial DR age [°C d]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [g MJ⁻¹]
-    - sigmaGV     : Respiratory C loss during senescence (DV) (σ_GV)
-    - sigmaGR     : Respiratory C loss during senescence (DR) (σ_GR)
+    - sigmaGV     : Respiratory C loss during senescence (GV) (σ_GV)
+    - sigmaGR     : Respiratory C loss during senescence (GR) (σ_GR)
     - maxOMDgv    : Maximum OMD green veg
     - minOMDgv    : Minimum OMD green veg
     - maxOMDgr    : Maximum OMD green rep

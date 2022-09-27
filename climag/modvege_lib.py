@@ -8,16 +8,16 @@ import numpy as np
 
 # def getAverageHeight(biomass, bulkDensity):
 #     """
-#     Return the height based on biomass and bulk density
+#     Return the average height based on biomass and bulk density
 
 #     Parameters
 #     ----------
-#     biomass : biomass (BM)
-#     bulkDensity : bulk density
+#     biomass : Biomass (BM)
+#     bulkDensity : Bulk density
 
 #     Returns
 #     -------
-#     - the average height
+#     - Average height
 #     """
 #     return biomass / bulkDensity
 
@@ -40,24 +40,24 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     return max(0, biomass - biomassAfterCut)
 
 
-def exeDefoliation(biomass, cut_biomass, area):
-    """
-    Defoliation method
+# def exeDefoliation(biomass, cut_biomass, area):
+#     """
+#     Defoliation method
 
-    Parameters
-    ----------
-    biomass : av biomass
-    cut_biomass : biomass removed by cut
-    area : area studied (i.e. pixel area)
+#     Parameters
+#     ----------
+#     biomass : av biomass
+#     cut_biomass : biomass removed by cut
+#     area : area studied (i.e. pixel area)
 
-    Returns
-    -------
-    - updated biomass after defoliation
-    """
-    biomass = biomass - cut_biomass / area
-    if biomass < 0 | np.isnan(biomass):
-        biomass = 0
-    return biomass
+#     Returns
+#     -------
+#     - updated biomass after defoliation
+#     """
+#     biomass = biomass - cut_biomass / area
+#     if biomass < 0 | np.isnan(biomass):
+#         biomass = 0
+#     return biomass
 
 
 def exeCut(cutHeight, bulkDensity, biomass):
@@ -424,22 +424,22 @@ def gr_update(
 # GRO                               # double gro
 
 
-def getHeight(gv_avg_h, gr_avg_h, dv_avg_h, dr_avg_h):
-    """
-    Return the height of this cell
+# def getHeight(gv_avg_h, gr_avg_h, dv_avg_h, dr_avg_h):
+#     """
+#     Return the height of this cell
 
-    Parameters
-    ----------
-    gv_avg_h : ?
-    gr_avg_h : ?
-    dv_avg_h : ?
-    dr_avg_h : ?
+#     Parameters
+#     ----------
+#     gv_avg_h : ?
+#     gr_avg_h : ?
+#     dv_avg_h : ?
+#     dr_avg_h : ?
 
-    Returns
-    -------
-    - the maximum height of the 4 cs
-    """
-    return max(max(gv_avg_h, gr_avg_h), np.max(dv_avg_h, dr_avg_h))
+#     Returns
+#     -------
+#     - the maximum height of the 4 cs
+#     """
+#     return max(max(gv_avg_h, gr_avg_h), np.max(dv_avg_h, dr_avg_h))
 
 
 def cut(
@@ -521,22 +521,22 @@ def mk_env(
     )
 
 
-def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
-    """
-    Return the total biomass of the cell (by adding the biomass of the 4 cs)
+# def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
+#     """
+#     Return the total biomass of the cell (by adding the biomass of the 4 cs)
 
-    Parameters
-    ----------
-    gv_biomass : the green vegetation biomass
-    dv_biomass : the dry vegetation biomass
-    gr_biomass : the green reproduction biomass
-    dr_biomass : the dry reproduction biomass
+#     Parameters
+#     ----------
+#     gv_biomass : the green vegetation biomass
+#     dv_biomass : the dry vegetation biomass
+#     gr_biomass : the green reproduction biomass
+#     dr_biomass : the dry reproduction biomass
 
-    Returns
-    -------
-    - total biomass
-    """
-    return gv_biomass + dv_biomass + gr_biomass + dr_biomass
+#     Returns
+#     -------
+#     - total biomass
+#     """
+#     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
 def fTemperature(meanTenDaysT, t0, t1, t2):
@@ -742,28 +742,28 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     return ta + ea
 
 
-def updateSumTemperature(temperature, t0, sumT, tbase):
-    """
-    Add the daily temperature to the sum temperature if the daily one is
-        positive
+# def updateSumTemperature(temperature, t0, sumT, tbase):
+#     """
+#     Add the daily temperature to the sum temperature if the daily one is
+#         positive
 
-    Parameters
-    ----------
-    temperature : ?
-    t0 : minimum temperature for growth
-    sumT : actual sum of temperature
-    tbase : base temperature (subtracted each day for the calculation of
-        the ST)
-    currentDay : the current DOY (** UNUSED ARGUMENT!)
+#     Parameters
+#     ----------
+#     temperature : ?
+#     t0 : minimum temperature for growth
+#     sumT : actual sum of temperature
+#     tbase : base temperature (subtracted each day for the calculation of
+#         the ST)
+#     currentDay : the current DOY (** UNUSED ARGUMENT!)
 
-    Returns
-    -------
-    - sum T
-    """
-    # TO-DO: return DOY in doc, but return sumT in code O_O?????
-    if temperature >= t0:
-        sumT += np.max(temperature - tbase, 0)
-    return sumT
+#     Returns
+#     -------
+#     - sum T
+#     """
+#     # TO-DO: return DOY in doc, but return sumT in code O_O?????
+#     if temperature >= t0:
+#         sumT += np.max(temperature - tbase, 0)
+#     return sumT
 
 
 def getAvailableBiomassForCut(
@@ -836,6 +836,7 @@ def defoliation(
         + avDefoliationBiomassGR
         + avDefoliationBiomassDR
     )
+    sumBiomassIngested = 0
     if sumAvailable > 0:
         if sumAvailable <= maxAmountToIngest:
             sumBiomassIngested = (
@@ -865,68 +866,66 @@ def defoliation(
                     maxAmountToIngest
                 )
             )
-    else:
-        sumBiomassIngested = 0
     return sumBiomassIngested
 
 
-def greenLimbsMass(gv_gamma, gv_biomass):
-    """
-    Calculation of mass of green limbs for the cell
-    (old name: mlv)
+# def greenLimbsMass(gv_gamma, gv_biomass):
+#     """
+#     Calculation of mass of green limbs for the cell
+#     (old name: mlv)
 
-    Parameters
-    ----------
-    gv_biomass : biomass of green vegetation
-    gv_gamma : ?
+#     Parameters
+#     ----------
+#     gv_biomass : biomass of green vegetation
+#     gv_gamma : ?
 
-    Returns
-    -------
-    - mass of green limbs
-    """
-    return gv_gamma * gv_biomass
-
-
-def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
-    """
-    Compute the green vegetation actual organic matter digestibility
-
-    Parameters
-    ----------
-    gv_min_omd : The minimum green vegetation organic matter digestibility
-    gv_max_omd : The maximum green vegetation organic matter digestibility
-    gv_avg_age : The average age of the green vegetation
-    lls : the leaf lifespan [°C day⁻¹]
-
-    Returns
-    -------
-    - the green vegetation organic matter digestibility
-    """
-    return max(
-        gv_min_omd, gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
-    )
+#     Returns
+#     -------
+#     - mass of green limbs
+#     """
+#     return gv_gamma * gv_biomass
 
 
-def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
-    """
-    Compute the green reproduction actual organic matter digestibility
+# def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
+#     """
+#     Compute the green vegetation actual organic matter digestibility
 
-    Parameters
-    ----------
-    gr_min_omd : The minimum green reproduction organic matter digestibility
-    gr_max_omd : The maximum green reproduction organic matter digestibility
-    gr_avg_age : The average age of the green reproduction
-    st1 : sum of temperature to begin vegeative activity
-    st2 : sum of temperature to end vegetative activity
+#     Parameters
+#     ----------
+#     gv_min_omd : The minimum green vegetation organic matter digestibility
+#     gv_max_omd : The maximum green vegetation organic matter digestibility
+#     gv_avg_age : The average age of the green vegetation
+#     lls : the leaf lifespan [°C day⁻¹]
 
-    Returns
-    -------
-    - the green vegetation organic matter digestibility
-    """
-    return max(
-        gr_min_omd,
-        gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
-    )
+#     Returns
+#     -------
+#     - the green vegetation organic matter digestibility
+#     """
+#     return max(
+#         gv_min_omd, gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
+#     )
+
+
+# def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
+#     """
+#     Compute the green reproduction actual organic matter digestibility
+
+#     Parameters
+#     ----------
+#     gr_min_omd : The minimum green reproduction organic matter digestibility
+#     gr_max_omd : The maximum green reproduction organic matter digestibility
+#     gr_avg_age : The average age of the green reproduction
+#     st1 : sum of temperature to begin vegetative activity
+#     st2 : sum of temperature to end vegetative activity
+
+#     Returns
+#     -------
+#     - the green vegetation organic matter digestibility
+#     """
+#     return max(
+#         gr_min_omd,
+#         gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
+#     )
 
 
 def getSumTemperature(weather, doy, t0):
@@ -935,19 +934,18 @@ def getSumTemperature(weather, doy, t0):
 
     Parameters
     ----------
-    weather : the weather array
-    doy : the day of year wanted [1-366]
-    t0 : minimum temperature for growth
+    weather : Weather array
+    doy : Day of the year [1-366]
+    t0 : Minimum temperature for growth [°C]
 
     Returns
     -------
-    - the sum temperature above t0 corresponding to the DOY
+    - Sum of temperatures above t0 corresponding to the DOY
     """
+    sumTemperature = 0
     for i in range(doy):
         if weather[i][1] > t0:
-            sumTemperature = weather[i][1] - t0
-        else:
-            sumTemperature = 0
+            sumTemperature += weather[i][1] - t0
     return sumTemperature
 
 
