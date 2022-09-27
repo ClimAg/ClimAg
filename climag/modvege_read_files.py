@@ -3,10 +3,10 @@
 https://github.com/YannChemin/modvege
 
 ModVege has four compartments:
-Green Vegetative      (GV)
-Green Reproductive    (GR)
-Dead Vegetative       (DV)
-Dead Reproductive     (DR)
+Green vegetative      (GV)
+Green reproductive    (GR)
+Dead vegetative       (DV)
+Dead reproductive     (DR)
 """
 
 import numpy as np
@@ -15,10 +15,10 @@ import numpy as np
 def read_params(filename):
     """Read the input parameters CSV file
 
-    See Tables 2 and 3 in Jouven (2006). Temperate grasses have been
-    classified into four groups based on their functional traits. The four
-    groups have been parameterised and the estimates are given in these
-    tables.
+    See Tables 2 and 3 in Jouven et al. (2006) for estimates of these
+    parameters. Temperate grasses have been classified into four groups based
+    on their functional traits. The four groups have been parameterised for
+    the Auvergne region in France, which has a temperate climate.
 
     Functional group A is relevant to Ireland: Species found in fertile sites,
     adapted to frequent defoliation **perennial ryegrass (*Lolium perenne*)**;
@@ -31,7 +31,7 @@ def read_params(filename):
     ------------------------------
     - ST1         : Onset of reproductive growth (ST₁) [°C d]
     - ST2         : End of reproductive growth (ST₂) [°C d]
-    - INcell      : Initial Nutritional index of cell - NNI
+    - INcell      : Initial nutritional index of cell - NNI
     - WHC         : Soil water-holding capacity (WHC) [mm]
     - WR          : Water reserve (WR) [mm]
     - minSEA      : Growth increase in winter
@@ -91,7 +91,7 @@ def read_weather(filename):
 
     Definition of input parameters
     ------------------------------
-    - DOY         : Day of year
+    - DOY         : Day of the year
     - Temperature : Temperature [°C]
     - PARi        : Incident photosynthetically active radiation
         (PAR_i) [MJ m⁻²]

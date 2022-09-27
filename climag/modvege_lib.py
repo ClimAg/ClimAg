@@ -8,33 +8,35 @@ import numpy as np
 
 # def getAverageHeight(biomass, bulkDensity):
 #     """
-#     Return the average height based on biomass and bulk density
+#     Return the average height based on biomass and bulk density.
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
-#     biomass : Biomass (BM)
-#     bulkDensity : Bulk density
+#     biomass : Biomass (BM) [kg DM ha⁻¹]
+#     bulkDensity : Bulk density (BD) [g DM m⁻³]
 
 #     Returns
 #     -------
-#     - Average height
+#     - Average height [m]
 #     """
-#     return biomass / bulkDensity
+#     avg_height = biomass / (bulkDensity * 10)
+#     return avg_height
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     """
-    Estimate av biomass for ingestion
+    Estimate biomass for ingestion.
 
     Parameters
     ----------
-    biomass : av biomass
-    cutHeight : default cut height in cutEvent
-    bulkDensity : bulk density
+    biomass : Biomass [kg DM ha⁻¹]
+    cutHeight : Default cut height in cut event [m]
+    bulkDensity : Bulk density [g DM m⁻³]
 
     Returns
     -------
-    - av biomass for ingestion
+    - Biomass for ingestion [kg DM ha⁻¹]
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     return max(0, biomass - biomassAfterCut)
@@ -42,17 +44,18 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
 
 # def exeDefoliation(biomass, cut_biomass, area):
 #     """
-#     Defoliation method
+#     Defoliation method.
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
-#     biomass : av biomass
-#     cut_biomass : biomass removed by cut
-#     area : area studied (i.e. pixel area)
+#     biomass : Biomass [kg DM ha⁻¹] ?
+#     cut_biomass : Biomass removed by cut [kg DM] ?
+#     area : Area studied (i.e. pixel area) [?]
 
 #     Returns
 #     -------
-#     - updated biomass after defoliation
+#     - Updated biomass after defoliation [kg DM ha⁻¹] ?
 #     """
 #     biomass = biomass - cut_biomass / area
 #     if biomass < 0 | np.isnan(biomass):
@@ -62,19 +65,19 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
 
 def exeCut(cutHeight, bulkDensity, biomass):
     """
-    Realise a cut in order that the average height is under cutHeight.
-    This height is calculated by using the bulkDensity given in parameter
+    Realise a cut so that the average height is under cutHeight.
+    This height is calculated by using the bulkDensity given in parameter.
 
     Parameters
     ----------
-    cutHeight : the average height after the cut in m
-    bulkDensity : the bulk density
+    cutHeight : Average height after the cut [m]
+    bulkDensity : Bulk density [g DM m⁻³]
         (biomass after cut = height * 10 * bulk density)
-    biomass : biomass
+    biomass : Biomass [kg DM ha⁻¹]
 
     Returns
     -------
-    - the biomass taken [kg DM m⁻²]
+    - Biomass taken [kg DM ha⁻¹]
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
@@ -87,46 +90,49 @@ def exeCut(cutHeight, bulkDensity, biomass):
 
 def exeDefoliationByBiomass(biomass, biomassToIngest):
     """
-    Realize a defoliation by providing the biomass to remove
+    Realise a defoliation by providing the biomass to remove.
 
     Parameters
     ----------
-    biomass : av biomass
-    biomassToIngest : the biomass to remove
+    biomass : Biomass [kg DM ha⁻¹]
+    biomassToIngest : Biomass to remove [kg DM ha⁻¹]
 
     Returns
     -------
-    - the biomass left [kg DM m⁻²]
+    - Biomass left [kg DM ha⁻¹]
     """
     biomass -= biomassToIngest
     return biomassToIngest
 
 
-# Dry vegetative functions
+# DRY VEGETATIVE FUNCTIONS
 def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     """
-    Compute abscission biomass
+    Compute abscission biomass.
+    See Equation (18) in Jouven et al. (2006).
 
     Parameters
     ----------
     lls : Leaf lifespan (LLS) [°C d]
-    kldv : Abscission coefficient DV (Ducroq 1996) [degree day]
-    temperature : temperature
-    dv_biomass : av biomass
-    dv_avg_age : the average DV age
+    kldv : Abscission coefficient for DV (Kl_DV) (Ducrocq 1996)
+    temperature : Mean daily temperature (T) [°C]
+    dv_biomass : DV biomass (BM_DV) [kg DM m⁻²]
+    dv_avg_age : Average DV age (AGE_DV) [°C d]
 
     Returns
     -------
-    - the abscission biomass
+    - Abscission biomass (ABS_DV) [kg DM m⁻²]
     """
     # method to compute the age of DV for computing abcission of DV
+    # f(AGE_DV) in Equation (18)
     if dv_avg_age / lls < 1.0 / 3.0:
         age = 1
     elif dv_avg_age / lls < 2.0 / 3.0:
         age = 2
     else:
         age = 3
-    # Compute the abscission for dead vegetative part
+    # compute the abscission for dead vegetative part
+    # abscission only occurs when T > 0
     if temperature > 0:
         abscission_biomass = kldv * dv_biomass * temperature * age
     else:
@@ -147,7 +153,7 @@ def dv_update(
         (1 - gv_gamma = dv_gamma)
     gv_senescent_biomass : senescence of compartment GV
     lls : Leaf lifespan (LLS) [°C d]
-    kldv : Abscission coefficient DV [°C d]
+    kldv : Abscission coefficient for DV (Kl_DV)
     temperature : temperature
     dv_biomass : av DV biomass
     dv_avg_age : the average DV age
@@ -181,7 +187,7 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 
     Parameters
     ----------
-    kldr : basic rates of abscission in DR (Ducroq 1996)
+    kldr : basic rates of abscission in DR (Ducrocq 1996)
     dr_biomass : av biomass
     temperature : temperature
     dr_avg_age : the average DR age
@@ -216,7 +222,7 @@ def dr_update(
 
     Parameters
     ----------
-    gr_gamma : a parameter to compute growth of DR (1-gr_gamma)=dr_gamma
+    gr_gamma : a parameter to compute growth of DR (1 - gr_gamma = dr_gamma)
     gr_senescent_biomass : Senescence of GR, computed in GR
     st1 : sum of temperature at the beginning
     st2 : sum of temperature in the end
@@ -255,11 +261,11 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
     Parameters
     ----------
-    kgv : Senescence coefficient (Ducroq 1996) [degree day]
+    kgv : Senescence coefficient (Ducrocq 1996) [°C d]
     gv_biomass : the green vegetation biomass
     temperature : Temperature
     t0 : minimum temperature for growth
-    lls : Leaf lifespan [degree day]
+    lls : Leaf lifespan [°C d]
     gv_avg_age : the average GV age
 
     Returns
@@ -292,9 +298,9 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     gro : in Jouven et al. (2006), total growth (GRO)
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
-    lls : Leaf lifespan [degree day]
+    lls : Leaf lifespan [°C d]
     temperature : temperature
-    kdv : Senescence coefficient DV [degree day]
+    kdv : Senescence coefficient DV [°C d]
     t0 : minimum temperature for growth
     gv_biomass : Updated biomass (BM_GV)
     gv_avg_age : the average GV age
@@ -330,14 +336,14 @@ def mk_gr_senescence(
     """
     Parameters
     ----------
-    kdr : Senescence coefficient DV [degree day] ** CHECK PARAM NAME!
+    kdr : Senescence coefficient DV [°C d] ** CHECK PARAM NAME!
     gr_biomass : the biomass available for GR
     temperature : Temperature
     t0 : minimum temperature for growth
-    lls : Leaf lifespan [degree day] (** UNUSED ARGUMENT!)
+    lls : Leaf lifespan [°C d] (** UNUSED ARGUMENT!)
     gr_avg_age : the average GR age
-    st1 : Onset of reproductive growth [degree day]
-    st2 : End of reproductive growth [degree day]
+    st1 : Onset of reproductive growth [°C d]
+    st2 : End of reproductive growth [°C d]
 
     Returns
     -------
@@ -373,10 +379,10 @@ def gr_update(
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
     gro : Total growth; in Jouven et al. (2006)
-    st1 : Onset of reproductive growth [degree day]
-    st2 : End of reproductive growth [degree day]
+    st1 : Onset of reproductive growth [°C d]
+    st2 : End of reproductive growth [°C d]
     kdr : basic rates of  in compartment GR
-    lls : Leaf lifespan [degree day] (** UNUSED ARGUMENT!)
+    lls : Leaf lifespan [°C d](** UNUSED ARGUMENT!)
     rhogr : Volume GR [g m⁻³] (** UNUSED ARGUMENT!)
     t0 : Minimum temperature for growth
     gr_biomass : The av GR biomass
@@ -427,6 +433,7 @@ def gr_update(
 # def getHeight(gv_avg_h, gr_avg_h, dv_avg_h, dr_avg_h):
 #     """
 #     Return the height of this cell
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
@@ -447,7 +454,7 @@ def cut(
     grb, drb, cellSurface, isHarvested
 ):
     """
-    Realize the harvest on each c. If the amount of cut biomass is not null,
+    Realise the harvest on each c. If the amount of cut biomass is not null,
     then the flag isHarvested is set to True
 
     Parameters
@@ -524,6 +531,7 @@ def mk_env(
 # def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
 #     """
 #     Return the total biomass of the cell (by adding the biomass of the 4 cs)
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
@@ -745,7 +753,8 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
 # def updateSumTemperature(temperature, t0, sumT, tbase):
 #     """
 #     Add the daily temperature to the sum temperature if the daily one is
-#         positive
+#     positive
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
@@ -873,6 +882,7 @@ def defoliation(
 #     """
 #     Calculation of mass of green limbs for the cell
 #     (old name: mlv)
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
@@ -889,13 +899,14 @@ def defoliation(
 # def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
 #     """
 #     Compute the green vegetation actual organic matter digestibility
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
 #     gv_min_omd : The minimum green vegetation organic matter digestibility
 #     gv_max_omd : The maximum green vegetation organic matter digestibility
 #     gv_avg_age : The average age of the green vegetation
-#     lls : the leaf lifespan [°C day⁻¹]
+#     lls : the leaf lifespan [°C d]
 
 #     Returns
 #     -------
@@ -909,6 +920,7 @@ def defoliation(
 # def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
 #     """
 #     Compute the green reproduction actual organic matter digestibility
+#     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
