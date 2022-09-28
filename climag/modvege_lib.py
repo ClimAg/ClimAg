@@ -146,6 +146,7 @@ def dv_update(
 ):
     """
     Update DV compartment.
+    See Equation (3) in Jouven et al. (2006).
 
     Parameters
     ----------
@@ -338,21 +339,21 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
 
 # GREEN REPRODUCTIVE FUNCTIONS
 def mk_gr_senescence(
-    kdr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
+    kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
 ):
     """
     See Equations (16) and (17) in Jouven et al. (2006).
 
     Parameters
     ----------
-    kdr : Senescence coefficient DV [°C d] ** CHECK PARAM NAME!
+    kgr : Senescence coefficient DV [°C d] ** CHECK PARAM NAME!
     gr_biomass : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
     temperature : Temperature (T) [°C]
     t0 : Minimum temperature for growth (T_0) [°C]
-    lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
     gr_avg_age : Average GR age (AGE_GR) [°C d]
     st1 : Onset of reproductive growth (ST_1) [°C d]
     st2 : End of reproductive growth (ST_2) [°C d]
+    lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -367,43 +368,43 @@ def mk_gr_senescence(
         age = 3
     # Compute senescence of GV
     if temperature > t0:
-        # T=10C kdr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
-        senescence_biomass = kdr * gr_biomass * temperature * age
+        # T=10C kgr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
+        senescence_biomass = kgr * gr_biomass * temperature * age
     elif temperature < 0:
-        senescence_biomass = kdr * gr_biomass * abs(temperature)
+        senescence_biomass = kgr * gr_biomass * abs(temperature)
     else:
         senescence_biomass = 0
     return senescence_biomass
 
 
 def gr_update(
-    temperature, a2r, gro, st1, st2, kdr, t0, gr_biomass, gr_avg_age
+    temperature, a2r, gro, st1, st2, kgr, t0, gr_biomass, gr_avg_age
 ):
     """
-    Update green reproductive
+    Update GR compartment.
 
     Parameters
     ----------
-    temperature : Temperature
+    temperature : Temperature (T) [°C]
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
-    gro : Total growth; in Jouven et al. (2006)
-    st1 : Onset of reproductive growth [°C d]
-    st2 : End of reproductive growth [°C d]
-    kdr : basic rates of  in compartment GR
-    lls : Leaf lifespan [°C d] (** UNUSED ARGUMENT!)
+    gro : Total growth (GRO) [kg DM ha⁻¹]
+    st1 : Onset of reproductive growth (ST₁) [°C d]
+    st2 : End of reproductive growth (ST₂) [°C d]
+    kgr : Basic rates of senescence in compartment GR (K_GR)
+    t0 : Minimum temperature for growth (T₀) [°C]
+    gr_biomass : GR biomass (BM_GR) [kg DM ha⁻¹]
+    gr_avg_age : Average GR age (AGE_GR) [°C d]
+    lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
     rhogr : Volume GR [g m⁻³] (** UNUSED ARGUMENT!)
-    t0 : Minimum temperature for growth (T_0) [°C]
-    gr_biomass : GR biomass
-    gr_avg_age : Average GR age
 
     Returns
     -------
     - Updated GR biomass
-    - the average GR age
+    - Average GR age
     """
     senescentBiomass = mk_gr_senescence(
-        kdr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
+        kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
     )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
@@ -508,26 +509,25 @@ def mk_env(
     pet, waterReserve, waterHoldingCapacity
 ):
     """
-    Environmental stress
+    Environmental stress.
 
     Parameters
     ----------
     meanTenDaysT : the mean of the ten days of temperature
-    t0 : minimum temperature for growth
+    t0 : minimum temperature for growth (T_0) [°C]
     t1 : sum of temperature at the beginning (growth activation threshold)
     t2 : sum of temperature in the end (growth decline threshold)
+    ni : Nutritional index of pixel (NI)
+    pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    alphapar : Light use interception
+    pet : Potential evapotranspiration (PET) [mm]
+    waterReserve : Water reserves (WR) [mm]
+    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
     sumT : sum of temperatures (** UNUSED ARGUMENT!)
-    ni : Nutritional index of pixel
-    pari : incident photosynthetic active radiation (PAR_i)
-    alphapar : the Light Use Interception
-    pet : potential evapotranspiration
-    waterReserve : reserve of water in the soil
-    waterHoldingCapacity : capacity of the soil to hold a certain volume
-        of water
 
     Returns
     -------
-    - the environmental stress
+    - Environmental stress
     """
     return (
         fTemperature(meanTenDaysT, t0, t1, t2)  # ** UNUSED ARGUMENT REMOVED!
@@ -544,14 +544,14 @@ def mk_env(
 
 #     Parameters
 #     ----------
-#     gv_biomass : the green vegetation biomass
-#     dv_biomass : the dry vegetation biomass
-#     gr_biomass : the green reproduction biomass
-#     dr_biomass : the dry reproduction biomass
+#     gv_biomass : Green vegetation biomass
+#     dv_biomass : Dry vegetation biomass
+#     gr_biomass : Green reproduction biomass
+#     dr_biomass : Dry reproduction biomass
 
 #     Returns
 #     -------
-#     - total biomass
+#     - Total biomass
 #     """
 #     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
@@ -562,11 +562,11 @@ def fTemperature(meanTenDaysT, t0, t1, t2):
 
     Parameters
     ----------
-    meanTenDaysT : the mean of the ten days of temperature
-    t0 : minimum temperature for growth
-    t1 : sum of temperature at the beginning (growth activation threshold)
-    t2 : sum of temperature in the end (growth decline threshold)
-    sumT : sum of temperatures (** UNUSED ARGUMENT!)
+    meanTenDaysT : Mean of the ten days of temperature
+    t0 : Minimum temperature for growth
+    t1 : Sum of temperature at the beginning (growth activation threshold)
+    t2 : Sum of temperature in the end (growth decline threshold)
+    sumT : Sum of temperatures (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -589,15 +589,15 @@ def fsea(maxsea, minsea, sumT, st2, st1):
 
     Parameters
     ----------
-    maxsea : growth increase in summer
-    minsea : growth increase in winter
-    sumT : sum of temperature
-    st1 : sum of temperature at the beginning of growth
-    st2 : sum of temperature in the end of growth
+    maxsea : Growth increase in summer (minSEA)
+    minsea : Growth increase in winter (maxSEA)
+    sumT : Sum of temperature [°C d]
+    st1 : Sum of temperature at the beginning of growth (ST_1) [°C d]
+    st2 : Sum of temperature in the end of growth (ST_2) [°C d]
 
     Returns
     -------
-    - the value given by the sea f
+    - Value given by the sea f
     """
     if sumT < 200 or sumT >= st2:
         f_sea = minsea
@@ -618,7 +618,7 @@ def fPARi(pari, alphapar):
 
     Parameters
     ----------
-    pari : Photosynthetic radiation incident (PAR_i)
+    pari : Photosynthetic radiation incident (PAR_i) [MJ m⁻²]
     alphapar : the light use interception
 
     Returns
@@ -743,7 +743,7 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     gv_biomass : GV biomass
     waterReserve : Water reserves (WR) [mm]
     waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
-    lai : Leaf area index
+    lai : Leaf area index (LAI)
 
     Returns
     -------
@@ -776,7 +776,7 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
 
 #     Returns
 #     -------
-#     - sum T
+#     - Sum of temperatures
 #     """
 #     # TO-DO: return DOY in doc, but return sumT in code O_O?????
 #     if temperature >= t0:
@@ -793,11 +793,11 @@ def getAvailableBiomassForCut(
 
     Parameters
     ----------
-    gv_biomass : biomass of green vegetation
-    dv_biomass : biomass of dry vegetation
-    gr_biomass : biomass of green reproduction
-    dr_biomass : biomass of dry reproduction
-    cutHeight : height of the cut
+    gv_biomass : Biomass of green vegetation
+    dv_biomass : Biomass of dry vegetation
+    gr_biomass : Biomass of green reproduction
+    dr_biomass : Biomass of dry reproduction
+    cutHeight : Height of the cut
     rhogv : Volume VV [g m⁻³]
     rhodv : Volume DV [g m⁻³]
     rhogr : Volume GR [g m⁻³]
@@ -805,7 +805,7 @@ def getAvailableBiomassForCut(
 
     Returns
     -------
-    - the amount of biomass av for cut
+    - Amount of biomass av for cut
     """
     avDefoliationBiomassGV = avDefoliationBiomass(gv_biomass, cutHeight, rhogv)
     avDefoliationBiomassDV = avDefoliationBiomass(dv_biomass, cutHeight, rhodv)

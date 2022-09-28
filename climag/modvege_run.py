@@ -95,7 +95,7 @@ def run_modvege(
         "GR biomass age [°C d]",
         "DV biomass age [°C d]",
         "DR biomass age [°C d]",
-        "Seasonal effect*",
+        "Seasonal effect",
         "Temperature function*",
         "Environmental limitation of growth*",
         "Potential growth [kg DM ha⁻¹]",

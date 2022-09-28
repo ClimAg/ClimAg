@@ -29,49 +29,69 @@ def read_params(filename):
 
     Definition of input parameters
     ------------------------------
-    - ST1         : Onset of reproductive growth (ST₁) [°C d]
-    - ST2         : End of reproductive growth (ST₂) [°C d]
+    - SLA         : Specific leaf area (SLA) [0.033 m² g⁻¹]
+    - pctLAM      : Percentage of laminae in the green vegetative compartment
+                    (%LAM) [0.68]
+    - ST1         : Sum of temperatures at the beginning of the reproductive
+                    period (ST₁) [600 °C d]
+    - ST2         : Sum of temperatures at the end of the reproductive period
+                    (ST₂) [1200 °C d]
+    - maxSEA      : Maximum seasonal effect (maxSEA) [1.20]
+    - minSEA      : Minimum seasonal effect (minSEA) [0.80]
+    - LLS         : Leaf lifespan (LLS) [500 °C d]
+    - maxOMDgv    : Maximum organic matter digestibility of the green
+                    vegetative compartment (maxOMD_GV) [0.90]
+    - minOMDgv    : Minimum organic matter digestibility of the green
+                    vegetative compartment (minOMD_GV) [0.75]
+    - maxOMDgr    : Maximum organic matter digestibility of the green
+                    reproductive compartment (maxOMD_GR) [0.90]
+    - minOMDgr    : Minimum organic matter digestibility of the green
+                    reproductive compartment (minOMD_GR) [0.65]
+    - rho_GV      : Bulk density of the green vegetative compartment (BD_GV)
+                    [850 g DM m⁻³]
+    - rho_DV      : Bulk density of the dead vegetative compartment (BD_DV)
+                    [500 g DM m⁻³]
+    - rho_GR      : Bulk density of the green reproductive compartment (BD_GR)
+                    [300 g DM m⁻³]
+    - rho_DR      : Bulk density of the dead reproductive compartment (BD_DR)
+                    [150 g DM m⁻³]
+    - sigmaGV     : Rate of biomass loss with respiration for the green
+                    vegetative compartment (σ_GV) [0.4]
+    - sigmaGR     : Rate of biomass loss with respiration for the green
+                    reproductive compartment (σ_GR) [0.2]
+    - T0          : Minimum temperature for growth (T₀) [4 °C]
+    - T1          : Minimum temperature for optimal growth (T₁) [10 °C]
+    - T2          : Maximum temperature for optimal growth (T₂) [20 °C]
+    - K_GV        : Basic senescence rate for the green vegetative compartment
+                    (K_GV) [0.002]
+    - K_GR        : Basic senescence rate for the green reproductive
+                    compartment (K_GR) [0.001]
+    - Kl_DV       : Basic abscission rate for the dead vegetative compartment
+                    (Kl_DV) [0.001]
+    - Kl_DR       : Basic abscission rate for the dead reproductive
+                    compartment (Kl_DR) [0.0005]
+    - meanOMDdv   : Organic matter digestibility for the dead vegetative
+                    compartment (OMD_DV) [0.45]
+    - meanOMDdr   : Organic matter digestibility for the dead reproductive
+                    compartment (OMD_DR) [0.40]
+
     - INcell      : Initial nutritional index of cell - NNI
     - WHC         : Soil water-holding capacity (WHC) [mm]
     - WR          : Water reserve (WR) [mm]
-    - minSEA      : Growth increase in winter
-    - maxSEA      : Growth increase in summer
     - W_GV        : Initial biomass of GV [kg ha⁻¹]
     - alpha_PAR   : Light extinction coefficient
-    - T0          : Temperature threshold: photosynthesis activation (T₀) [°C]
-    - T1          : Temp threshold: stable growth [°C]
-    - T2          : Temp threshold: growth decline [°C]
     - beta_T      : Decrease in LUE after T2
     - b_IN        : Impact of IN on LUE at IN=0
-    - SLA         : Specific leaf area [m² g⁻¹]
-    - LLS         : Leaf lifespan [°C d]
-    - rho_GV      : Volume GV [g m⁻³]
-    - percentLAM  : Fraction of leaf of laminae in GV
     - W_GR        : Biomass of GR [kg ha⁻¹]
     - a_IN        : Value of ALLOC at IN=0
     - max_fIN     : Max of fNI
-    - rho_GR      : Volume GR [g m⁻³]
     - W_DV        : Biomass of DV [kg ha⁻¹]
-    - K_DV        : Senescence coefficient DV [°C d]
-    - Kl_DV       : Abscission coefficient DV [°C d]
-    - rho_DV      : Volume DV [g m⁻³]
     - W_DR        : Biomass of DR [kg DM ha⁻¹]
-    - K_DR        : Senescence coefficient DR [°C d]
-    - Kl_DR       : Abscission coefficient DR [°C d]
-    - rho_DR      : Volume DR [g m⁻³]
     - init_AGE_GV : Initial GV age [°C d]
     - init_AGE_GR : Initial GR age [°C d]
     - init_AGE_DV : Initial DV age [°C d]
     - init_AGE_DR : Initial DR age [°C d]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [g MJ⁻¹]
-    - sigmaGV     : Respiratory C loss during senescence for GV (σ_GV)
-    - sigmaGR     : Respiratory C loss during senescence for GR (σ_GR)
-    - maxOMDgv    : Maximum OMD green veg
-    - minOMDgv    : Minimum OMD green veg
-    - maxOMDgr    : Maximum OMD green rep
-    - minOMDgr    : Minimum OMD green rep
-    - meanOMDdv   : Mean OMD dry veg (digestibility of dead part is constant)
-    - meanOMDdr   : Mean OMD dry rep (digestibility of dead part constant)
     - cellSurface : Pixel area [ha]
 
     Parameters
