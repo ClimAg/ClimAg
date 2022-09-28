@@ -71,8 +71,8 @@ def run_modvege(
     # 1 Mean biomass                     [kg DM ha⁻¹]  gv_b+gr_b+dv_b+dr_b
     # 2 Mean green vegetative biomass    [kg DM ha⁻¹]  gv_b
     # 3 Mean green reproductive biomass  [kg DM ha⁻¹]  gr_b
-    # 4 Mean dry vegetative biomass      [kg DM ha⁻¹]  dv_b
-    # 5 Mean dry reproductive biomass    [kg DM ha⁻¹]  dr_b
+    # 4 Mean dead vegetative biomass     [kg DM ha⁻¹]  dv_b
+    # 5 Mean dead reproductive biomass   [kg DM ha⁻¹]  dr_b
     # 6 Harvested Biomass                [kg DM ha⁻¹]  h_b
     # 7 Ingested Biomass                 [kg DM ha⁻¹]  i_b
     # 8 Mean GRO biomass                 [kg DM ha⁻¹]  gro
@@ -106,23 +106,5 @@ def run_modvege(
         xlabel="Day of the year", title=plot_title, legend=False
     )
     plt.tight_layout()
-
-    # # biomass compartments
-    # output_df.plot(y=["gv_b", "dv_b", "gr_b", "dr_b"], figsize=(15, 4))
-    # plt.title("Biomass compartments")
-    # plt.xlabel("Day of the year")
-    # plt.ylabel("[kg DM ha⁻¹]")
-
-    # # growth
-    # output_df.plot(y=["pgr", "gro"], figsize=(15, 4))
-    # plt.title("Potential growth and growth of biomass")
-    # plt.xlabel("Day of the year")
-    # plt.ylabel("[kg DM ha⁻¹]")
-
-    # # age and sum of temperatures
-    # output_df.plot(y=["sumT", "gva", "dva", "gra", "dra"], figsize=(15, 4))
-    # plt.title("Sum of temperatures and age of biomass compartments")
-    # plt.xlabel("Day of the year")
-    # plt.ylabel("Degree day [°C d]")
 
     plt.show()

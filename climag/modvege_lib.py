@@ -113,8 +113,9 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
 
     Parameters
     ----------
-    lls : Leaf lifespan (LLS) [°C d]
-    kldv : Abscission coefficient for DV (Kl_DV) (Ducrocq 1996)
+    lls : Leaf lifespan (LLS) [500 °C d]
+    kldv : Basic abscission rate for the dead vegetative compartment
+        (Kl_DV) [0.001]
     temperature : Mean daily temperature (T) [°C]
     dv_biomass : DV biomass (BM_DV) [kg DM ha⁻¹]
     dv_avg_age : Average DV age (AGE_DV) [°C d]
@@ -153,15 +154,16 @@ def dv_update(
     gv_gamma : Respiratory C loss during senescence (DV)
         (1 - gv_gamma = dv_gamma)
     gv_senescent_biomass : Senescence of GV compartment
-    lls : Leaf lifespan (LLS) [°C d]
-    kldv : Abscission coefficient for DV (Kl_DV)
-    temperature : Temperature (T) [°C]
+    lls : Leaf lifespan (LLS) [500 °C d]
+    kldv : Basic abscission rate for the dead vegetative compartment
+        (Kl_DV) [0.001]
+    temperature : Mean daily temperature (*T*) [°C]
     dv_biomass : DV biomass (BM_DV) [kg DM ha⁻¹]
     dv_avg_age : Average DV age (AGE_DV) [°C d]
 
     Returns
     -------
-    - Dead vegetation biomass
+    - Dead vegetative biomass
     - Average DV age
     """
     abscissionBiomass = mk_dv_abscission(
@@ -189,12 +191,15 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 
     Parameters
     ----------
-    kldr : Abscission coefficient for DR (Kl_DR) (Ducrocq 1996)
+    kldr : Basic abscission rate for the dead reproductive compartment
+        (Kl_DR) [0.0005]
     dr_biomass : DR biomass (BM_DR) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (T) [°C]
+    temperature : Mean daily temperature (*T*) [°C]
     dr_avg_age : Average DR age (AGE_DR) [°C d]
-    st1 : Sum of temperature at the beginning (ST_1) [°C d]
-    st2 : Sum of temperature in the end (ST_2) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
 
     Returns
     -------
@@ -228,10 +233,13 @@ def dr_update(
     ----------
     gr_gamma : Parameter to compute growth of DR (1 - gr_gamma = dr_gamma)
     gr_senescent_biomass : Senescence of GR, computed in GR
-    st1 : Sum of temperature at the beginning (ST_1) [°C d]
-    st2 : Sum of temperature in the end (ST_2) [°C d]
-    temperature : Temperature [°C]
-    kldr : Basic rates of abscission in DR
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
+    temperature : Mean daily temperature (*T*) [°C]
+    kldr : Basic abscission rate for the dead reproductive compartment
+        (Kl_DR) [0.0005]
     dr_biomass : DR biomass
     dr_avg_age : Average DR age [°C d]
 
@@ -266,12 +274,13 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
     Parameters
     ----------
-    kgv : Senescence coefficient (K_GV) (Ducrocq 1996)
+    kgv : Basic senescence rate for the green vegetative compartment
+        (K_GV) [0.002]
     gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
-    temperature : Temperature (T) [°C]
-    t0 : Minimum temperature for growth (T_0) [°C]
-    lls : Leaf lifespan (LLS) [°C d]
-    gv_avg_age : Average GV age [°C d]
+    temperature : Mean daily temperature (*T*) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [°C]
+    lls : Leaf lifespan (LLS) [500 °C d]
+    gv_avg_age : Average GV age (AGE_GV) [°C d]
 
     Returns
     -------
@@ -306,10 +315,10 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     gro : in Jouven et al. (2006), total growth (GRO)
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
-    lls : Leaf lifespan (LLS) [°C d]
-    temperature : Temperature [°C]
+    lls : Leaf lifespan (LLS) [500 °C d]
+    temperature : Mean daily temperature (*T*) [°C]
     kdv : Senescence coefficient DV [°C d]
-    t0 : Minimum temperature for growth (T_0) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [4 °C]
     gv_biomass : Updated biomass
     gv_avg_age : Average GV age [°C day]
 
@@ -346,13 +355,16 @@ def mk_gr_senescence(
 
     Parameters
     ----------
-    kgr : Senescence coefficient DV [°C d] ** CHECK PARAM NAME!
+    kgr : Basic senescence rate for the green reproductive compartment
+        (K_GR) [0.001]
     gr_biomass : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
-    temperature : Temperature (T) [°C]
-    t0 : Minimum temperature for growth (T_0) [°C]
+    temperature : Mean daily temperature (*T*) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [4 °C]
     gr_avg_age : Average GR age (AGE_GR) [°C d]
-    st1 : Onset of reproductive growth (ST_1) [°C d]
-    st2 : End of reproductive growth (ST_2) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
     lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
 
     Returns
@@ -385,14 +397,14 @@ def gr_update(
 
     Parameters
     ----------
-    temperature : Temperature (T) [°C]
+    temperature : Mean daily temperature (*T*) [°C]
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
     gro : Total growth (GRO) [kg DM ha⁻¹]
     st1 : Onset of reproductive growth (ST₁) [°C d]
     st2 : End of reproductive growth (ST₂) [°C d]
     kgr : Basic rates of senescence in compartment GR (K_GR)
-    t0 : Minimum temperature for growth (T₀) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [4 °C]
     gr_biomass : GR biomass (BM_GR) [kg DM ha⁻¹]
     gr_avg_age : Average GR age (AGE_GR) [°C d]
     lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
@@ -428,8 +440,8 @@ def gr_update(
 # water reserves WR                 # double waterReserve
 # Compartment green vegetative      # CompartmentGreenVegetative cGV
 # Compartment green reproductive    # CompartmentGreenReproductive cGR
-# Compartment dry vegetative        # CompartmentDryVegetative cDV
-# Compartment dry reproductive      # CompartmentDryReproductive cDR
+# Compartment dead vegetative       # CompartmentDeadVegetative cDV
+# Compartment dead reproductive     # CompartmentDeadReproductive cDR
 # Indicate if the cell was previously cut during a certain period
 #     # boolean isCut
 # Cut tag shows if there is a cut event
@@ -470,14 +482,14 @@ def cut(
     Parameters
     ----------
     cutHeight : the height of the cut [m]
-    rhogv : rho green vegetation
-    rhodv : rho dry vegetation
-    rhogr : rho green reproduction
-    rhodr : rho dry reproduction
-    gvb : the biomass of green vegetation
-    dvb : the biomass of dry vegetation
+    rhogv : rho green vegetative
+    rhodv : rho dead vegetative
+    rhogr : rho green reproductive
+    rhodr : rho dead reproductive
+    gvb : the biomass of green vegetative
+    dvb : the biomass of dead vegetative
     grb : the biomass of green reproductive
-    drb : the biomass of dry reproductive
+    drb : the biomass of dead reproductive
     cellSurface : Surface of the pixel [ha]
     isHarvested : Status flag indicating harvest happened
 
@@ -544,10 +556,10 @@ def mk_env(
 
 #     Parameters
 #     ----------
-#     gv_biomass : Green vegetation biomass
-#     dv_biomass : Dry vegetation biomass
-#     gr_biomass : Green reproduction biomass
-#     dr_biomass : Dry reproduction biomass
+#     gv_biomass : Green vegetative biomass
+#     dv_biomass : Dead vegetative biomass
+#     gr_biomass : Green reproductive biomass
+#     dr_biomass : Dead reproductive biomass
 
 #     Returns
 #     -------
@@ -585,19 +597,21 @@ def fTemperature(meanTenDaysT, t0, t1, t2):
 
 def fsea(maxsea, minsea, sumT, st2, st1):
     """
-    Function for seasonality (SEA) to compute the potential growth
+    Function for seasonality (SEA) to compute the potential growth.
 
     Parameters
     ----------
-    maxsea : Growth increase in summer (minSEA)
-    minsea : Growth increase in winter (maxSEA)
-    sumT : Sum of temperature [°C d]
-    st1 : Sum of temperature at the beginning of growth (ST_1) [°C d]
-    st2 : Sum of temperature in the end of growth (ST_2) [°C d]
+    maxsea : Maximum seasonal effect (maxSEA) [1.20]
+    minsea : Minimum seasonal effect (minSEA) [0.80]
+    sumT : Sum of temperatures (ST) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
 
     Returns
     -------
-    - Value given by the sea f
+    - Value given by *f*(SEA)
     """
     if sumT < 200 or sumT >= st2:
         f_sea = minsea
@@ -698,7 +712,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     ruemax : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
     pctlam : Percentage of laminae in GV (%LAM)
     sla : Specific leaf area (SLA) [m² g⁻¹]
-    gv_biomass : Green vegetation biomass (BM_GV) [kg DM ha⁻¹]
+    gv_biomass : Green vegetative biomass (BM_GV) [kg DM ha⁻¹]
     lai : the LAI from remote sensing (if available)
 
     Returns
@@ -793,10 +807,10 @@ def getAvailableBiomassForCut(
 
     Parameters
     ----------
-    gv_biomass : Biomass of green vegetation
-    dv_biomass : Biomass of dry vegetation
-    gr_biomass : Biomass of green reproduction
-    dr_biomass : Biomass of dry reproduction
+    gv_biomass : Biomass of green vegetative
+    dv_biomass : Biomass of dead vegetative
+    gr_biomass : Biomass of green reproductive
+    dr_biomass : Biomass of dead reproductive
     cutHeight : Height of the cut
     rhogv : Volume VV [g m⁻³]
     rhodv : Volume DV [g m⁻³]
@@ -828,10 +842,10 @@ def defoliation(
 
     Parameters
     ----------
-    gv_biomass : biomass of green vegetation
-    dv_biomass : biomass of dry vegetation
-    gr_biomass : biomass of green reproduction
-    dr_biomass : biomass of dry reproduction
+    gv_biomass : biomass of green vegetative
+    dv_biomass : biomass of dead vegetative
+    gr_biomass : biomass of green reproductive
+    dr_biomass : biomass of dead reproductive
     cutHeight : height of the cut
     rhogv : Volume VV [g m⁻³]
     rhodv : Volume DV [g m⁻³]
@@ -895,7 +909,7 @@ def defoliation(
 
 #     Parameters
 #     ----------
-#     gv_biomass : biomass of green vegetation
+#     gv_biomass : biomass of green vegetative
 #     gv_gamma : ?
 
 #     Returns
@@ -907,19 +921,19 @@ def defoliation(
 
 # def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
 #     """
-#     Compute the green vegetation actual organic matter digestibility
+#     Compute the green vegetative actual organic matter digestibility
 #     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
-#     gv_min_omd : The minimum green vegetation organic matter digestibility
-#     gv_max_omd : The maximum green vegetation organic matter digestibility
-#     gv_avg_age : The average age of the green vegetation
+#     gv_min_omd : The minimum green vegetative organic matter digestibility
+#     gv_max_omd : The maximum green vegetative organic matter digestibility
+#     gv_avg_age : The average age of the green vegetative
 #     lls : the leaf lifespan [°C d]
 
 #     Returns
 #     -------
-#     - the green vegetation organic matter digestibility
+#     - the green vegetative organic matter digestibility
 #     """
 #     return max(
 #         gv_min_omd, gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
@@ -928,20 +942,20 @@ def defoliation(
 
 # def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
 #     """
-#     Compute the green reproduction actual organic matter digestibility
+#     Compute the green reproductive actual organic matter digestibility
 #     ** THIS FUNCTION IS UNUSED!
 
 #     Parameters
 #     ----------
-#     gr_min_omd : The minimum green reproduction organic matter digestibility
-#     gr_max_omd : The maximum green reproduction organic matter digestibility
-#     gr_avg_age : The average age of the green reproduction
+#     gr_min_omd : The minimum green reproductive organic matter digestibility
+#     gr_max_omd : The maximum green reproductive organic matter digestibility
+#     gr_avg_age : The average age of the green reproductive
 #     st1 : sum of temperature to begin vegetative activity
 #     st2 : sum of temperature to end vegetative activity
 
 #     Returns
 #     -------
-#     - the green vegetation organic matter digestibility
+#     - the green vegetative organic matter digestibility
 #     """
 #     return max(
 #         gr_min_omd,

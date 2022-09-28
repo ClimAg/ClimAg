@@ -36,6 +36,7 @@ List of variables
     - Age of biomass (AGE) [°C d] (degree day - units of thermal time)
     - Organic matter digestibility (OMD)
 - Quantities
+    - Mean daily temperature (*T*) [°C]
     - Sum of temperatures (ST) [°C d]
     - Seasonal effect (SEA)
     - Specific leaf area (SLA)
@@ -86,9 +87,9 @@ short leaf lifespan, and early reproductive growth and flowering).
   (σ_GV) [0.4]
 - Rate of biomass loss with respiration for the green reproductive compartment
   (σ_GR) [0.2]
-- Minimum temperature for growth (T₀) [4 °C]
-- Minimum temperature for optimal growth (T₁) [10 °C]
-- Maximum temperature for optimal growth (T₂) [20 °C]
+- Minimum temperature for growth (*T*₀) [4 °C]
+- Minimum temperature for optimal growth (*T*₁) [10 °C]
+- Maximum temperature for optimal growth (*T*₂) [20 °C]
 - Basic senescence rate for the green vegetative compartment (K_GV) [0.002]
 - Basic senescence rate for the green reproductive compartment (K_GR) [0.001]
 - Basic abscission rate for the dead vegetative compartment (Kl_DV) [0.001]
@@ -218,9 +219,9 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     # maxOMDgr = params[39]
     # minimum OMD green rep
     # minOMDgr = params[40]
-    # mean OMD dry veg
+    # mean OMD dead veg
     # meanOMDdv = params[41]
-    # mean OMD dry rep
+    # mean OMD dead rep
     # meanOMDdr = params[42]
     # Pixel area [Ha]
     cellSurface = params[43]
@@ -407,7 +408,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
             # allocation to reproductive
             a2r = lm.rep(ni)
             # TO-DO: When to change NI, and by how much?
-            # NI        A2R        NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+            # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
             # 0.5       0.42307
             # 0.6       0.53846
