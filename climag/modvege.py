@@ -41,7 +41,7 @@ List of variables
     - Seasonal effect (SEA)
     - Specific leaf area (SLA)
     - Percentage of laminae in the green vegetative compartment (%LAM)
-    -
+    - Leaf lifespan (LLS) [°C d]
 
 Notes
 -----
@@ -138,93 +138,93 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     # Load input parameters into variables
     #######################################################
     # Onset of reproductive growth (degree day)
-    st1 = params[0]
+    st1 = params["ST1"]
     # End of reproductive growth (degree day)
-    st2 = params[1]
-    # Initial Nutritional index of cell
-    ni = params[2]
+    st2 = params["ST2"]
+    # Initial nutritional index of cell
+    ni = params["NI"]
     # Soil water-holding capacity (mm)
-    waterHoldingCapacity = params[3]
+    waterHoldingCapacity = params["WHC"]
     # Soil water reserve (mm)
-    waterReserve = params[4]
+    waterReserve = params["WR"]
     # Growth increase in winter
-    minsea = params[5]
+    minsea = params["minSEA"]
     # Growth increase in summer
-    maxsea = params[6]
+    maxsea = params["maxSEA"]
     # Biomass of GV (kg ha-1)
-    wgv = params[7]
+    wgv = params["W_GV"]
     # Light Use Interception
-    alphapar = params[8]
+    alphapar = params["alpha_PAR"]
     # Temperature threshold: photosynthesis activation (degC)
-    t0 = params[9]
+    t0 = params["T0"]
     # Temp threshold: stable growth (degC)
-    t1 = params[10]
+    t1 = params["T1"]
     # Temp threshold: growth decline (degC)
-    t2 = params[11]
+    t2 = params["T2"]
     # beta_T
-    # betaT = params[12]
+    # betaT = params["beta_T"]
     # b_IN
-    # b_IN = params[13]
+    # b_IN = params["b_IN"]
     # Specific leaf area (m2 g-1)
-    sla = params[14]
+    sla = params["SLA"]
     # Leaf lifespan (degree day)
-    lls = params[15]
+    lls = params["LLS"]
     # Volume GV (g m-3)
-    rhogv = params[16]
+    rhogv = params["rho_GV"]
     # % leaf of laminae in GV
-    pctlam = params[17]
+    pctlam = params["pctLAM"]
     # Biomass of GR (kg ha-1)
-    wgr = params[18]
+    wgr = params["W_GR"]
     # Value of ALLOC at NI=0
-    # allocNI = params[19]
+    # allocNI = params["a_IN"]
     # max of fNI
-    # maxFNI = params[20]
+    # maxFNI = params["max_fIN"]
     # Volume GR (g m-3)
-    rhogr = params[21]
+    rhogr = params["rho_GR"]
     # Biomass of DV (kg ha-1)
-    wdv = params[22]
-    # Senescence coefficient DV (degree day)
-    kgv = params[23]
-    # Abscission coefficient DV (degree day)
-    kldv = params[24]
+    wdv = params["W_DV"]
+    # Senescence coefficient GV
+    kgv = params["K_GV"]
+    # Abscission coefficient DV
+    kldv = params["Kl_DV"]
     # Volume DV (g m-3)
-    rhodv = params[25]
+    rhodv = params["rho_DV"]
     # Biomass of DR (kg ha-1)
-    wdr = params[26]
-    # Senescence coefficient DR (degree day)
-    kgr = params[27]
-    # Abscission coefficient DR (degree day)
-    kldr = params[28]
+    wdr = params["W_DR"]
+    # Senescence coefficient GR
+    kgr = params["K_GR"]
+    # Abscission coefficient DR
+    kldr = params["Kl_DR"]
     # Volume DR (g m-3)
-    rhodr = params[29]
+    rhodr = params["rho_DR"]
     # Initial value of age of compartment GV
-    gv_init_age = params[30]
+    gv_init_age = params["init_AGE_GV"]
     # Initial value of age of compartment GR
-    gr_init_age = params[31]
+    gr_init_age = params["init_AGE_GR"]
     # Initial value of age of compartment DV
-    dv_init_age = params[32]
+    dv_init_age = params["init_AGE_DV"]
     # Initial value of age of compartment DR
-    dr_init_age = params[33]
+    dr_init_age = params["init_AGE_DR"]
     # Max of R.U.E.
-    ruemax = params[34]
+    ruemax = params["RUEmax"]
     # rates of biomass loss with respiration for GV
-    sigma_gv = params[35]
+    sigma_gv = params["sigmaGV"]
     # rates of biomass loss with respiration for GR
-    sigma_gr = params[36]
+    sigma_gr = params["sigmaGR"]
     # maximum OMD green veg
-    # maxOMDgv = params[37]
+    # maxOMDgv = params["maxOMDgv"]
     # minimum OMD green veg
-    # minOMDgv = params[38]
+    # minOMDgv = params["minOMDgv"]
     # maximum OMD green rep
-    # maxOMDgr = params[39]
+    # maxOMDgr = params["maxOMDgr"]
     # minimum OMD green rep
-    # minOMDgr = params[40]
+    # minOMDgr = params["minOMDgr"]
     # mean OMD dead veg
-    # meanOMDdv = params[41]
+    # meanOMDdv = params["meanOMDdv"]
     # mean OMD dead rep
-    # meanOMDdr = params[42]
+    # meanOMDdr = params["meanOMDdr"]
     # Pixel area [Ha]
-    cellSurface = params[43]
+    cellSurface = params["cellSurface"]
 
     # Pixel area [m2]
     # cellSurfaceMeter = 10000 * cellSurface

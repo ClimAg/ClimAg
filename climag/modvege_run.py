@@ -2,10 +2,8 @@
 
 https://github.com/YannChemin/modvege
 
-ModVege main code.
 This code runs a single geographical "cell" (as the Java code was trying
 to do on a grid).
-This function *should* be self sustaining, nothing else needed.
 """
 
 import matplotlib.pyplot as plt
@@ -25,11 +23,11 @@ def run_modvege(
 
     Parameters
     ----------
-    input_params_csv : File name for the input parameters CSV
-    input_weather_csv : File name for the input weather CSV
-    out_csv : File name for the output CSV
-    startdoy : start day of the year (default 1)
-    enddoy : end day of the year (default 365)
+    input_params_csv : File path for the input parameters CSV
+    input_weather_csv : File path for the input weather CSV
+    out_csv : File path for the output CSV
+    startdoy : Start day of the year (default 1)
+    enddoy : End day of the year (default 365)
     """
 
     # read parameter files into array

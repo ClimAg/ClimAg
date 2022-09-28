@@ -10,6 +10,7 @@ Dead reproductive     (DR)
 """
 
 import numpy as np
+import pandas as pd
 
 
 def read_params(filename):
@@ -100,10 +101,12 @@ def read_params(filename):
 
     Returns
     -------
-    - An array of the input parameters
+    - A dictionary of the input parameters
     """
-    arr = np.genfromtxt(filename, delimiter=",", dtype=float, usecols=(-1))
-    return arr
+    params = pd.read_csv(
+        filename, header=None, index_col=0
+    ).squeeze().to_dict()
+    return params
 
 
 def read_weather(filename):
