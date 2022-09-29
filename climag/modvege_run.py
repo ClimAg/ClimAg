@@ -11,40 +11,51 @@ import pandas as pd
 # import the model function
 from climag.modvege import modvege
 # file reading
-from climag.modvege_read_files import read_params, read_weather
+from climag.modvege_read_files import read_params, read_timeseries
 
 
-def run_modvege(input_params_csv, input_weather_csv, out_csv):
+def run_modvege(input_params_file, input_timeseries_file, out_file):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
 
+    Definition of columns in the output
+    -----------------------------------
+    - day                                                doy
+    - Mean green vegetative biomass      [kg DM ha⁻¹]    gv_b
+    - Mean green reproductive biomass    [kg DM ha⁻¹]    gr_b
+    - Mean dead vegetative biomass       [kg DM ha⁻¹]    dv_b
+    - Mean dead reproductive biomass     [kg DM ha⁻¹]    dr_b
+    - Harvested biomass                  [kg DM ha⁻¹]    h_b
+    - Ingested biomass                   [kg DM ha⁻¹]    i_b
+    - Mean GRO biomass                   [kg DM ha⁻¹]    gro
+    - Mean available biomass for cut     [kg DM ha⁻¹]    abc
+      (gv_b + gr_b + dv_b + dr_b)
+    - Sum of temperatures                [°C d]          sumT
+    - GV biomass age                     [°C d]          gva
+    - GR biomass age                     [°C d]          gra
+    - DV biomass age                     [°C d]          dva
+    - DR biomass age                     [°C d]          dra
+    - Seasonal effect                                    sea
+    - Temperature function*                              ftm
+    - Environmental limitation of growth                 env
+    - Potential growth                   [kg DM ha⁻¹]    pgr
+    - Reproductive function*                             atr
+
     Parameters
     ----------
-    input_params_csv : File path for the input parameters CSV
-    input_weather_csv : File path for the input weather CSV
-    out_csv : File path for the output CSV
+    input_params_file : File path for the input parameters
+    input_timeseries_file : File path for the input timeseries
+    out_file : File path for the output
     """
 
     # read parameter files into array
-    params = read_params(input_params_csv)
+    params = read_params(input_params_file)
 
-    # read weather file into array
-    # arr[0][0] = DOY[0] = 1
-    # arr[0][1] = Temperature[0] = -0.84125
-    # arr[0][2] = PARi[0] = 2.22092475
-    # arr[0][3] = PP[0] = 0.119
-    # arr[0][4] = PET[0] = 0.602689848
-    # arr[0][5] = ETA[0] = 0.301344  # RS simulated
-    # arr[0][6] = LAI[0] = 0.864162  # RS simulated
-    # arr[0][7] = gcut_height[0] = 0.0  # [default is 0.05 if cut]
-    # arr[0][8] = grazing_animal_count[0] = 0  # [default is 1 for test]
-    # arr[0][9] = grazing_avg_animal_weight[0] = 0  # [default is 400 for cow]
-
-    weather = read_weather(input_weather_csv)
+    tseries = read_timeseries(input_timeseries_file)
 
     # initialise the run and return arrays
-    mod_out = modvege(params, weather)
+    mod_out = modvege(params, tseries)
 
     # convert output to dataframe and save as CSV
     data = tuple([list(range(1, len(mod_out[0]) + 1))]) + mod_out
@@ -56,21 +67,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv):
 
     output_df = pd.DataFrame(zip(*data), columns=colnames)
 
-    output_df.to_csv(out_csv, index=False)
-
-    # ###############################################  ###################
-    # Definition of columns in out_cut.csv             Eq. from output run
-    # ###############################################  ###################
-    # 0 day
-    # 1 Mean biomass                     [kg DM ha⁻¹]  gv_b+gr_b+dv_b+dr_b
-    # 2 Mean green vegetative biomass    [kg DM ha⁻¹]  gv_b
-    # 3 Mean green reproductive biomass  [kg DM ha⁻¹]  gr_b
-    # 4 Mean dead vegetative biomass     [kg DM ha⁻¹]  dv_b
-    # 5 Mean dead reproductive biomass   [kg DM ha⁻¹]  dr_b
-    # 6 Harvested Biomass                [kg DM ha⁻¹]  h_b
-    # 7 Ingested Biomass                 [kg DM ha⁻¹]  i_b
-    # 8 Mean GRO biomass                 [kg DM ha⁻¹]  gro
-    # 9 Mean available biomass for cut   [kg DM ha⁻¹]  abc
+    output_df.to_csv(out_file, index=False)
 
     # PLOT
     # plot all columns
@@ -83,7 +80,7 @@ def run_modvege(input_params_csv, input_weather_csv, out_csv):
         "Harvested biomass [kg DM ha⁻¹]",
         "Ingested biomass [kg DM ha⁻¹]",
         "Biomass growth [kg DM ha⁻¹]",
-        "Available biomass for cut [kg DM ha⁻¹]",
+        "Available biomass [kg DM ha⁻¹]",
         "Sum of temperatures [°C d]",
         "GV biomass age [°C d]",
         "GR biomass age [°C d]",

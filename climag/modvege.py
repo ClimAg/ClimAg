@@ -1,7 +1,7 @@
 """modvege.py
 
-This is the Python implementation of the ModVege pasture model, translated
-from Java to Python by Chemin (2022).
+This is the Python implementation of the ModVege pasture model, a modified
+version of the original Java to Python translation by Chemin (2022).
 The Java model was provided by Raphael Martin, INRAE UREP Clermont-Ferrand
 for the original Python implementation.
 The original ModVege pasture model was developed by Jouven et al. (2006).
@@ -24,24 +24,27 @@ References
   effects of drought on herbage growth', Field Crops Research, vol. 187, pp.
   12-23. DOI: 10.1016/j.fcr.2015.12.008.
 
+Model definition
+----------------
+Compartments representing the structural components of herbage:
+- Green vegetative (GV) - green leaves and sheath
+- Dead vegetative (DV) - dead leaves and sheath
+- Green reproductive (GR) - green stems and flowers
+- Dead reproductive (DR) - dead stems and flowers
+
+Compartment description:
+- Standing biomass (BM) [kg DM ha⁻¹]
+- Age of biomass (AGE) [°C d] (degree day - units of thermal time)
+- Organic matter digestibility (OMD)
+
 List of variables
 -----------------
-- Compartments representing the structural components of herbage
-    - Green vegetative (GV) - green leaves and sheath
-    - Dead vegetative (DV) - dead leaves and sheath
-    - Green reproductive (GR) - green stems and flowers
-    - Dead reproductive (DR) - dead stems and flowers
-- Compartment description
-    - Standing biomass (BM) [kg DM ha⁻¹]
-    - Age of biomass (AGE) [°C d] (degree day - units of thermal time)
-    - Organic matter digestibility (OMD)
-- Quantities
-    - Mean daily temperature (*T*) [°C]
-    - Sum of temperatures (ST) [°C d]
-    - Seasonal effect (SEA)
-    - Specific leaf area (SLA)
-    - Percentage of laminae in the green vegetative compartment (%LAM)
-    - Leaf lifespan (LLS) [°C d]
+- Mean daily temperature (*T*) [°C]
+- Sum of temperatures (ST) [°C d]
+- Seasonal effect (SEA)
+- Specific leaf area (SLA)
+- Percentage of laminae in the green vegetative compartment (%LAM)
+- Leaf lifespan (LLS) [°C d]
 
 Notes
 -----
@@ -105,7 +108,7 @@ import numpy as np
 import climag.modvege_lib as lm
 
 
-def modvege(params, weather):
+def modvege(params, tseries):
     """**ModVege** model as a function
 
     ! This model cannot regenerate reproductive growth after a cut !
@@ -117,8 +120,8 @@ def modvege(params, weather):
 
     Parameters
     ----------
-    params : parameters of this run
-    weather : weather data (and grass cut and grazing)
+    params : Parameters (constants)
+    tseries : Timeseries data (weather, grass cut, grazing)
 
     Returns
     -------
@@ -172,9 +175,9 @@ def modvege(params, weather):
     # Initialise state parameters
     # This is a status flag changed in lib_cell.updateCell()
     isCut = False
-    # This is an actionable flag modified by weather.gcut_height presence
+    # This is an actionable flag modified by gcut_height presence
     isHarvested = False
-    # This is an actionable flag modified by weather.grazing* presences
+    # This is an actionable flag modified by grazing* presences
     isGrazed = False
     # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
@@ -241,40 +244,28 @@ def modvege(params, weather):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
-        # arr[0][0] = DOY[0] = 1
-        # arr[0][1] = Temperature[0] = -0.84125
-        temperature = weather["Temperature"][i]
+        temperature = tseries["T"][i]
         # mean ten days temperature
         if i < 10:
-            # listA = [weather["Temperature"][i - j] for j in range(1, 10)]
             meanTenDaysT = temperature  # ** USING THE TEMP, NOT 10-d AVG!
         else:
-            # listA = [weather["Temperature"][i - j] for j in range(10, 1, -1)]
-            meanTenDaysT = np.mean([
-                weather["Temperature"][i - j] for j in range(10 - 1, 0 - 1, -1)
-            ])
+            meanTenDaysT = np.mean(
+                [tseries["T"][i - j] for j in range(10 - 1, 0 - 1, -1)]
+            )
 
-        # arr[0][2] = PARi[0] = 2.22092475
-        pari = weather["PARi"][i]
-        # arr[0][3] = PP[0] = 0.119
-        pmm = weather["PP"][i]
-        # arr[0][4] = PET[0] = 0.602689848
-        pet = weather["PET"][i]
-        # arr[0][5] = ETA[0] = 0.4 [RS data, optional]
-        eta = weather["eta"][i]
-        # arr[0][6] = LAI[0] = 0.02 [RS data, optional]
-        lai = weather["lai"][i]
-        # arr[0][7] = gcut_height[0] = 0.0 [default is 0.05 if cut]
-        cutHeight = weather["gcut_height"][i]
-        # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test]
-        grazing_animal_count = weather["grazing_animal_count"][i]
-        # arr[0][9] = grazing_avg_animal_weight[0] = 0 [default is 400 for cow]
-        grazing_avg_animal_weight = weather["grazing_avg_animal_weight"][1]
+        pari = tseries["PARi"][i]
+        pmm = tseries["PP"][i]
+        pet = tseries["PET"][i]
+        eta = tseries["eta"][i]
+        lai = tseries["lai"][i]
+        cutHeight = tseries["gcut_height"][i]
+        grazing_animal_count = tseries["grazing_animal_count"][i]
+        grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][1]
         #######################################################
         # Prepare additional variables
         #######################################################
         # mk sumTemperature Uses T0=0 and not T0
-        sumT = lm.getSumTemperature(weather, i, 0.55)
+        sumT = lm.getSumTemperature(tseries, i, 0.55)
         # fSEA array for graphs
         sea.append(
             lm.fsea(
@@ -289,10 +280,10 @@ def modvege(params, weather):
             )
         )
 
-        # grass cut flag modification if weather file has grass cut for that
+        # grass cut flag modification if timeseries file has grass cut for that
         # day
         isHarvested = bool(cutHeight != 0.0)
-        # grazing flag modification if weather file has BOTH animal related
+        # grazing flag modification if timeseries file has BOTH animal related
         # values
         isGrazed = bool(
             grazing_animal_count != 0 and grazing_avg_animal_weight != 0

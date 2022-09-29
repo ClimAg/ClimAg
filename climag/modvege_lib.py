@@ -652,10 +652,10 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
 
     Parameters
     ----------
-    waterReserve : reserve of water in the soil
-    waterHoldingCapacity : capacity of the soil to hold a certain volume
+    waterReserve : Reserve of water in the soil
+    waterHoldingCapacity : Capacity of the soil to hold a certain volume
         of water
-    pet : potential evapotranspiration
+    pet : Potential evapotranspiration
 
     Returns
     -------
@@ -963,13 +963,13 @@ def defoliation(
 #     )
 
 
-def getSumTemperature(weather, doy, t0):
+def getSumTemperature(timeseries, doy, t0):
     """
     Return the sum temperature corresponding to the DOY
 
     Parameters
     ----------
-    weather : Weather array
+    timeseries : Input timeseries data
     doy : Day of the year [1-366]
     t0 : Minimum temperature for growth [°C]
 
@@ -979,8 +979,8 @@ def getSumTemperature(weather, doy, t0):
     """
     sumTemperature = 0
     for i in range(1, doy + 1):
-        if weather["Temperature"][i] > t0:
-            sumTemperature += weather["Temperature"][i] - t0
+        if timeseries["T"][i] > t0:
+            sumTemperature += timeseries["T"][i] - t0
     return sumTemperature
 
 

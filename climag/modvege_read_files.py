@@ -14,7 +14,7 @@ import pandas as pd
 
 
 def read_params(filename):
-    """Read the input parameters CSV file
+    """Read the input parameters (constants) file
 
     See Tables 2 and 3 in Jouven et al. (2006) for estimates of these
     parameters. Temperate grasses have been classified into four groups based
@@ -28,8 +28,8 @@ def read_params(filename):
 
     The nutritional index (NI) is site-specific.
 
-    Definition of input parameters
-    ------------------------------
+    Definition of inputs
+    --------------------
     - SLA         : Specific leaf area (SLA) [0.033 m² g⁻¹]
     - pctLAM      : Percentage of laminae in the green vegetative compartment
                     (%LAM) [0.68]
@@ -79,6 +79,7 @@ def read_params(filename):
     - cutHeight   : Grass cut height [m]
     - startdoy    : Start day of the year
     - enddoy      : End day of the year
+    - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 
     - INcell      : Initial nutritional index of cell - NNI
     - WHC         : Soil water-holding capacity (WHC) [mm]
@@ -96,7 +97,6 @@ def read_params(filename):
     - init_AGE_GR : Initial GR age [°C d]
     - init_AGE_DV : Initial DV age [°C d]
     - init_AGE_DR : Initial DR age [°C d]
-    - RUEmax      : Maximum radiation use efficiency (RUE_max) [g MJ⁻¹]
 
     Parameters
     ----------
@@ -112,13 +112,13 @@ def read_params(filename):
     return params
 
 
-def read_weather(filename):
-    """Read the weather data CSV file
+def read_timeseries(filename):
+    """Read the timeseries input data
 
-    Definition of input parameters
-    ------------------------------
+    Definition of inputs
+    --------------------
     - DOY         : Day of the year
-    - Temperature : Temperature (T) [°C]
+    - T           : Temperature (*T*) [°C]
     - PARi        : Incident photosynthetically active radiation
         (PAR_i) [MJ m⁻²]
     - PP          : Precipitation (PP) [mm]
@@ -126,23 +126,23 @@ def read_weather(filename):
     - ETA         : Actual evapotranspiration (AET); from remote sensing
         [mm/day] (if available)
     - LAI         : Leaf area index (LAI); from remote sensing (if available)
-    - gcut        : Grass cut event cutHeight [m]
+    - gcut        : Grass cut event cutHeight [m] (if cut, the default is 0.05)
     - grazing     : Grazing animal count
     - grazingw    : Grazing average animal weight [kg]
 
     Parameters
     ----------
-    filename : Path to the input weather data file
+    filename : Path to the input timeseries data file
 
     Returns
     -------
-    - A dictionary of the input weather data
+    - A dictionary of the input timeseries data
     """
-    # weather = np.genfromtxt(
+    # timeseries = np.genfromtxt(
     #     filename, delimiter=",", skip_header=0, names=True
     # )
-    weather = pd.read_csv(filename, index_col=0).squeeze().to_dict()
-    return weather
+    timeseries = pd.read_csv(filename, index_col=0).squeeze().to_dict()
+    return timeseries
 
 
 # def read_out(filename):
