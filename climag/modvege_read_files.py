@@ -75,6 +75,10 @@ def read_params(filename):
                     compartment (OMD_DV) [0.45]
     - meanOMDdr   : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
+    - cellSurface : Pixel area [ha]
+    - cutHeight   : Grass cut height [m]
+    - startdoy    : Start day of the year
+    - enddoy      : End day of the year
 
     - INcell      : Initial nutritional index of cell - NNI
     - WHC         : Soil water-holding capacity (WHC) [mm]
@@ -93,7 +97,6 @@ def read_params(filename):
     - init_AGE_DV : Initial DV age [°C d]
     - init_AGE_DR : Initial DR age [°C d]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [g MJ⁻¹]
-    - cellSurface : Pixel area [ha]
 
     Parameters
     ----------

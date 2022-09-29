@@ -14,9 +14,7 @@ from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_weather
 
 
-def run_modvege(
-    input_params_csv, input_weather_csv, out_csv, startdoy=1, enddoy=365
-):
+def run_modvege(input_params_csv, input_weather_csv, out_csv):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
@@ -26,8 +24,6 @@ def run_modvege(
     input_params_csv : File path for the input parameters CSV
     input_weather_csv : File path for the input weather CSV
     out_csv : File path for the output CSV
-    startdoy : Start day of the year (default 1)
-    enddoy : End day of the year (default 365)
     """
 
     # read parameter files into array
@@ -48,7 +44,7 @@ def run_modvege(
     weather = read_weather(input_weather_csv)
 
     # initialise the run and return arrays
-    mod_out = modvege(params, weather, startdoy, enddoy)
+    mod_out = modvege(params, weather)
 
     # convert output to dataframe and save as CSV
     data = tuple([list(range(1, len(mod_out[0]) + 1))]) + mod_out

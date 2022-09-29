@@ -105,7 +105,7 @@ import numpy as np
 import climag.modvege_lib as lm
 
 
-def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
+def modvege(params, weather):
     """**ModVege** model as a function
 
     ! This model cannot regenerate reproductive growth after a cut !
@@ -119,9 +119,6 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     ----------
     params : parameters of this run
     weather : weather data (and grass cut and grazing)
-    startdoy : day of year when the simulation starts
-    enddoy : day of year when simulation stops
-    default_cut_height : defined as 0.05
 
     Returns
     -------
@@ -300,7 +297,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     atr = []
 
     # daily loop
-    for i in range(startdoy, enddoy, 1):
+    for i in range(int(params["startdoy"]), int(params["enddoy"]), 1):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
@@ -509,7 +506,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         )
         # If we do not cut the grass, ensure default estimation is created
         if not isCut:
-            cutHeight = default_cut_height
+            cutHeight = params["cutHeight"]
         # Compute available biomass for cut (output comparison requirement)
         avBiom4cut = lm.getAvailableBiomassForCut(
             gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
