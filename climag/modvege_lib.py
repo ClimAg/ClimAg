@@ -909,12 +909,12 @@ def defoliation(
 
 #     Parameters
 #     ----------
-#     gv_biomass : biomass of green vegetative
+#     gv_biomass : Biomass of green vegetative
 #     gv_gamma : ?
 
 #     Returns
 #     -------
-#     - mass of green limbs
+#     - Mass of green limbs
 #     """
 #     return gv_gamma * gv_biomass
 
@@ -950,12 +950,12 @@ def defoliation(
 #     gr_min_omd : The minimum green reproductive organic matter digestibility
 #     gr_max_omd : The maximum green reproductive organic matter digestibility
 #     gr_avg_age : The average age of the green reproductive
-#     st1 : sum of temperature to begin vegetative activity
-#     st2 : sum of temperature to end vegetative activity
+#     st1 : Sum of temperature to begin vegetative activity
+#     st2 : Sum of temperature to end vegetative activity
 
 #     Returns
 #     -------
-#     - the green vegetative organic matter digestibility
+#     - Green vegetative organic matter digestibility
 #     """
 #     return max(
 #         gr_min_omd,
@@ -978,9 +978,9 @@ def getSumTemperature(weather, doy, t0):
     - Sum of temperatures above t0 corresponding to the DOY
     """
     sumTemperature = 0
-    for i in range(doy):
-        if weather[i][1] > t0:
-            sumTemperature += weather[i][1] - t0
+    for i in range(1, doy + 1):
+        if weather["Temperature"][i] > t0:
+            sumTemperature += weather["Temperature"][i] - t0
     return sumTemperature
 
 

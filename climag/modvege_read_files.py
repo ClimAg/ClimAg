@@ -9,7 +9,7 @@ Dead vegetative       (DV)
 Dead reproductive     (DR)
 """
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 
 
@@ -83,15 +83,15 @@ def read_params(filename):
     - INcell      : Initial nutritional index of cell - NNI
     - WHC         : Soil water-holding capacity (WHC) [mm]
     - WR          : Water reserve (WR) [mm]
-    - W_GV        : Initial biomass of GV [kg ha⁻¹]
     - alpha_PAR   : Light extinction coefficient
     - beta_T      : Decrease in LUE after T2
     - b_IN        : Impact of IN on LUE at IN=0
-    - W_GR        : Biomass of GR [kg ha⁻¹]
     - a_IN        : Value of ALLOC at IN=0
     - max_fIN     : Max of fNI
-    - W_DV        : Biomass of DV [kg ha⁻¹]
-    - W_DR        : Biomass of DR [kg DM ha⁻¹]
+    - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
+    - W_GR        : Initial biomass of GR [kg DM ha⁻¹]
+    - W_DV        : Initial biomass of DV [kg DM ha⁻¹]
+    - W_DR        : Initial biomass of DR [kg DM ha⁻¹]
     - init_AGE_GV : Initial GV age [°C d]
     - init_AGE_GR : Initial GR age [°C d]
     - init_AGE_DV : Initial DV age [°C d]
@@ -124,8 +124,8 @@ def read_weather(filename):
     - PP          : Precipitation (PP) [mm]
     - PET         : Potential evapotranspiration (PET) [mm/day]
     - ETA         : Actual evapotranspiration (AET); from remote sensing
-        [mm/day]
-    - LAI         : Leaf area index (LAI); from remote sensing
+        [mm/day] (if available)
+    - LAI         : Leaf area index (LAI); from remote sensing (if available)
     - gcut        : Grass cut event cutHeight [m]
     - grazing     : Grazing animal count
     - grazingw    : Grazing average animal weight [kg]
@@ -136,29 +136,32 @@ def read_weather(filename):
 
     Returns
     -------
-    - An array of the input weather data
+    - A dictionary of the input weather data
     """
-    arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
-    return arr
+    # weather = np.genfromtxt(
+    #     filename, delimiter=",", skip_header=0, names=True
+    # )
+    weather = pd.read_csv(filename, index_col=0).squeeze().to_dict()
+    return weather
 
 
-def read_out(filename):
-    """Read the "out_cut.csv" file
+# def read_out(filename):
+#     """Read the "out_cut.csv" file
 
-    This is used only for development, to remove for operational mode
+#     This is used only for development, to remove for operational mode
 
-    Definition of columns
-    ---------------------
-    - Day
-    - Mean biomass                      [kg DM ha⁻¹]
-    - Mean green vegetative biomass     [kg DM ha⁻¹]
-    - Mean green reproductive biomass   [kg DM ha⁻¹]
-    - Mean dead vegetative biomass      [kg DM ha⁻¹]
-    - Mean dead reproductive biomass    [kg DM ha⁻¹]
-    - Harvested biomass                 [kg DM ha⁻¹]
-    - Ingested biomass                  [kg DM ha⁻¹]
-    - Mean GRO biomass                  [kg DM ha⁻¹]
-    - Mean available biomass for cut    [kg DM ha⁻¹]
-    """
-    arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
-    return arr
+#     Definition of columns
+#     ---------------------
+#     - Day
+#     - Mean biomass                      [kg DM ha⁻¹]
+#     - Mean green vegetative biomass     [kg DM ha⁻¹]
+#     - Mean green reproductive biomass   [kg DM ha⁻¹]
+#     - Mean dead vegetative biomass      [kg DM ha⁻¹]
+#     - Mean dead reproductive biomass    [kg DM ha⁻¹]
+#     - Harvested biomass                 [kg DM ha⁻¹]
+#     - Ingested biomass                  [kg DM ha⁻¹]
+#     - Mean GRO biomass                  [kg DM ha⁻¹]
+#     - Mean available biomass for cut    [kg DM ha⁻¹]
+#     """
+#     arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
+#     return arr

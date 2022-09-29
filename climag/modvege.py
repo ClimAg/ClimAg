@@ -134,42 +134,16 @@ def modvege(params, weather):
     #######################################################
     # Load input parameters into variables
     #######################################################
-    # Onset of reproductive growth (degree day)
-    # st1 = params["ST1"]
-    # End of reproductive growth (degree day)
-    # st2 = params["ST2"]
     # Initial nutritional index of cell
     # ni = params["NI"]
-    # Soil water-holding capacity (mm)
-    # waterHoldingCapacity = params["WHC"]
-    # Soil water reserve (mm)
-    # waterReserve = params["WR"]
-    # Growth increase in winter
-    # minsea = params["minSEA"]
-    # Growth increase in summer
-    # maxsea = params["maxSEA"]
-    # Biomass of GV (kg DM ha-1)
-    # wgv = params["W_GV"]
     # Light Use Interception
     # alphapar = params["alpha_PAR"]
-    # Temperature threshold: photosynthesis activation (degC)
-    # t0 = params["T0"]
-    # Temp threshold: stable growth (degC)
-    # t1 = params["T1"]
-    # Temp threshold: growth decline (degC)
-    # t2 = params["T2"]
     # beta_T
     # betaT = params["beta_T"]
     # b_IN
     # b_IN = params["b_IN"]
-    # Specific leaf area (m2 g-1)
-    # sla = params["SLA"]
-    # Leaf lifespan (degree day)
-    # lls = params["LLS"]
     # Volume GV (g m-3)
     # rhogv = params["rho_GV"]
-    # % leaf of laminae in GV
-    # pctlam = params["pctLAM"]
     # Biomass of GR (kg ha-1)
     # wgr = params["W_GR"]
     # Value of ALLOC at NI=0
@@ -180,48 +154,14 @@ def modvege(params, weather):
     # rhogr = params["rho_GR"]
     # Biomass of DV (kg ha-1)
     # wdv = params["W_DV"]
-    # Senescence coefficient GV
-    # kgv = params["K_GV"]
-    # Abscission coefficient DV
-    # kldv = params["Kl_DV"]
     # Volume DV (g m-3)
     # rhodv = params["rho_DV"]
     # Biomass of DR (kg ha-1)
     # wdr = params["W_DR"]
-    # Senescence coefficient GR
-    # kgr = params["K_GR"]
-    # Abscission coefficient DR
-    # kldr = params["Kl_DR"]
     # Volume DR (g m-3)
     # rhodr = params["rho_DR"]
-    # Initial value of age of compartment GV
-    # gv_init_age = params["init_AGE_GV"]
-    # Initial value of age of compartment GR
-    # gr_init_age = params["init_AGE_GR"]
-    # Initial value of age of compartment DV
-    # dv_init_age = params["init_AGE_DV"]
-    # Initial value of age of compartment DR
-    # dr_init_age = params["init_AGE_DR"]
     # Max of R.U.E.
     # ruemax = params["RUEmax"]
-    # rates of biomass loss with respiration for GV
-    # sigma_gv = params["sigmaGV"]
-    # rates of biomass loss with respiration for GR
-    # sigma_gr = params["sigmaGR"]
-    # maximum OMD green veg
-    # maxOMDgv = params["maxOMDgv"]
-    # minimum OMD green veg
-    # minOMDgv = params["minOMDgv"]
-    # maximum OMD green rep
-    # maxOMDgr = params["maxOMDgr"]
-    # minimum OMD green rep
-    # minOMDgr = params["minOMDgr"]
-    # mean OMD dead veg
-    # meanOMDdv = params["meanOMDdv"]
-    # mean OMD dead rep
-    # meanOMDdr = params["meanOMDdr"]
-    # Pixel area [Ha]
-    # cellSurface = params["cellSurface"]
 
     # Pixel area [m2]
     # cellSurfaceMeter = 10000 * params["cellSurface"]
@@ -297,36 +237,39 @@ def modvege(params, weather):
     atr = []
 
     # daily loop
-    for i in range(int(params["startdoy"]), int(params["enddoy"]), 1):
+    for i in range(int(params["startdoy"]), int(params["enddoy"]) + 1):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
         # arr[0][0] = DOY[0] = 1
         # arr[0][1] = Temperature[0] = -0.84125
-        temperature = weather[i - 1][1]
-        # mean Ten Days Temperature
+        temperature = weather["Temperature"][i]
+        # mean ten days temperature
         if i < 10:
-            listA = [weather[i - j][1] for j in range(1, 10, 1)]
+            # listA = [weather["Temperature"][i - j] for j in range(1, 10)]
+            meanTenDaysT = temperature  # ** USING THE TEMP, NOT 10-d AVG!
         else:
-            listA = [weather[i - j][1] for j in range(10, 1, -1)]
-        meanTenDaysT = np.mean(listA)
+            # listA = [weather["Temperature"][i - j] for j in range(10, 1, -1)]
+            meanTenDaysT = np.mean([
+                weather["Temperature"][i - j] for j in range(10 - 1, 0 - 1, -1)
+            ])
 
         # arr[0][2] = PARi[0] = 2.22092475
-        pari = weather[i - 1][2]
+        pari = weather["PARi"][i]
         # arr[0][3] = PP[0] = 0.119
-        pmm = weather[i - 1][3]
+        pmm = weather["PP"][i]
         # arr[0][4] = PET[0] = 0.602689848
-        pet = weather[i - 1][4]
+        pet = weather["PET"][i]
         # arr[0][5] = ETA[0] = 0.4 [RS data, optional]
-        eta = weather[i - 1][5]
+        eta = weather["eta"][i]
         # arr[0][6] = LAI[0] = 0.02 [RS data, optional]
-        lai = weather[i - 1][6]
+        lai = weather["lai"][i]
         # arr[0][7] = gcut_height[0] = 0.0 [default is 0.05 if cut]
-        cutHeight = weather[i - 1][7]
+        cutHeight = weather["gcut_height"][i]
         # arr[0][8] = grazing_animal_count[0] = 0 [default is 1 for test]
-        grazing_animal_count = weather[i - 1][8]
+        grazing_animal_count = weather["grazing_animal_count"][i]
         # arr[0][9] = grazing_avg_animal_weight[0] = 0 [default is 400 for cow]
-        grazing_avg_animal_weight = weather[i - 1][9]
+        grazing_avg_animal_weight = weather["grazing_avg_animal_weight"][1]
         #######################################################
         # Prepare additional variables
         #######################################################
@@ -346,7 +289,7 @@ def modvege(params, weather):
             )
         )
 
-        # Grass cut flag modification if weather file has grass cut for that
+        # grass cut flag modification if weather file has grass cut for that
         # day
         isHarvested = bool(cutHeight != 0.0)
         # grazing flag modification if weather file has BOTH animal related
@@ -367,28 +310,26 @@ def modvege(params, weather):
         #####################################################################
         # The model starts here really
         #####################################################################
-        # If ETA from remote sensing not available, then compute it
+        # if ETA from remote sensing not available, then compute it
         if int(eta) == 0:
-            # If LAI from remote sensing not available, then compute it
+            # if LAI from remote sensing not available, then compute it
             if int(lai) == 0:
                 lai = lm.fclai(params["pctLAM"], params["SLA"], gv_biomass)
             eta = lm.aet(
                 pet, params["pctLAM"], params["SLA"], gv_biomass, params["WR"],
                 params["WHC"], lai
             )
-        # Compute WR
-        params["WR"] = min(
-            max(0, params["WR"] + pmm - eta), params["WHC"]
-        )
+        # compute WR
+        params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
 
-        # Compute CUT
+        # compute CUT
         # harvestedBiomassPart = 0
         ingestedBiomassPart = 0
-        # Are we in vegetative growth period?
+        # are we in vegetative growth period?
         if params["ST2"] > sumT > params["ST1"]:
-            # Look for flags to indicate mechanical cut
+            # look for flags to indicate mechanical cut
             if isHarvested:
-                # Change status flag
+                # change status flag
                 isCut = True
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
@@ -402,7 +343,7 @@ def modvege(params, weather):
                     isHarvested
                 )
 
-            # Look for flags to indicate livestock ingestion
+            # look for flags to indicate livestock ingestion
             if isGrazed:
                 # change status flag
                 isCut = True
@@ -538,6 +479,6 @@ def modvege(params, weather):
         dra.append(dr_avg_age)
 
     return (
-        gvb, dvb, grb, drb, hb, ib, g, abc, stp, gva,
-        gra, dva, dra, sea, ftm, env, pgr, atr
+        gvb, dvb, grb, drb, hb, ib, g, abc, stp, gva, gra, dva, dra, sea, ftm,
+        env, pgr, atr
     )
