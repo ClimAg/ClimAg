@@ -138,79 +138,79 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     # Load input parameters into variables
     #######################################################
     # Onset of reproductive growth (degree day)
-    st1 = params["ST1"]
+    # st1 = params["ST1"]
     # End of reproductive growth (degree day)
-    st2 = params["ST2"]
+    # st2 = params["ST2"]
     # Initial nutritional index of cell
-    ni = params["NI"]
+    # ni = params["NI"]
     # Soil water-holding capacity (mm)
-    waterHoldingCapacity = params["WHC"]
+    # waterHoldingCapacity = params["WHC"]
     # Soil water reserve (mm)
-    waterReserve = params["WR"]
+    # waterReserve = params["WR"]
     # Growth increase in winter
-    minsea = params["minSEA"]
+    # minsea = params["minSEA"]
     # Growth increase in summer
-    maxsea = params["maxSEA"]
-    # Biomass of GV (kg ha-1)
-    wgv = params["W_GV"]
+    # maxsea = params["maxSEA"]
+    # Biomass of GV (kg DM ha-1)
+    # wgv = params["W_GV"]
     # Light Use Interception
-    alphapar = params["alpha_PAR"]
+    # alphapar = params["alpha_PAR"]
     # Temperature threshold: photosynthesis activation (degC)
-    t0 = params["T0"]
+    # t0 = params["T0"]
     # Temp threshold: stable growth (degC)
-    t1 = params["T1"]
+    # t1 = params["T1"]
     # Temp threshold: growth decline (degC)
-    t2 = params["T2"]
+    # t2 = params["T2"]
     # beta_T
     # betaT = params["beta_T"]
     # b_IN
     # b_IN = params["b_IN"]
     # Specific leaf area (m2 g-1)
-    sla = params["SLA"]
+    # sla = params["SLA"]
     # Leaf lifespan (degree day)
-    lls = params["LLS"]
+    # lls = params["LLS"]
     # Volume GV (g m-3)
-    rhogv = params["rho_GV"]
+    # rhogv = params["rho_GV"]
     # % leaf of laminae in GV
-    pctlam = params["pctLAM"]
+    # pctlam = params["pctLAM"]
     # Biomass of GR (kg ha-1)
-    wgr = params["W_GR"]
+    # wgr = params["W_GR"]
     # Value of ALLOC at NI=0
     # allocNI = params["a_IN"]
     # max of fNI
     # maxFNI = params["max_fIN"]
     # Volume GR (g m-3)
-    rhogr = params["rho_GR"]
+    # rhogr = params["rho_GR"]
     # Biomass of DV (kg ha-1)
-    wdv = params["W_DV"]
+    # wdv = params["W_DV"]
     # Senescence coefficient GV
-    kgv = params["K_GV"]
+    # kgv = params["K_GV"]
     # Abscission coefficient DV
-    kldv = params["Kl_DV"]
+    # kldv = params["Kl_DV"]
     # Volume DV (g m-3)
-    rhodv = params["rho_DV"]
+    # rhodv = params["rho_DV"]
     # Biomass of DR (kg ha-1)
-    wdr = params["W_DR"]
+    # wdr = params["W_DR"]
     # Senescence coefficient GR
-    kgr = params["K_GR"]
+    # kgr = params["K_GR"]
     # Abscission coefficient DR
-    kldr = params["Kl_DR"]
+    # kldr = params["Kl_DR"]
     # Volume DR (g m-3)
-    rhodr = params["rho_DR"]
+    # rhodr = params["rho_DR"]
     # Initial value of age of compartment GV
-    gv_init_age = params["init_AGE_GV"]
+    # gv_init_age = params["init_AGE_GV"]
     # Initial value of age of compartment GR
-    gr_init_age = params["init_AGE_GR"]
+    # gr_init_age = params["init_AGE_GR"]
     # Initial value of age of compartment DV
-    dv_init_age = params["init_AGE_DV"]
+    # dv_init_age = params["init_AGE_DV"]
     # Initial value of age of compartment DR
-    dr_init_age = params["init_AGE_DR"]
+    # dr_init_age = params["init_AGE_DR"]
     # Max of R.U.E.
-    ruemax = params["RUEmax"]
+    # ruemax = params["RUEmax"]
     # rates of biomass loss with respiration for GV
-    sigma_gv = params["sigmaGV"]
+    # sigma_gv = params["sigmaGV"]
     # rates of biomass loss with respiration for GR
-    sigma_gr = params["sigmaGR"]
+    # sigma_gr = params["sigmaGR"]
     # maximum OMD green veg
     # maxOMDgv = params["maxOMDgv"]
     # minimum OMD green veg
@@ -224,10 +224,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     # mean OMD dead rep
     # meanOMDdr = params["meanOMDdr"]
     # Pixel area [Ha]
-    cellSurface = params["cellSurface"]
+    # cellSurface = params["cellSurface"]
 
     # Pixel area [m2]
-    # cellSurfaceMeter = 10000 * cellSurface
+    # cellSurfaceMeter = 10000 * params["cellSurface"]
 
     # distance minimum between center of the cell and border of the cell
     # r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter) / 6
@@ -247,10 +247,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     # Harvested biomass
     ingestedBiomass = 0
     # biomass for compartments
-    gv_biomass = wgv
-    gr_biomass = wgr
-    dv_biomass = wdv
-    dr_biomass = wdr
+    gv_biomass = params["W_GV"]
+    gr_biomass = params["W_GR"]
+    dv_biomass = params["W_DV"]
+    dr_biomass = params["W_DR"]
     # an==gro: biomass growth
     # an = 0.0
     # allocate to reproductive
@@ -259,10 +259,10 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
     gv_senescent_biomass = 0.0
     gr_senescent_biomass = 0.0
     # average age of grass
-    gv_avg_age = gv_init_age
-    dv_avg_age = dv_init_age
-    gr_avg_age = gr_init_age
-    dr_avg_age = dr_init_age
+    gv_avg_age = params["init_AGE_GV"]
+    dv_avg_age = params["init_AGE_DV"]
+    gr_avg_age = params["init_AGE_GR"]
+    dr_avg_age = params["init_AGE_DR"]
 
     # outputs
     # GV biomass
@@ -333,12 +333,21 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         #######################################################
         # Prepare additional variables
         #######################################################
-        # mk sumTemperature Uses t0=0 and not t0
+        # mk sumTemperature Uses T0=0 and not T0
         sumT = lm.getSumTemperature(weather, i, 0.55)
         # fSEA array for graphs
-        sea.append(lm.fsea(maxsea, minsea, sumT, st2, st1))
+        sea.append(
+            lm.fsea(
+                params["maxSEA"], params["minSEA"], sumT, params["ST2"],
+                params["ST1"]
+            )
+        )
         # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
-        ftm.append(lm.fTemperature(meanTenDaysT, t0, t1, t2))
+        ftm.append(
+            lm.fTemperature(
+                meanTenDaysT, params["T0"], params["T1"], params["T2"]
+            )
+        )
 
         # Grass cut flag modification if weather file has grass cut for that
         # day
@@ -356,7 +365,7 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         correctiveFactorForAn = 1
         # If the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
         # (Belanger et al. 1994)
-        ni = max(ni, 0.35)
+        params["NI"] = max(params["NI"], 0.35)
 
         #####################################################################
         # The model starts here really
@@ -365,21 +374,21 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         if int(eta) == 0:
             # If LAI from remote sensing not available, then compute it
             if int(lai) == 0:
-                lai = lm.fclai(pctlam, sla, gv_biomass)
+                lai = lm.fclai(params["pctLAM"], params["SLA"], gv_biomass)
             eta = lm.aet(
-                pet, pctlam, sla, gv_biomass, waterReserve,
-                waterHoldingCapacity, lai
+                pet, params["pctLAM"], params["SLA"], gv_biomass, params["WR"],
+                params["WHC"], lai
             )
         # Compute WR
-        waterReserve = min(
-            max(0, waterReserve + pmm - eta), waterHoldingCapacity
+        params["WR"] = min(
+            max(0, params["WR"] + pmm - eta), params["WHC"]
         )
 
         # Compute CUT
         # harvestedBiomassPart = 0
         ingestedBiomassPart = 0
         # Are we in vegetative growth period?
-        if st2 > sumT > st1:
+        if params["ST2"] > sumT > params["ST1"]:
             # Look for flags to indicate mechanical cut
             if isHarvested:
                 # Change status flag
@@ -390,8 +399,9 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
                     isHarvested, harvestedBiomassPart,
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass
                 ) = lm.cut(
-                    cutHeight, rhogv, rhodv, rhogr, rhodr, gv_biomass,
-                    dv_biomass, gr_biomass, dr_biomass, cellSurface,
+                    cutHeight, params["rho_GV"], params["rho_DV"],
+                    params["rho_GR"], params["rho_DR"], gv_biomass,
+                    dv_biomass, gr_biomass, dr_biomass, params["cellSurface"],
                     isHarvested
                 )
 
@@ -403,10 +413,11 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
                 # of this henceforth wicked rabbit!"
                 ingestedBiomassPart = lm.defoliation(
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-                    rhogv, rhodv, rhogr, rhodr
+                    params["rho_GV"], params["rho_DV"], params["rho_GR"],
+                    params["rho_DR"]
                 )  # ** MODIFIED -- NEED TO CHECK!
             # allocation to reproductive
-            a2r = lm.rep(ni)
+            a2r = lm.rep(params["NI"])
             # TO-DO: When to change NI, and by how much?
             # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
@@ -433,54 +444,77 @@ def modvege(params, weather, startdoy, enddoy, default_cut_height=0.05):
         # compute biomass growth
         env.append(
             lm.mk_env(
-                meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
-                pet, waterReserve, waterHoldingCapacity
+                meanTenDaysT, params["T0"], params["T1"], params["T2"],
+                params["NI"], pari, params["alpha_PAR"], pet, params["WR"],
+                params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
         )
-        pgr.append(lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai))
+        pgr.append(
+            lm.pgro(
+                pari, params["RUEmax"], params["pctLAM"], params["SLA"],
+                gv_biomass, lai
+            )
+        )
         gro = (
             lm.mk_env(
-                meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
-                pet, waterReserve, waterHoldingCapacity
+                meanTenDaysT, params["T0"], params["T1"], params["T2"],
+                params["NI"], pari, params["alpha_PAR"], pet, params["WR"],
+                params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
-            * lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
-            * lm.fsea(maxsea, minsea, sumT, st2, st1)
+            * lm.pgro(
+                pari, params["RUEmax"], params["pctLAM"], params["SLA"],
+                gv_biomass, lai
+            )
+            * lm.fsea(
+                params["maxSEA"], params["minSEA"], sumT, params["ST2"],
+                params["ST1"]
+            )
             * correctiveFactorForAn
         )
         # egro = lm.mk_env(
-        #     meanTenDaysT, t0, t1, t2, sumT, ni, pari, alphapar, pet,
-        #     waterReserve, waterHoldingCapacity
+        #     meanTenDaysT, params["T0"], params["T1"], params["T2"], sumT,
+        #     params["NI"], pari, params["alpha_PAR"], pet, params["WR"],
+        #     params["WHC"]
         # )
-        # ggro = lm.pgro(pari, ruemax, pctlam, sla, gv_biomass, lai)
-        # sgro = lm.fsea(maxsea, minsea, sumT, st2, st1)
+        # ggro = lm.pgro(
+        #     pari, params["RUEmax"], params["pctLAM"], params["SLA"],
+        #     gv_biomass, lai
+        # )
+        # sgro = lm.fsea(
+        #     params["maxSEA"], params["minSEA"], sumT, params["ST2"],
+        #     params["ST1"]
+        # )
         # cgro = correctiveFactorForAn
         # gro = egro * ggro * sgro * cgro
 
         # Update the state of the vegetative parts
-        # Used t0 = 0 instead of t0 to match output data!
+        # Used T0 = 0 instead of T0 to match output data!
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
-            gro, a2r, lls, temperature, kgv, 0, gv_biomass, gv_avg_age
+            gro, a2r, params["LLS"], temperature, params["K_GV"], 0,
+            gv_biomass, gv_avg_age
         )
         dv_biomass, dv_avg_age = lm.dv_update(
-            sigma_gv, gv_senescent_biomass, lls, kldv,
-            temperature, dv_biomass, dv_avg_age
+            params["sigmaGV"], gv_senescent_biomass, params["LLS"],
+            params["Kl_DV"], temperature, dv_biomass, dv_avg_age
         )
         # Start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
-            temperature, a2r, gro, st1, st2, kgr,
-            t0, gr_biomass, gr_avg_age
+            temperature, a2r, gro, params["ST1"], params["ST2"],
+            params["K_GR"], params["T0"], gr_biomass, gr_avg_age
         )  # ** UNUSED ARGUMENTS REMOVED!
         dr_biomass, dr_avg_age = lm.dr_update(
-            sigma_gr, gr_senescent_biomass, st1, st2,
-            temperature, kldr, dr_biomass, dr_avg_age
+            params["sigmaGR"], gr_senescent_biomass, params["ST1"],
+            params["ST2"], temperature, params["Kl_DR"], dr_biomass,
+            dr_avg_age
         )
         # If we do not cut the grass, ensure default estimation is created
         if not isCut:
             cutHeight = default_cut_height
         # Compute available biomass for cut (output comparison requirement)
         avBiom4cut = lm.getAvailableBiomassForCut(
-            gv_biomass, dv_biomass, gr_biomass, dr_biomass,
-            cutHeight, rhogv, rhodv, rhogr, rhodr
+            gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
+            params["rho_GV"], params["rho_DV"], params["rho_GR"],
+            params["rho_DR"]
         )
 
         #####################################################################
