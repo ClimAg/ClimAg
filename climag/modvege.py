@@ -1,6 +1,6 @@
 """modvege.py
 
-This is the Python implementation of the ModVege pasture model, a modified
+This is a Python implementation of the ModVege pasture model, a modified
 version of the original Java to Python translation by Chemin (2022).
 The Java model was provided by Raphael Martin, INRAE UREP Clermont-Ferrand
 for the original Python implementation.
@@ -37,14 +37,12 @@ Compartment description:
 - Age of biomass (AGE) [°C d] (degree day - units of thermal time)
 - Organic matter digestibility (OMD)
 
-List of variables
------------------
+List of timeseries variables
+----------------------------
 - Mean daily temperature (*T*) [°C]
-- Sum of temperatures (ST) [°C d]
-- Seasonal effect (SEA)
-- Specific leaf area (SLA)
-- Percentage of laminae in the green vegetative compartment (%LAM)
-- Leaf lifespan (LLS) [°C d]
+- Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+- Precipitation (PP) [mm]
+- Potential evapotranspiration (PET) [mm]
 
 Notes
 -----
@@ -101,6 +99,7 @@ short leaf lifespan, and early reproductive growth and flowering).
   [0.45]
 - Organic matter digestibility for the dead reproductive compartment (OMD_DR)
   [0.40]
+- Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
 import numpy as np

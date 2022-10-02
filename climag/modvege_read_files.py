@@ -120,11 +120,11 @@ def read_timeseries(filename):
     - DOY         : Day of the year
     - T           : Temperature (*T*) [°C]
     - PARi        : Incident photosynthetically active radiation
-        (PAR_i) [MJ m⁻²]
+                    (PAR_i) [MJ m⁻²]
     - PP          : Precipitation (PP) [mm]
-    - PET         : Potential evapotranspiration (PET) [mm/day]
-    - ETA         : Actual evapotranspiration (AET); from remote sensing
-        [mm/day] (if available)
+    - PET         : Potential evapotranspiration (PET) [mm]
+    - ETA         : Actual evapotranspiration (AET); from remote sensing [mm]
+                    (if available)
     - LAI         : Leaf area index (LAI); from remote sensing (if available)
     - gcut        : Grass cut event cutHeight [m] (if cut, the default is 0.05)
     - grazing     : Grazing animal count

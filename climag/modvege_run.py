@@ -21,26 +21,26 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
     Definition of columns in the output
     -----------------------------------
-    - day                                                doy
-    - Mean green vegetative biomass      [kg DM ha⁻¹]    gv_b
-    - Mean green reproductive biomass    [kg DM ha⁻¹]    gr_b
-    - Mean dead vegetative biomass       [kg DM ha⁻¹]    dv_b
-    - Mean dead reproductive biomass     [kg DM ha⁻¹]    dr_b
-    - Harvested biomass                  [kg DM ha⁻¹]    h_b
-    - Ingested biomass                   [kg DM ha⁻¹]    i_b
-    - Mean GRO biomass                   [kg DM ha⁻¹]    gro
-    - Mean available biomass for cut     [kg DM ha⁻¹]    abc
+    - day                                                   doy
+    - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
+    - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
+    - Mean dead vegetative biomass          [kg DM ha⁻¹]    dv_b
+    - Mean dead reproductive biomass        [kg DM ha⁻¹]    dr_b
+    - Harvested biomass                     [kg DM ha⁻¹]    h_b
+    - Ingested biomass                      [kg DM ha⁻¹]    i_b
+    - Mean GRO biomass                      [kg DM ha⁻¹]    gro
+    - Mean available biomass for cut        [kg DM ha⁻¹]    abc
       (gv_b + gr_b + dv_b + dr_b)
-    - Sum of temperatures                [°C d]          sumT
-    - GV biomass age                     [°C d]          gva
-    - GR biomass age                     [°C d]          gra
-    - DV biomass age                     [°C d]          dva
-    - DR biomass age                     [°C d]          dra
-    - Seasonal effect                                    sea
-    - Temperature function*                              ftm
-    - Environmental limitation of growth                 env
-    - Potential growth                   [kg DM ha⁻¹]    pgr
-    - Reproductive function*                             atr
+    - Sum of temperatures                   [°C d]          sumT
+    - GV biomass age                        [°C d]          gva
+    - GR biomass age                        [°C d]          gra
+    - DV biomass age                        [°C d]          dva
+    - DR biomass age                        [°C d]          dra
+    - Seasonal effect                                       sea
+    - Temperature function*                                 ftm
+    - Environmental limitation of growth                    env
+    - Potential growth                      [kg DM ha⁻¹]    pgr
+    - Reproductive function*                                atr
 
     Parameters
     ----------

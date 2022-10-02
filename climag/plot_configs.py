@@ -46,6 +46,40 @@ def rotated_pole_point(data, lon, lat):
     return rp_cds[0], rp_cds[1]
 
 
+def rotated_pole_transform(data):
+    """
+    Rotated pole transform for plotting CORDEX data.
+
+    Parameters
+    ----------
+    data : input CORDEX data
+
+    Returns
+    -------
+    - rotated pole transform
+    """
+    if data.rio.crs is None:
+        pole_longitude = (
+            data["rotated_pole"].attrs["grid_north_pole_longitude"]
+        )
+        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
+    else:
+        pole_longitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][1]["value"]
+        )
+        pole_latitude = (
+            data.rio.crs.to_dict(
+                projjson=True
+            )["conversion"]["parameters"][0]["value"]
+        )
+    transform = ccrs.RotatedPole(
+        pole_longitude=pole_longitude, pole_latitude=pole_latitude
+    )
+    return transform
+
+
 def cordex_plot_title(data, lon=None, lat=None):
     """
     Define the map plot title for CORDEX data.
@@ -84,9 +118,10 @@ def cordex_plot_title(data, lon=None, lat=None):
     return plot_title
 
 
-def rotated_pole_transform(data):
+def ie_ncfile_name(data):
     """
-    Rotated pole transform for plotting CORDEX data.
+    Define the NetCDF file name for the CORDEX data that has been subset for
+    Ireland.
 
     Parameters
     ----------
@@ -94,28 +129,22 @@ def rotated_pole_transform(data):
 
     Returns
     -------
-    - rotated pole transform
+    - file name
     """
-    if data.rio.crs is None:
-        pole_longitude = (
-            data["rotated_pole"].attrs["grid_north_pole_longitude"]
-        )
-        pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
-    else:
-        pole_longitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][1]["value"]
-        )
-        pole_latitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][0]["value"]
-        )
-    transform = ccrs.RotatedPole(
-        pole_longitude=pole_longitude, pole_latitude=pole_latitude
+    filename = (
+        list(data.data_vars)[0] + "_" +
+        data.attrs["CORDEX_domain"] + "_" +
+        data.attrs["driving_model_id"] + "_" +
+        data.attrs["driving_experiment_name"] + "_" +
+        data.attrs["driving_model_ensemble_member"] + "_" +
+        data.attrs["model_id"] + "_" +
+        data.attrs["rcm_version_id"] + "_" +
+        data.attrs["frequency"] + "_" +
+        datetime.strftime(parse(str(data["time"][0].values)), "%Y%m%d") + "-" +
+        datetime.strftime(parse(str(data["time"][-1].values)), "%Y%m%d")
+        + "_IE.nc"
     )
-    return transform
+    return filename
 
 
 # def data_plot(
