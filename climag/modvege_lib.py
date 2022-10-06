@@ -78,6 +78,7 @@ def exeCut(cutHeight, bulkDensity, biomass):
     Returns
     -------
     - Biomass taken [kg DM ha⁻¹]
+    - Biomass after cut
     """
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
@@ -142,8 +143,8 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
 
 
 def dv_update(
-    gv_gamma, gv_senescent_biomass, lls, kldv, temperature,
-    dv_biomass, dv_avg_age
+    gv_gamma, gv_senescent_biomass, lls, kldv, temperature, dv_biomass,
+    dv_avg_age
 ):
     """
     Update dead vegetative compartment.
@@ -167,7 +168,8 @@ def dv_update(
     - Average DV age
     """
     abscissionBiomass = mk_dv_abscission(
-        kldv, dv_biomass, temperature, dv_avg_age, lls
+        kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
+        dv_avg_age=dv_avg_age, lls=lls
     )
     dv_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion, and abscission, not
@@ -223,8 +225,8 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 
 
 def dr_update(
-    gr_gamma, gr_senescent_biomass, st1, st2,
-    temperature, kldr, dr_biomass, dr_avg_age
+    gr_gamma, gr_senescent_biomass, st1, st2, temperature, kldr, dr_biomass,
+    dr_avg_age
 ):
     """
     Update dead reproductive compartment.
@@ -249,7 +251,8 @@ def dr_update(
     - Average DR age
     """
     abscissionBiomass = mk_dr_abscission(
-        kldr, dr_biomass, temperature, dr_avg_age, st1, st2
+        kldr=kldr, dr_biomass=dr_biomass, temperature=temperature,
+        dr_avg_age=dr_avg_age, st1=st1, st2=st2
     )
     dr_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion and abscission, not
@@ -306,7 +309,7 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     return senescence_biomass
 
 
-def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
+def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
     """
     Update green vegetative compartment.
 
@@ -317,17 +320,20 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
         (REP in Jouven et al. (2006), reproductive function)
     lls : Leaf lifespan (LLS) [500 °C d]
     temperature : Mean daily temperature (*T*) [°C]
-    kdv : Senescence coefficient DV [°C d]
+    kgv : Senescence coefficient GV [°C d]
     t0 : Minimum temperature for growth (*T*₀) [4 °C]
     gv_biomass : Updated biomass
     gv_avg_age : Average GV age [°C day]
 
     Returns
     -------
+    - GV biomass
+    - GV average age
     - Senescent biomass
     """
     senescentBiomass = mk_gv_senescence(
-        kdv, gv_biomass, temperature, t0, lls, gv_avg_age
+        kgv=kgv, gv_biomass=gv_biomass, temperature=temperature, t0=t0,
+        lls=lls, gv_avg_age=gv_avg_age
     )
     gv_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
@@ -347,9 +353,7 @@ def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
 
 
 # GREEN REPRODUCTIVE FUNCTIONS
-def mk_gr_senescence(
-    kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
-):
+def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
     """
     See Equations (16) and (17) in Jouven et al. (2006).
 
@@ -414,9 +418,11 @@ def gr_update(
     -------
     - Updated GR biomass
     - Average GR age
+    - Senescent biomass
     """
     senescentBiomass = mk_gr_senescence(
-        kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2
+        kgr=kgr, gr_biomass=gr_biomass, temperature=temperature, t0=t0,
+        gr_avg_age=gr_avg_age, st1=st1, st2=st2
     )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
@@ -472,8 +478,8 @@ def gr_update(
 
 
 def cut(
-    cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb,
-    grb, drb, cellSurface, isHarvested
+    cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb, cellSurface,
+    isHarvested
 ):
     """
     Realise the harvest on each c. If the amount of cut biomass is not null,
@@ -503,10 +509,10 @@ def cut(
     - the amount of DR biomass cut [kg DM]
     """
     # exeCut returns harvested biomass in [kg DM m⁻²]
-    gv_h, gv_b = exeCut(rhogv, cutHeight, gvb)
-    dv_h, dv_b = exeCut(rhodv, cutHeight, dvb)
-    gr_h, gr_b = exeCut(rhogr, cutHeight, grb)
-    dr_h, dr_b = exeCut(rhodr, cutHeight, drb)
+    gv_h, gv_b = exeCut(bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
+    dv_h, dv_b = exeCut(bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
+    gr_h, gr_b = exeCut(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
+    dr_h, dr_b = exeCut(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
     # sum of harvested biomass [kg DM m⁻²]
     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
     if sumBiomassHarvested > 0:
@@ -517,8 +523,8 @@ def cut(
 
 
 def mk_env(
-    meanTenDaysT, t0, t1, t2, ni, pari, alphapar,
-    pet, waterReserve, waterHoldingCapacity
+    meanTenDaysT, t0, t1, t2, ni, pari, alphapar, pet, waterReserve,
+    waterHoldingCapacity
 ):
     """
     Environmental stress.
@@ -542,10 +548,16 @@ def mk_env(
     - Environmental stress
     """
     return (
-        fTemperature(meanTenDaysT, t0, t1, t2)  # ** UNUSED ARGUMENT REMOVED!
+        fTemperature(
+            meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
+        )  # ** UNUSED ARGUMENT REMOVED!
         * ni
-        * fPARi(pari, alphapar)
-        * fWaterStress(waterReserve, waterHoldingCapacity, pet)
+        * fPARi(pari=pari, alphapar=alphapar)
+        * fWaterStress(
+            waterReserve=waterReserve,
+            waterHoldingCapacity=waterHoldingCapacity,
+            pet=pet
+        )
     )
 
 
@@ -768,7 +780,11 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
     pt = pet * lightInterceptionByPlant
     pe = pet - pt
-    ta = pt * fWaterStress(waterReserve, waterHoldingCapacity, pet)
+    ta = pt * fWaterStress(
+        waterReserve=waterReserve,
+        waterHoldingCapacity=waterHoldingCapacity,
+        pet=pet
+    )
     ea = pe * min(waterReserve / waterHoldingCapacity, 1)
     return ta + ea
 
@@ -799,8 +815,8 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
 
 
 def getAvailableBiomassForCut(
-    gv_biomass, dv_biomass, gr_biomass, dr_biomass,
-    cutHeight, rhogv, rhodv, rhogr, rhodr
+    gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight, rhogv, rhodv,
+    rhogr, rhodr
 ):
     """
     Return the amount of biomass av for cut
@@ -821,10 +837,18 @@ def getAvailableBiomassForCut(
     -------
     - Amount of biomass av for cut
     """
-    avDefoliationBiomassGV = avDefoliationBiomass(gv_biomass, cutHeight, rhogv)
-    avDefoliationBiomassDV = avDefoliationBiomass(dv_biomass, cutHeight, rhodv)
-    avDefoliationBiomassGR = avDefoliationBiomass(gr_biomass, cutHeight, rhogr)
-    avDefoliationBiomassDR = avDefoliationBiomass(dr_biomass, cutHeight, rhodr)
+    avDefoliationBiomassGV = avDefoliationBiomass(
+        biomass=gv_biomass, cutHeight=cutHeight, bulkDensity=rhogv
+    )
+    avDefoliationBiomassDV = avDefoliationBiomass(
+        biomass=dv_biomass, cutHeight=cutHeight, bulkDensity=rhodv
+    )
+    avDefoliationBiomassGR = avDefoliationBiomass(
+        biomass=gr_biomass, cutHeight=cutHeight, bulkDensity=rhogr
+    )
+    avDefoliationBiomassDR = avDefoliationBiomass(
+        biomass=dr_biomass, cutHeight=cutHeight, bulkDensity=rhodr
+    )
     return (
         avDefoliationBiomassGV
         + avDefoliationBiomassDV
@@ -834,8 +858,8 @@ def getAvailableBiomassForCut(
 
 
 def defoliation(
-    gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-    rhogv, rhodv, rhogr, rhodr, maxAmountToIngest=9999
+    gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight, rhogv, rhodv,
+    rhogr, rhodr, maxAmountToIngest=9999
 ):
     """
     Defoliation method
@@ -858,10 +882,18 @@ def defoliation(
     -------
     - the sum of ingested biomass
     """
-    avDefoliationBiomassGV = avDefoliationBiomass(gv_biomass, cutHeight, rhogv)
-    avDefoliationBiomassDV = avDefoliationBiomass(dv_biomass, cutHeight, rhodv)
-    avDefoliationBiomassGR = avDefoliationBiomass(gr_biomass, cutHeight, rhogr)
-    avDefoliationBiomassDR = avDefoliationBiomass(dr_biomass, cutHeight, rhodr)
+    avDefoliationBiomassGV = avDefoliationBiomass(
+        biomass=gv_biomass, cutHeight=cutHeight, bulkDensity=rhogv
+    )
+    avDefoliationBiomassDV = avDefoliationBiomass(
+        biomass=dv_biomass, cutHeight=cutHeight, bulkDensity=rhodv
+    )
+    avDefoliationBiomassGR = avDefoliationBiomass(
+        biomass=gr_biomass, cutHeight=cutHeight, bulkDensity=rhogr
+    )
+    avDefoliationBiomassDR = avDefoliationBiomass(
+        biomass=dr_biomass, cutHeight=cutHeight, bulkDensity=rhodr
+    )
     sumAvailable = (
         avDefoliationBiomassGV
         + avDefoliationBiomassDV
@@ -873,29 +905,51 @@ def defoliation(
         if sumAvailable <= maxAmountToIngest:
             sumBiomassIngested = (
                 exeDefoliationByBiomass(
-                    avDefoliationBiomassGV, maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    avDefoliationBiomassDV, maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    avDefoliationBiomassGR, maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    avDefoliationBiomassDR, maxAmountToIngest
+                    biomass=avDefoliationBiomassGV,
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=avDefoliationBiomassDV,
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=avDefoliationBiomassGR,
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=avDefoliationBiomassDR,
+                    biomassToIngest=maxAmountToIngest
                 )
             )
         else:
             sumBiomassIngested = (
                 exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassGV / sumAvailable,
-                    maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassDV / sumAvailable,
-                    maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassGR / sumAvailable,
-                    maxAmountToIngest
-                ) + exeDefoliationByBiomass(
-                    maxAmountToIngest * avDefoliationBiomassDR / sumAvailable,
-                    maxAmountToIngest
+                    biomass=(
+                        maxAmountToIngest
+                        * avDefoliationBiomassGV / sumAvailable
+                    ),
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=(
+                        maxAmountToIngest
+                        * avDefoliationBiomassDV / sumAvailable
+                    ),
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=(
+                        maxAmountToIngest
+                        * avDefoliationBiomassGR / sumAvailable
+                    ),
+                    biomassToIngest=maxAmountToIngest
+                )
+                + exeDefoliationByBiomass(
+                    biomass=(
+                        maxAmountToIngest
+                        * avDefoliationBiomassDR / sumAvailable
+                    ),
+                    biomassToIngest=maxAmountToIngest
                 )
             )
     return sumBiomassIngested
@@ -978,7 +1032,7 @@ def getSumTemperature(timeseries, doy, t0):
     - Sum of temperatures above t0 corresponding to the DOY
     """
     sumTemperature = 0
-    for i in range(1, doy + 1):
+    for i in range(0, doy):
         if timeseries["tas"][i] > t0:
             sumTemperature += timeseries["tas"][i] - t0
     return sumTemperature

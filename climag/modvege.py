@@ -103,7 +103,6 @@ short leaf lifespan, and early reproductive growth and flowering).
 """
 
 import numpy as np
-# import ModVege libraries
 import climag.modvege_lib as lm
 
 
@@ -239,13 +238,13 @@ def modvege(params, tseries):
     atr = []
 
     # daily loop
-    for i in range(1, tseries.index.max() + 1):
+    for i in range(0, tseries.index.max() + 1):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
         temperature = tseries["tas"][i]
         # mean ten days temperature
-        if i < 10:
+        if i < (10 - 1):
             meanTenDaysT = temperature  # ** USING THE TEMP, NOT 10-d AVG!
         else:
             meanTenDaysT = np.mean(
@@ -264,18 +263,19 @@ def modvege(params, tseries):
         # Prepare additional variables
         #######################################################
         # mk sumTemperature uses T0=0 and not T0
-        sumT = lm.getSumTemperature(tseries, i, 0.55)
+        sumT = lm.getSumTemperature(timeseries=tseries, doy=i, t0=0)
         # fSEA array for graphs
         sea.append(
             lm.fsea(
-                params["maxSEA"], params["minSEA"], sumT, params["ST2"],
-                params["ST1"]
+                maxsea=params["maxSEA"], minsea=params["minSEA"], sumT=sumT,
+                st2=params["ST2"], st1=params["ST1"]
             )
         )
         # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
         ftm.append(
             lm.fTemperature(
-                meanTenDaysT, params["T0"], params["T1"], params["T2"]
+                meanTenDaysT=meanTenDaysT, t0=params["T0"], t1=params["T1"],
+                t2=params["T2"]
             )
         )
 
@@ -287,13 +287,13 @@ def modvege(params, tseries):
         isGrazed = bool(
             grazing_animal_count != 0 and grazing_avg_animal_weight != 0
         )
-        # Reset the flag isCut
+        # reset the flag isCut
         if isGrazed is False and isHarvested is False:
             isCut = False
         # TO-DO: This variable is not found in the manual/sourcecode, yet is
         # used widely
         correctiveFactorForAn = 1
-        # If the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
+        # if the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
         # (Belanger et al. 1994)
         params["NI"] = max(params["NI"], 0.35)
 
@@ -304,10 +304,14 @@ def modvege(params, tseries):
         if int(eta) == 0:
             # if LAI from remote sensing not available, then compute it
             if int(lai) == 0:
-                lai = lm.fclai(params["pctLAM"], params["SLA"], gv_biomass)
+                lai = lm.fclai(
+                    pctlam=params["pctLAM"], sla=params["SLA"],
+                    gv_biomass=gv_biomass
+                )
             eta = lm.aet(
-                pet, params["pctLAM"], params["SLA"], gv_biomass, params["WR"],
-                params["WHC"], lai
+                pet=pet, pctlam=params["pctLAM"], sla=params["SLA"],
+                gv_biomass=gv_biomass, waterReserve=params["WR"],
+                waterHoldingCapacity=params["WHC"], lai=lai
             )
         # compute WR
         params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
@@ -327,10 +331,12 @@ def modvege(params, tseries):
                     isHarvested, harvestedBiomassPart,
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass
                 ) = lm.cut(
-                    cutHeight, params["rho_GV"], params["rho_DV"],
-                    params["rho_GR"], params["rho_DR"], gv_biomass,
-                    dv_biomass, gr_biomass, dr_biomass, params["cellSurface"],
-                    isHarvested
+                        cutHeight=cutHeight, rhogv=params["rho_GV"],
+                        rhodv=params["rho_DV"], rhogr=params["rho_GR"],
+                        rhodr=params["rho_DR"], gvb=gv_biomass,
+                        dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass,
+                        cellSurface=params["cellSurface"],
+                        isHarvested=isHarvested
                 )
 
             # look for flags to indicate livestock ingestion
@@ -340,12 +346,14 @@ def modvege(params, tseries):
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
                 ingestedBiomassPart = lm.defoliation(
-                    gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-                    params["rho_GV"], params["rho_DV"], params["rho_GR"],
-                    params["rho_DR"]
+                    gv_biomass=gv_biomass, dv_biomass=dv_biomass,
+                    gr_biomass=gr_biomass, dr_biomass=dr_biomass,
+                    cutHeight=cutHeight, rhogv=params["rho_GV"],
+                    rhodv=params["rho_DV"], rhogr=params["rho_GR"],
+                    rhodr=params["rho_DR"]
                 )  # ** MODIFIED -- NEED TO CHECK!
             # allocation to reproductive
-            a2r = lm.rep(params["NI"])
+            a2r = lm.rep(ni=params["NI"])
             # TO-DO: When to change NI, and by how much?
             # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
@@ -372,30 +380,32 @@ def modvege(params, tseries):
         # compute biomass growth
         env.append(
             lm.mk_env(
-                meanTenDaysT, params["T0"], params["T1"], params["T2"],
-                params["NI"], pari, params["alpha_PAR"], pet, params["WR"],
-                params["WHC"]
+                meanTenDaysT=meanTenDaysT, t0=params["T0"], t1=params["T1"],
+                t2=params["T2"], ni=params["NI"], pari=pari,
+                alphapar=params["alpha_PAR"], pet=pet,
+                waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
         )
         pgr.append(
             lm.pgro(
-                pari, params["RUEmax"], params["pctLAM"], params["SLA"],
-                gv_biomass, lai
+                pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
+                sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
             )
         )
         gro = (
             lm.mk_env(
-                meanTenDaysT, params["T0"], params["T1"], params["T2"],
-                params["NI"], pari, params["alpha_PAR"], pet, params["WR"],
-                params["WHC"]
+                meanTenDaysT=meanTenDaysT, t0=params["T0"], t1=params["T1"],
+                t2=params["T2"], ni=params["NI"], pari=pari,
+                alphapar=params["alpha_PAR"], pet=pet,
+                waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
             * lm.pgro(
-                pari, params["RUEmax"], params["pctLAM"], params["SLA"],
-                gv_biomass, lai
+                pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
+                sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
             )
             * lm.fsea(
-                params["maxSEA"], params["minSEA"], sumT, params["ST2"],
-                params["ST1"]
+                maxsea=params["maxSEA"], minsea=params["minSEA"], sumT=sumT,
+                st2=params["ST2"], st1=params["ST1"]
             )
             * correctiveFactorForAn
         )
@@ -418,31 +428,37 @@ def modvege(params, tseries):
         # Update the state of the vegetative parts
         # Used T0 = 0 instead of T0 to match output data!
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
-            gro, a2r, params["LLS"], temperature, params["K_GV"], 0,
-            gv_biomass, gv_avg_age
+            gro=gro, a2r=a2r, lls=params["LLS"], temperature=temperature,
+            kgv=params["K_GV"], t0=0, gv_biomass=gv_biomass,
+            gv_avg_age=gv_avg_age
         )
         dv_biomass, dv_avg_age = lm.dv_update(
-            params["sigmaGV"], gv_senescent_biomass, params["LLS"],
-            params["Kl_DV"], temperature, dv_biomass, dv_avg_age
+            gv_gamma=params["sigmaGV"],
+            gv_senescent_biomass=gv_senescent_biomass, lls=params["LLS"],
+            kldv=params["Kl_DV"], temperature=temperature,
+            dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
         )
         # Start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
-            temperature, a2r, gro, params["ST1"], params["ST2"],
-            params["K_GR"], params["T0"], gr_biomass, gr_avg_age
+            temperature=temperature, a2r=a2r, gro=gro, st1=params["ST1"],
+            st2=params["ST2"], kgr=params["K_GR"], t0=params["T0"],
+            gr_biomass=gr_biomass, gr_avg_age=gr_avg_age
         )  # ** UNUSED ARGUMENTS REMOVED!
         dr_biomass, dr_avg_age = lm.dr_update(
-            params["sigmaGR"], gr_senescent_biomass, params["ST1"],
-            params["ST2"], temperature, params["Kl_DR"], dr_biomass,
-            dr_avg_age
+            gr_gamma=params["sigmaGR"],
+            gr_senescent_biomass=gr_senescent_biomass, st1=params["ST1"],
+            st2=params["ST2"], temperature=temperature, kldr=params["Kl_DR"],
+            dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
         )
         # If we do not cut the grass, ensure default estimation is created
         if not isCut:
             cutHeight = params["cutHeight"]
         # Compute available biomass for cut (output comparison requirement)
         avBiom4cut = lm.getAvailableBiomassForCut(
-            gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight,
-            params["rho_GV"], params["rho_DV"], params["rho_GR"],
-            params["rho_DR"]
+            gv_biomass=gv_biomass, dv_biomass=dv_biomass,
+            gr_biomass=gr_biomass, dr_biomass=dr_biomass, cutHeight=cutHeight,
+            rhogv=params["rho_GV"], rhodv=params["rho_DV"],
+            rhogr=params["rho_GR"], rhodr=params["rho_DR"]
         )
 
         #####################################################################

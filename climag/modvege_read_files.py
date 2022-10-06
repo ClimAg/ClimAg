@@ -139,7 +139,7 @@ def read_timeseries(filename):
     # timeseries = np.genfromtxt(
     #     filename, delimiter=",", skip_header=0, names=True
     # )
-    timeseries = pd.read_csv(filename, index_col=0)
+    timeseries = pd.read_csv(filename)
     return timeseries
 
 
