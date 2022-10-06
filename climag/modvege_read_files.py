@@ -3,10 +3,10 @@
 https://github.com/YannChemin/modvege
 
 ModVege has four compartments:
-Green vegetative      (GV)
-Green reproductive    (GR)
-Dead vegetative       (DV)
-Dead reproductive     (DR)
+Green vegetative          (GV)
+Green reproductive        (GR)
+Dead vegetative           (DV)
+Dead reproductive         (DR)
 """
 
 # import numpy as np
@@ -77,8 +77,6 @@ def read_params(filename):
                     compartment (OMD_DR) [0.40]
     - cellSurface : Pixel area [ha]
     - cutHeight   : Grass cut height [m]
-    - startdoy    : Start day of the year
-    - enddoy      : End day of the year
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 
     - INcell      : Initial nutritional index of cell - NNI
@@ -117,18 +115,18 @@ def read_timeseries(filename):
 
     Definition of inputs
     --------------------
-    - DOY         : Day of the year
-    - T           : Temperature (*T*) [°C]
-    - PARi        : Incident photosynthetically active radiation
-                    (PAR_i) [MJ m⁻²]
-    - PP          : Precipitation (PP) [mm]
-    - PET         : Potential evapotranspiration (PET) [mm]
-    - ETA         : Actual evapotranspiration (AET); from remote sensing [mm]
-                    (if available)
-    - LAI         : Leaf area index (LAI); from remote sensing (if available)
-    - gcut        : Grass cut event cutHeight [m] (if cut, the default is 0.05)
-    - grazing     : Grazing animal count
-    - grazingw    : Grazing average animal weight [kg]
+    - doy        : Day of the year
+    - tas        : Temperature (*T*) [°C]
+    - pari       : Incident photosynthetically active radiation
+                   (PAR_i) [MJ m⁻²]
+    - pr         : Precipitation (PP) [mm]
+    - evspsblpot : Potential evapotranspiration (PET) [mm]
+    - eta        : Actual evapotranspiration (AET); from remote sensing [mm]
+                   (if available)
+    - lai        : Leaf area index (LAI); from remote sensing (if available)
+    - gcut       : Grass cut event cutHeight [m] (if cut, the default is 0.05)
+    - grazing    : Grazing animal count
+    - grazingw   : Grazing average animal weight [kg]
 
     Parameters
     ----------
@@ -141,7 +139,7 @@ def read_timeseries(filename):
     # timeseries = np.genfromtxt(
     #     filename, delimiter=",", skip_header=0, names=True
     # )
-    timeseries = pd.read_csv(filename, index_col=0).squeeze().to_dict()
+    timeseries = pd.read_csv(filename, index_col=0)
     return timeseries
 
 

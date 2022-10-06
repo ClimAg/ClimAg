@@ -146,7 +146,7 @@ def dv_update(
     dv_biomass, dv_avg_age
 ):
     """
-    Update DV compartment.
+    Update dead vegetative compartment.
     See Equation (3) in Jouven et al. (2006).
 
     Parameters
@@ -227,7 +227,7 @@ def dr_update(
     temperature, kldr, dr_biomass, dr_avg_age
 ):
     """
-    Update DR compartment.
+    Update dead reproductive compartment.
 
     Parameters
     ----------
@@ -308,7 +308,7 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
 def gv_update(gro, a2r, lls, temperature, kdv, t0, gv_biomass, gv_avg_age):
     """
-    Update GV compartment.
+    Update green vegetative compartment.
 
     Parameters
     ----------
@@ -393,7 +393,7 @@ def gr_update(
     temperature, a2r, gro, st1, st2, kgr, t0, gr_biomass, gr_avg_age
 ):
     """
-    Update GR compartment.
+    Update green reproductive compartment.
 
     Parameters
     ----------
@@ -979,8 +979,8 @@ def getSumTemperature(timeseries, doy, t0):
     """
     sumTemperature = 0
     for i in range(1, doy + 1):
-        if timeseries["T"][i] > t0:
-            sumTemperature += timeseries["T"][i] - t0
+        if timeseries["tas"][i] > t0:
+            sumTemperature += timeseries["tas"][i] - t0
     return sumTemperature
 
 

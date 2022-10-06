@@ -118,7 +118,7 @@ def cordex_plot_title(data, lon=None, lat=None):
     return plot_title
 
 
-def ie_ncfile_name(data):
+def ie_cordex_ncfile_name(data):
     """
     Define the NetCDF file name for the CORDEX data that has been subset for
     Ireland.
@@ -132,7 +132,7 @@ def ie_ncfile_name(data):
     - file name
     """
     filename = (
-        list(data.data_vars)[0] + "_" +
+        "_".join(list(data.data_vars)) + "_" +
         data.attrs["CORDEX_domain"] + "_" +
         data.attrs["driving_model_id"] + "_" +
         data.attrs["driving_experiment_name"] + "_" +

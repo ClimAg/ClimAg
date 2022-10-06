@@ -52,7 +52,8 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
     # read parameter files into array
     params = read_params(input_params_file)
 
-    tseries = read_timeseries(input_timeseries_file)
+    if input_timeseries_file.endswith(".csv"):
+        tseries = read_timeseries(input_timeseries_file)
 
     # initialise the run and return arrays
     mod_out = modvege(params, tseries)
@@ -62,7 +63,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
     colnames = [
         "doy", "gv_b", "dv_b", "gr_b", "dr_b", "h_b", "i_b", "gro", "abc",
-        "sumT", "gva", "gra", "dva", "dra", "sea", "ftm", "env", "pgr", "atr"
+        "sumT", "gva", "dva", "gra", "dra", "sea", "ftm", "env", "pgr", "atr"
     ]
 
     output_df = pd.DataFrame(zip(*data), columns=colnames)
@@ -73,19 +74,19 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
     # plot all columns
     output_df.set_index("doy", inplace=True)
     plot_title = [
-        "GV biomass [kg DM ha⁻¹]",
-        "DV biomass [kg DM ha⁻¹]",
-        "GR biomass [kg DM ha⁻¹]",
-        "DR biomass [kg DM ha⁻¹]",
+        "Green vegetative biomass [kg DM ha⁻¹]",
+        "Dead vegetative biomass [kg DM ha⁻¹]",
+        "Green reproductive biomass [kg DM ha⁻¹]",
+        "Dead reproductive biomass [kg DM ha⁻¹]",
         "Harvested biomass [kg DM ha⁻¹]",
         "Ingested biomass [kg DM ha⁻¹]",
         "Biomass growth [kg DM ha⁻¹]",
         "Available biomass [kg DM ha⁻¹]",
         "Sum of temperatures [°C d]",
-        "GV biomass age [°C d]",
-        "GR biomass age [°C d]",
-        "DV biomass age [°C d]",
-        "DR biomass age [°C d]",
+        "Green vegetative biomass age [°C d]",
+        "Dead vegetative biomass age [°C d]",
+        "Green reproductive biomass age [°C d]",
+        "Dead reproductive biomass age [°C d]",
         "Seasonal effect",
         "Temperature function*",
         "Environmental limitation of growth*",

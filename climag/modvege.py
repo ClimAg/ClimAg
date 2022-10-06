@@ -39,10 +39,10 @@ Compartment description:
 
 List of timeseries variables
 ----------------------------
-- Mean daily temperature (*T*) [°C]
-- Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-- Precipitation (PP) [mm]
-- Potential evapotranspiration (PET) [mm]
+- tas: Mean daily temperature (*T*) [°C]
+- pari: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+- pr: Precipitation (PP) [mm]
+- evspsblpot: Potential evapotranspiration (PET) [mm]
 
 Notes
 -----
@@ -239,31 +239,31 @@ def modvege(params, tseries):
     atr = []
 
     # daily loop
-    for i in range(int(params["startdoy"]), int(params["enddoy"]) + 1):
+    for i in range(1, tseries.index.max() + 1):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
-        temperature = tseries["T"][i]
+        temperature = tseries["tas"][i]
         # mean ten days temperature
         if i < 10:
             meanTenDaysT = temperature  # ** USING THE TEMP, NOT 10-d AVG!
         else:
             meanTenDaysT = np.mean(
-                [tseries["T"][i - j] for j in range(10 - 1, 0 - 1, -1)]
+                [tseries["tas"][i - j] for j in range(10 - 1, 0 - 1, -1)]
             )
 
-        pari = tseries["PARi"][i]
-        pmm = tseries["PP"][i]
-        pet = tseries["PET"][i]
+        pari = tseries["pari"][i]
+        pmm = tseries["pr"][i]
+        pet = tseries["evspsblpot"][i]
         eta = tseries["eta"][i]
         lai = tseries["lai"][i]
         cutHeight = tseries["gcut_height"][i]
         grazing_animal_count = tseries["grazing_animal_count"][i]
-        grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][1]
+        grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][i]
         #######################################################
         # Prepare additional variables
         #######################################################
-        # mk sumTemperature Uses T0=0 and not T0
+        # mk sumTemperature uses T0=0 and not T0
         sumT = lm.getSumTemperature(tseries, i, 0.55)
         # fSEA array for graphs
         sea.append(
@@ -469,6 +469,6 @@ def modvege(params, tseries):
         dra.append(dr_avg_age)
 
     return (
-        gvb, dvb, grb, drb, hb, ib, g, abc, stp, gva, gra, dva, dra, sea, ftm,
+        gvb, dvb, grb, drb, hb, ib, g, abc, stp, gva, dva, gra, dra, sea, ftm,
         env, pgr, atr
     )
