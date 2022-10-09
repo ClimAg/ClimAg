@@ -106,7 +106,7 @@ import numpy as np
 import climag.modvege_lib as lm
 
 
-def modvege(params, tseries):
+def modvege(params, tseries, enddoy=365):
     """**ModVege** model as a function
 
     ! This model cannot regenerate reproductive growth after a cut !
@@ -120,6 +120,7 @@ def modvege(params, tseries):
     ----------
     params : Parameters (constants)
     tseries : Timeseries data (weather, grass cut, grazing)
+    enddoy : End day of the year (default 365)
 
     Returns
     -------
@@ -238,7 +239,7 @@ def modvege(params, tseries):
     atr = []
 
     # daily loop
-    for i in range(0, tseries.index.max() + 1):
+    for i in range(0, enddoy):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
@@ -330,13 +331,15 @@ def modvege(params, tseries):
                 (
                     isHarvested, harvestedBiomassPart,
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass
-                ) = lm.cut(
+                ) = (
+                    lm.cut(
                         cutHeight=cutHeight, rhogv=params["rho_GV"],
                         rhodv=params["rho_DV"], rhogr=params["rho_GR"],
                         rhodr=params["rho_DR"], gvb=gv_biomass,
                         dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass,
                         cellSurface=params["cellSurface"],
                         isHarvested=isHarvested
+                    )
                 )
 
             # look for flags to indicate livestock ingestion

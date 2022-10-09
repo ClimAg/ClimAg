@@ -134,13 +134,17 @@ def read_timeseries(filename):
 
     Returns
     -------
-    - A dictionary of the input timeseries data
+    - A dataframe of the input timeseries data
+    - The end day of the year
     """
     # timeseries = np.genfromtxt(
     #     filename, delimiter=",", skip_header=0, names=True
     # )
     timeseries = pd.read_csv(filename)
-    return timeseries
+    timeseries.sort_values(by=["doy"], inplace=True)
+    timeseries.reset_index(inplace=True)
+    enddoy = timeseries["doy"].max()
+    return timeseries, enddoy
 
 
 # def read_out(filename):
