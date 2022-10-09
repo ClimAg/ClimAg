@@ -264,7 +264,7 @@ def modvege(params, tseries, enddoy=365):
         # Prepare additional variables
         #######################################################
         # mk sumTemperature uses T0=0 and not T0
-        sumT = lm.getSumTemperature(timeseries=tseries, doy=i, t0=0)
+        sumT = lm.getSumTemperature(timeseries=tseries, doy=(i + 1), t0=0)
         # fSEA array for graphs
         sea.append(
             lm.fsea(

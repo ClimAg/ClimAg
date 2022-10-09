@@ -6,12 +6,13 @@ This code runs a single geographical "cell" (as the Java code was trying
 to do on a grid).
 """
 
+import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
 from climag.modvege import modvege
-from climag.modvege_read_files import read_params  # read_timeseries
+from climag.modvege_read_files import read_params, read_timeseries
 
 
 def run_modvege(input_params_file, input_timeseries_file, out_file):
@@ -21,7 +22,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
     Definition of columns in the output
     -----------------------------------
-    - day                                                   doy
+    - Day of the year                                       doy
     - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
     - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
     - Mean dead vegetative biomass          [kg DM ha⁻¹]    dv_b
@@ -49,126 +50,154 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
     out_file : File path for the output
     """
 
-    # read parameter files into a dataframe
+    # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    # if input_timeseries_file.endswith(".csv"):
-    #     tseries, enddoy = read_timeseries(filename=input_timeseries_file)
-    # else:
-    #     open the climate model dataset
-
-    tseries = xr.open_dataset(
-        input_timeseries_file,
-        # chunks="auto",  # the following operations do not work with Dask
-        #                   yet, so chunking is disabled...
-        decode_coords="all"
-    )
-
-    # assign new variables for the outputs
-    tseries["bm_gv"] = xr.full_like(tseries["pr"], fill_value=np.nan)
-    tseries["bm_gv"].attrs = {
-        "standard_name": "green_vegetative_biomass",
-        "long_name": "Green vegetative biomass",
-        "units": "kg DM ha⁻¹"
+    outputs = {
+        "gv_b": ["Green vegetative biomass", "kg DM ha⁻¹"],
+        "dv_b": ["Dead vegetative biomass", "kg DM ha⁻¹"],
+        "gr_b": ["Green reproductive biomass", "kg DM ha⁻¹"],
+        "dr_b": ["Dead reproductive biomass", "kg DM ha⁻¹"],
+        "h_b": ["Harvested biomass", "kg DM ha⁻¹"],
+        "i_b": ["Ingested biomass", "kg DM ha⁻¹"],
+        "gro": ["Biomass growth", "kg DM ha⁻¹"],
+        "abc": ["Available biomass", "kg DM ha⁻¹"],
+        "sumT": ["Sum of temperatures", "°C d"],
+        "gva": ["Green vegetative biomass age", "°C d"],
+        "dva": ["Dead vegetative biomass age", "°C d"],
+        "gra": ["Green reproductive biomass age", "°C d"],
+        "dra": ["Dead reproductive biomass age", "°C d"],
+        "sea": ["Seasonal effect"],
+        "ftm": ["Temperature function"],
+        "env": ["Environmental limitation of growth"],
+        "pgr": ["Potential growth", "kg DM ha⁻¹"],
+        "atr": ["Reproductive function"]
     }
 
-    # create a dictionary to store the timeseries output dataframes
-    data_df = {}
-    for rlon, rlat in [(20, 20), (21, 21)]:
-        tseries_loc = tseries.isel(rlon=rlon, rlat=rlat)
+    if input_timeseries_file.endswith(".csv"):
+        tseries, enddoy = read_timeseries(filename=input_timeseries_file)
 
-        # ignore NaN cells
-        if not tseries_loc["evspsblpot"].isnull().all():
-            for year in [2050]:
-                tseries_y = tseries_loc.sel(
-                    time=slice(f"{year}-01-01", f"{year}-12-31")
-                )
+        # initialise the run
+        data_df = modvege(params=params, tseries=tseries, enddoy=enddoy)
 
-                # extract the end day of the year
-                enddoy = tseries_y["time"].dt.dayofyear.values.max()
+        # convert output to dataframe and save as CSV
+        data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
-                data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
-                    {"time": tseries_y["time"]}
-                )  # create a dataframe using the time array
+        data_df = pd.DataFrame(
+            zip(*data_df), columns=["doy"] + list(outputs.keys())
+        )
 
-                # assign the variables to columns
-                for v in tseries_y.data_vars:
-                    data_df[f"{rlon}_{rlat}_{year}"][v] = tseries_y[v]
+        data_df.to_csv(out_file, index=False)
 
-                # assign other variables
-                data_df[f"{rlon}_{rlat}_{year}"]["pari"] = 2.0
-                data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"]["grazing_animal_count"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"][
-                    "grazing_avg_animal_weight"
-                ] = 0.0
+        # PLOT
+        # plot all columns
+        data_df.set_index("doy", inplace=True)
 
-                # initialise the run
-                data_df[f"{rlon}_{rlat}_{year}"] = modvege(
-                    params=params,
-                    tseries=data_df[f"{rlon}_{rlat}_{year}"],
-                    enddoy=enddoy
-                )
+        plot_title = []
+        for val in outputs.values():
+            if len(val) > 1:
+                val = " [".join(val) + "]"
+            else:
+                val = val[0]
+            plot_title.append(val)
 
-                # convert output to dataframe
-                data_df[f"{rlon}_{rlat}_{year}"] = tuple([list(
-                    range(1, len(data_df[f"{rlon}_{rlat}_{year}"][0]) + 1)
-                )]) + data_df[f"{rlon}_{rlat}_{year}"]
+        data_df.plot(
+            subplots=True, layout=(6, 3), figsize=(15, 14),
+            xlabel="Day of the year", title=plot_title, legend=False
+        )
 
-                colnames = [
-                    "doy", "gv_b", "dv_b", "gr_b", "dr_b", "h_b", "i_b",
-                    "gro", "abc", "sumT", "gva", "dva", "gra", "dra",
-                    "sea", "ftm", "env", "pgr", "atr"
-                ]
+        plt.tight_layout()
 
-                data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
-                    zip(*data_df[f"{rlon}_{rlat}_{year}"]), columns=colnames
-                )
+        plt.show()
+    else:  # open the climate model dataset
+        tseries = xr.open_dataset(
+            input_timeseries_file,
+            # chunks="auto",  # the following operations do not work with Dask
+            #                   yet, so chunking is disabled...
+            decode_coords="all"
+        )
 
-                # PLOT
-                # plot all columns
-                data_df[f"{rlon}_{rlat}_{year}"].set_index(
-                    "doy", inplace=True
-                )
+        # assign new variables for the outputs
+        for key, val in outputs.items():
+            tseries[key] = xr.full_like(tseries["pr"], fill_value=np.nan)
+            if len(val) > 1:
+                tseries[key].attrs = {
+                    "standard_name": val[0].lower().replace(" ", "_"),
+                    "long_name": val[0],
+                    "units": val[1]
+                }
+            else:
+                tseries[key].attrs = {
+                    "standard_name": val[0].lower().replace(" ", "_"),
+                    "long_name": val[0],
+                    "units": "dimensionless"
+                }
 
-                plot_title = [
-                    "Green vegetative biomass [kg DM ha⁻¹]",
-                    "Dead vegetative biomass [kg DM ha⁻¹]",
-                    "Green reproductive biomass [kg DM ha⁻¹]",
-                    "Dead reproductive biomass [kg DM ha⁻¹]",
-                    "Harvested biomass [kg DM ha⁻¹]",
-                    "Ingested biomass [kg DM ha⁻¹]",
-                    "Biomass growth [kg DM ha⁻¹]",
-                    "Available biomass [kg DM ha⁻¹]",
-                    "Sum of temperatures [°C d]",
-                    "Green vegetative biomass age [°C d]",
-                    "Dead vegetative biomass age [°C d]",
-                    "Green reproductive biomass age [°C d]",
-                    "Dead reproductive biomass age [°C d]",
-                    "Seasonal effect",
-                    "Temperature function *",
-                    "Environmental limitation of growth *",
-                    "Potential growth [kg DM ha⁻¹]",
-                    "Reproductive function *"
-                ]
+        # create a dictionary to store the timeseries output dataframes
+        data_df = {}
 
-                data_df[f"{rlon}_{rlat}_{year}"].plot(
-                    subplots=True, layout=(6, 3), figsize=(15, 14),
-                    xlabel="Day of the year", title=plot_title, legend=False
-                )
+        # loop through each grid cell
+        # for rlon, rlat in [(20, 20), (21, 21)]:
+        for rlon, rlat in itertools.product(
+            range(len(tseries.coords["rlon"])),
+            range(len(tseries.coords["rlat"]))
+        ):
+            tseries_loc = tseries.isel(rlon=rlon, rlat=rlat)
 
-                plt.tight_layout()
+            # ignore NaN cells
+            if not tseries_loc["evspsblpot"].isnull().all():
+                for year in [2050]:
+                    tseries_y = tseries_loc.sel(
+                        time=slice(f"{year}-01-01", f"{year}-12-31")
+                    )
 
-                plt.show()
+                    # extract the end day of the year
+                    enddoy = tseries_y["time"].dt.dayofyear.values.max()
 
-                # assign the outputs to the main xarray dataset
-                tseries["bm_gv"].loc[dict(
-                    rlon=tseries_y.coords["rlon"],
-                    rlat=tseries_y.coords["rlat"],
-                    time=tseries_y.coords["time"]
-                )] = np.array(data_df[f"{rlon}_{rlat}_{year}"]["gv_b"])
+                    data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
+                        {"time": tseries_y["time"]}
+                    )  # create a dataframe using the time array
 
-    tseries.to_netcdf(out_file)
-    # print(tseries)
+                    # assign the variables to columns
+                    for var in tseries_y.data_vars:
+                        data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_y[var]
+
+                    # assign other variables
+                    data_df[f"{rlon}_{rlat}_{year}"]["pari"] = 2.0
+                    data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
+                    data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
+                    data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
+                    data_df[f"{rlon}_{rlat}_{year}"][
+                        "grazing_animal_count"
+                    ] = 0.0
+                    data_df[f"{rlon}_{rlat}_{year}"][
+                        "grazing_avg_animal_weight"
+                    ] = 0.0
+
+                    # initialise the run
+                    data_df[f"{rlon}_{rlat}_{year}"] = modvege(
+                        params=params,
+                        tseries=data_df[f"{rlon}_{rlat}_{year}"],
+                        enddoy=enddoy
+                    )
+
+                    # convert output to dataframe
+                    data_df[f"{rlon}_{rlat}_{year}"] = tuple([list(
+                        range(1, len(data_df[f"{rlon}_{rlat}_{year}"][0]) + 1)
+                    )]) + data_df[f"{rlon}_{rlat}_{year}"]
+
+                    data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
+                        zip(*data_df[f"{rlon}_{rlat}_{year}"]),
+                        columns=["doy"] + list(outputs.keys())
+                    )
+
+                    # assign the outputs to the main xarray dataset
+                    for key in outputs:
+                        tseries[key].loc[dict(
+                            rlon=tseries_y.coords["rlon"],
+                            rlat=tseries_y.coords["rlat"],
+                            time=tseries_y.coords["time"]
+                        )] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
+
+        tseries = tseries.drop_vars(["evspsblpot", "pr", "tas"])
+        tseries.to_netcdf(out_file)
