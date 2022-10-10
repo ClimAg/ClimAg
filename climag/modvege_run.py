@@ -7,6 +7,7 @@ to do on a grid).
 """
 
 import itertools
+from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -84,7 +85,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
         data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
         data_df = pd.DataFrame(
-            zip(*data_df), columns=["doy"] + list(outputs.keys())
+            zip(*data_df), columns=(["doy"] + list(outputs.keys()))
         )
 
         data_df.to_csv(out_file, index=False)
@@ -106,15 +107,17 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             xlabel="Day of the year", title=plot_title, legend=False
         )
 
+        plt.suptitle("ModVege outputs")
+
         plt.tight_layout()
 
         plt.show()
     else:  # open the climate model dataset
         tseries = xr.open_dataset(
             input_timeseries_file,
-            # chunks="auto",  # the following operations do not work with Dask
-            #                   yet, so chunking is disabled...
-            decode_coords="all"
+            decode_coords="all",
+            # chunks="auto"  # the following operations do not work with Dask
+            #                   yet, so chunking must be disabled...
         )
 
         # assign new variables for the outputs
@@ -146,6 +149,8 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
             # ignore NaN cells
             if not tseries_loc["evspsblpot"].isnull().all():
+                # loop through each year
+                # for year in set(tseries_loc["time"].dt.year.values):
                 for year in [2050]:
                     tseries_y = tseries_loc.sel(
                         time=slice(f"{year}-01-01", f"{year}-12-31")
@@ -188,7 +193,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
                     data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
                         zip(*data_df[f"{rlon}_{rlat}_{year}"]),
-                        columns=["doy"] + list(outputs.keys())
+                        columns=(["doy"] + list(outputs.keys()))
                     )
 
                     # assign the outputs to the main xarray dataset
@@ -199,5 +204,18 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
                             time=tseries_y.coords["time"]
                         )] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
+        # delete input variables
         tseries = tseries.drop_vars(["evspsblpot", "pr", "tas"])
+
+        # assign attributes for the data
+        tseries.attrs = {
+            "creation_date": str(datetime.now(tz=timezone.utc)),
+            "contact": "nstreethran@ucc.ie",
+            "frequency": "day",
+            "references": "https://github.com/ClimAg",
+            "input_data": str(tseries.attrs.copy()),
+            "input_variables": "evspsblpot, pr, tas"
+        }
+
+        # save as a NetCDF file
         tseries.to_netcdf(out_file)
