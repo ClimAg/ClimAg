@@ -80,13 +80,41 @@ def rotated_pole_transform(data):
     return transform
 
 
-def cordex_plot_title(data, lon=None, lat=None):
+def cordex_plot_title_main(data):
     """
     Define the map plot title for CORDEX data.
 
     Parameters
     ----------
     data : input CORDEX data
+
+    Returns
+    -------
+    - plot title
+    """
+    plot_title = (
+        data.attrs["project_id"] + ", " +
+        data.attrs["CORDEX_domain"] + ", " +
+        data.attrs["driving_model_id"] + ", " +
+        data.attrs["driving_model_ensemble_member"] + ", " +
+        data.attrs["driving_experiment_name"] + ", " +
+        data.attrs["model_id"] + ", " +
+        data.attrs["rcm_version_id"] + ", " +
+        data.attrs["frequency"]
+    )
+    return plot_title
+
+
+def cordex_plot_title(data, lon=None, lat=None):
+    """
+    Define the map plot title for CORDEX data with information about the time
+    or point subset.
+
+    Parameters
+    ----------
+    data : input CORDEX data
+    lon : longitude of the point subset (optional)
+    lat : latitude of the point subset (optional)
 
     Returns
     -------
@@ -104,17 +132,7 @@ def cordex_plot_title(data, lon=None, lat=None):
         )
     else:
         end_str = "(" + str(lon) + ", " + str(lat) + ")"
-    plot_title = (
-        data.attrs["project_id"] + ", " +
-        data.attrs["CORDEX_domain"] + ", " +
-        data.attrs["driving_model_id"] + ", " +
-        data.attrs["driving_model_ensemble_member"] + ", " +
-        data.attrs["driving_experiment_name"] + ", " +
-        data.attrs["model_id"] + ", " +
-        data.attrs["rcm_version_id"] + ", " +
-        data.attrs["frequency"] + ", " +
-        end_str
-    )
+    plot_title = cordex_plot_title_main(data) + ", " + end_str
     return plot_title
 
 

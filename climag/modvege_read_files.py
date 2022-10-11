@@ -40,14 +40,6 @@ def read_params(filename):
     - maxSEA      : Maximum seasonal effect (maxSEA) [1.20]
     - minSEA      : Minimum seasonal effect (minSEA) [0.80]
     - LLS         : Leaf lifespan (LLS) [500 °C d]
-    - maxOMDgv    : Maximum organic matter digestibility of the green
-                    vegetative compartment (maxOMD_GV) [0.90]
-    - minOMDgv    : Minimum organic matter digestibility of the green
-                    vegetative compartment (minOMD_GV) [0.75]
-    - maxOMDgr    : Maximum organic matter digestibility of the green
-                    reproductive compartment (maxOMD_GR) [0.90]
-    - minOMDgr    : Minimum organic matter digestibility of the green
-                    reproductive compartment (minOMD_GR) [0.65]
     - rho_GV      : Bulk density of the green vegetative compartment (BD_GV)
                     [850 g DM m⁻³]
     - rho_DV      : Bulk density of the dead vegetative compartment (BD_DV)
@@ -71,22 +63,13 @@ def read_params(filename):
                     (Kl_DV) [0.001]
     - Kl_DR       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
-    - meanOMDdv   : Organic matter digestibility for the dead vegetative
-                    compartment (OMD_DV) [0.45]
-    - meanOMDdr   : Organic matter digestibility for the dead reproductive
-                    compartment (OMD_DR) [0.40]
     - cellSurface : Pixel area [ha]
     - cutHeight   : Grass cut height [m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 
-    - INcell      : Initial nutritional index of cell - NNI
+    - NI          : Initial nutritional index of cell
     - WHC         : Soil water-holding capacity (WHC) [mm]
     - WR          : Water reserve (WR) [mm]
-    - alpha_PAR   : Light extinction coefficient
-    - beta_T      : Decrease in LUE after T2
-    - b_IN        : Impact of IN on LUE at IN=0
-    - a_IN        : Value of ALLOC at IN=0
-    - max_fIN     : Max of fNI
     - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
     - W_GR        : Initial biomass of GR [kg DM ha⁻¹]
     - W_DV        : Initial biomass of DV [kg DM ha⁻¹]
@@ -95,6 +78,25 @@ def read_params(filename):
     - init_AGE_GR : Initial GR age [°C d]
     - init_AGE_DV : Initial DV age [°C d]
     - init_AGE_DR : Initial DR age [°C d]
+
+    - maxOMDgv    : Maximum organic matter digestibility of the green
+                    vegetative compartment (maxOMD_GV) [0.90]
+    - minOMDgv    : Minimum organic matter digestibility of the green
+                    vegetative compartment (minOMD_GV) [0.75]
+    - maxOMDgr    : Maximum organic matter digestibility of the green
+                    reproductive compartment (maxOMD_GR) [0.90]
+    - minOMDgr    : Minimum organic matter digestibility of the green
+                    reproductive compartment (minOMD_GR) [0.65]
+    - meanOMDdv   : Organic matter digestibility for the dead vegetative
+                    compartment (OMD_DV) [0.45]
+    - meanOMDdr   : Organic matter digestibility for the dead reproductive
+                    compartment (OMD_DR) [0.40]
+
+    - alpha_PAR   : Light extinction coefficient
+    - beta_T      : Decrease in LUE after T2
+    - b_IN        : Impact of IN on LUE at IN=0
+    - a_IN        : Value of ALLOC at IN=0
+    - max_fIN     : Max of fNI
 
     Parameters
     ----------

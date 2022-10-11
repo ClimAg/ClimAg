@@ -120,6 +120,9 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             #                   yet, so chunking must be disabled...
         )
 
+        # use rsds as pari for now
+        tseries = tseries.rename({"rsds": "pari"})
+
         # assign new variables for the outputs
         for key, val in outputs.items():
             tseries[key] = xr.full_like(tseries["pr"], fill_value=np.nan)
@@ -140,11 +143,11 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
         data_df = {}
 
         # loop through each grid cell
-        # for rlon, rlat in [(20, 20), (21, 21)]:
-        for rlon, rlat in itertools.product(
-            range(len(tseries.coords["rlon"])),
-            range(len(tseries.coords["rlat"]))
-        ):
+        for rlon, rlat in [(20, 20), (21, 21)]:
+            # for rlon, rlat in itertools.product(
+            #     range(len(tseries.coords["rlon"])),
+            #     range(len(tseries.coords["rlat"]))
+            # ):
             tseries_loc = tseries.isel(rlon=rlon, rlat=rlat)
 
             # ignore NaN cells
@@ -168,7 +171,6 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
                         data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_y[var]
 
                     # assign other variables
-                    data_df[f"{rlon}_{rlat}_{year}"]["pari"] = 2.0
                     data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
                     data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
                     data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
@@ -205,7 +207,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
                         )] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
         # delete input variables
-        tseries = tseries.drop_vars(["evspsblpot", "pr", "tas"])
+        tseries = tseries.drop_vars(["evspsblpot", "pari", "pr", "tas"])
 
         # assign attributes for the data
         tseries.attrs = {
@@ -213,8 +215,8 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             "contact": "nstreethran@ucc.ie",
             "frequency": "day",
             "references": "https://github.com/ClimAg",
-            "input_data": str(tseries.attrs.copy()),
-            "input_variables": "evspsblpot, pr, tas"
+            "input_data": str(tseries.attrs),
+            "input_variables": ["evspsblpot", "pr", "rsds", "tas"]
         }
 
         # save as a NetCDF file

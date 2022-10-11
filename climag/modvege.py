@@ -133,38 +133,6 @@ def modvege(params, tseries, enddoy=365):
     - GRO biomass [kg DM ha⁻¹]
     - Available biomass for [kg DM ha⁻¹]
     """
-    #######################################################
-    # Load input parameters into variables
-    #######################################################
-    # Initial nutritional index of cell
-    # ni = params["NI"]
-    # Light Use Interception
-    # alphapar = params["alpha_PAR"]
-    # beta_T
-    # betaT = params["beta_T"]
-    # b_IN
-    # b_IN = params["b_IN"]
-    # Volume GV (g m-3)
-    # rhogv = params["rho_GV"]
-    # Biomass of GR (kg ha-1)
-    # wgr = params["W_GR"]
-    # Value of ALLOC at NI=0
-    # allocNI = params["a_IN"]
-    # max of fNI
-    # maxFNI = params["max_fIN"]
-    # Volume GR (g m-3)
-    # rhogr = params["rho_GR"]
-    # Biomass of DV (kg ha-1)
-    # wdv = params["W_DV"]
-    # Volume DV (g m-3)
-    # rhodv = params["rho_DV"]
-    # Biomass of DR (kg ha-1)
-    # wdr = params["W_DR"]
-    # Volume DR (g m-3)
-    # rhodr = params["rho_DR"]
-    # Max of R.U.E.
-    # ruemax = params["RUEmax"]
-
     # Pixel area [m2]
     # cellSurfaceMeter = 10000 * params["cellSurface"]
 
