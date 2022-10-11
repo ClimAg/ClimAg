@@ -120,55 +120,62 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             #                   yet, so chunking must be disabled...
         )
 
-        # use rsds as pari for now
-        tseries = tseries.rename({"rsds": "pari"})
+        # use rsds - rsus as pari for now
+        tseries["pari"] = tseries["rsds"] - tseries["rsus"]
 
-        # assign new variables for the outputs
-        for key, val in outputs.items():
-            tseries[key] = xr.full_like(tseries["pr"], fill_value=np.nan)
-            if len(val) > 1:
-                tseries[key].attrs = {
-                    "standard_name": val[0].lower().replace(" ", "_"),
-                    "long_name": val[0],
-                    "units": val[1]
-                }
-            else:
-                tseries[key].attrs = {
-                    "standard_name": val[0].lower().replace(" ", "_"),
-                    "long_name": val[0],
-                    "units": "dimensionless"
-                }
+        # loop through each year
+        # for year in set(tseries_loc["time"].dt.year.values):
+        for year in [2055]:
+            tseries_y = tseries.sel(
+                time=slice(f"{year}-01-01", f"{year}-12-31")
+            )
 
-        # create a dictionary to store the timeseries output dataframes
-        data_df = {}
+            # extract the end day of the year
+            enddoy = tseries_y["time"].dt.dayofyear.values.max()
 
-        # loop through each grid cell
-        for rlon, rlat in [(20, 20), (21, 21)]:
-            # for rlon, rlat in itertools.product(
-            #     range(len(tseries.coords["rlon"])),
-            #     range(len(tseries.coords["rlat"]))
-            # ):
-            tseries_loc = tseries.isel(rlon=rlon, rlat=rlat)
+            # assign new variables for the outputs
+            for key, val in outputs.items():
+                tseries_y[key] = xr.full_like(
+                    tseries_y["pr"], fill_value=np.nan
+                )
+                if len(val) > 1:
+                    tseries_y[key].attrs = {
+                        "standard_name": val[0].lower().replace(
+                            " ", "_"
+                        ),
+                        "long_name": val[0],
+                        "units": val[1]
+                    }
+                else:
+                    tseries_y[key].attrs = {
+                        "standard_name": val[0].lower().replace(
+                            " ", "_"
+                        ),
+                        "long_name": val[0],
+                        "units": "dimensionless"
+                    }
 
-            # ignore NaN cells
-            if not tseries_loc["evspsblpot"].isnull().all():
-                # loop through each year
-                # for year in set(tseries_loc["time"].dt.year.values):
-                for year in [2050]:
-                    tseries_y = tseries_loc.sel(
-                        time=slice(f"{year}-01-01", f"{year}-12-31")
-                    )
+            # create a dictionary to store the timeseries output
+            # dataframes
+            data_df = {}
 
-                    # extract the end day of the year
-                    enddoy = tseries_y["time"].dt.dayofyear.values.max()
+            # loop through each grid cell
+            # for rlon, rlat in [(20, 20), (21, 21)]:
+            for rlon, rlat in itertools.product(
+                range(len(tseries.coords["rlon"])),
+                range(len(tseries.coords["rlat"]))
+            ):
+                tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
+                # ignore null cells
+                if not tseries_l["pr"].isnull().all():
                     data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
-                        {"time": tseries_y["time"]}
+                        {"time": tseries_l["time"]}
                     )  # create a dataframe using the time array
 
                     # assign the variables to columns
-                    for var in tseries_y.data_vars:
-                        data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_y[var]
+                    for var in tseries_l.data_vars:
+                        data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_l[var]
 
                     # assign other variables
                     data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
@@ -200,24 +207,24 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
                     # assign the outputs to the main xarray dataset
                     for key in outputs:
-                        tseries[key].loc[dict(
-                            rlon=tseries_y.coords["rlon"],
-                            rlat=tseries_y.coords["rlat"],
-                            time=tseries_y.coords["time"]
+                        tseries_y[key].loc[dict(
+                            rlon=tseries_l.coords["rlon"],
+                            rlat=tseries_l.coords["rlat"],
+                            time=tseries_l.coords["time"]
                         )] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
-        # delete input variables
-        tseries = tseries.drop_vars(["evspsblpot", "pari", "pr", "tas"])
+            # delete input variables
+            tseries_y = tseries_y.drop_vars(list(tseries.data_vars))
 
-        # assign attributes for the data
-        tseries.attrs = {
-            "creation_date": str(datetime.now(tz=timezone.utc)),
-            "contact": "nstreethran@ucc.ie",
-            "frequency": "day",
-            "references": "https://github.com/ClimAg",
-            "input_data": str(tseries.attrs),
-            "input_variables": ["evspsblpot", "pr", "rsds", "tas"]
-        }
+            # assign attributes for the data
+            tseries_y.attrs = {
+                "creation_date": str(datetime.now(tz=timezone.utc)),
+                "contact": "nstreethran@ucc.ie",
+                "frequency": "day",
+                "references": "https://github.com/ClimAg",
+                "input_data": str(tseries.attrs),
+                "input_variables": list(tseries.data_vars)
+            }
 
-        # save as a NetCDF file
-        tseries.to_netcdf(out_file)
+            # save as a NetCDF file
+            tseries_y.to_netcdf(out_file)
