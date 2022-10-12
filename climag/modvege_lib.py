@@ -1032,7 +1032,7 @@ def getSumTemperature(timeseries, doy, t0):
     - Sum of temperatures above t0 corresponding to the DOY
     """
     sumTemperature = 0
-    for i in range(0, doy):
+    for i in range(doy):
         if timeseries["tas"][i] > t0:
             sumTemperature += timeseries["tas"][i] - t0
     return sumTemperature

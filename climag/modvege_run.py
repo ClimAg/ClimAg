@@ -7,6 +7,7 @@ to do on a grid).
 """
 
 import itertools
+import os
 from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,15 +15,16 @@ import pandas as pd
 import xarray as xr
 from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
+from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
 
-def run_modvege(input_params_file, input_timeseries_file, out_file):
+def run_modvege(input_params_file, input_timeseries_file, out_dir):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
 
-    Definition of columns in the output
-    -----------------------------------
+    Outputs
+    -------
     - Day of the year                                       doy
     - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
     - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
@@ -48,13 +50,13 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
     ----------
     input_params_file : File path for the input parameters
     input_timeseries_file : File path for the input timeseries
-    out_file : File path for the output
+    out_dir : Directory to store output file(s)
     """
 
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    outputs = {
+    output_vars = {
         "gv_b": ["Green vegetative biomass", "kg DM ha⁻¹"],
         "dv_b": ["Dead vegetative biomass", "kg DM ha⁻¹"],
         "gr_b": ["Green reproductive biomass", "kg DM ha⁻¹"],
@@ -85,17 +87,17 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
         data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
         data_df = pd.DataFrame(
-            zip(*data_df), columns=(["doy"] + list(outputs.keys()))
+            zip(*data_df), columns=(["doy"] + list(output_vars.keys()))
         )
 
-        data_df.to_csv(out_file, index=False)
+        data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
         # PLOT
         # plot all columns
         data_df.set_index("doy", inplace=True)
 
         plot_title = []
-        for val in outputs.values():
+        for val in output_vars.values():
             if len(val) > 1:
                 val = " [".join(val) + "]"
             else:
@@ -120,8 +122,12 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             #                   yet, so chunking must be disabled...
         )
 
-        # use rsds - rsus as pari for now
-        tseries["pari"] = tseries["rsds"] - tseries["rsus"]
+        # list of input variables
+        input_vars = list(tseries.data_vars)
+
+        # use rsds as pari for now
+        # tseries["pari"] = tseries["rsds"]
+        tseries = tseries.rename({"rsds": "pari"})
 
         # loop through each year
         # for year in set(tseries_loc["time"].dt.year.values):
@@ -133,8 +139,8 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
             # extract the end day of the year
             enddoy = tseries_y["time"].dt.dayofyear.values.max()
 
-            # assign new variables for the outputs
-            for key, val in outputs.items():
+            # assign the outputs as new variables
+            for key, val in output_vars.items():
                 tseries_y[key] = xr.full_like(
                     tseries_y["pr"], fill_value=np.nan
                 )
@@ -202,11 +208,11 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
 
                     data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
                         zip(*data_df[f"{rlon}_{rlat}_{year}"]),
-                        columns=(["doy"] + list(outputs.keys()))
+                        columns=(["doy"] + list(output_vars.keys()))
                     )
 
-                    # assign the outputs to the main xarray dataset
-                    for key in outputs:
+                    # assign the output variables to the main xarray dataset
+                    for key in output_vars:
                         tseries_y[key].loc[dict(
                             rlon=tseries_l.coords["rlon"],
                             rlat=tseries_l.coords["rlat"],
@@ -223,8 +229,17 @@ def run_modvege(input_params_file, input_timeseries_file, out_file):
                 "frequency": "day",
                 "references": "https://github.com/ClimAg",
                 "input_data": str(tseries.attrs),
-                "input_variables": list(tseries.data_vars)
+                "input_variables": input_vars
             }
 
             # save as a NetCDF file
-            tseries_y.to_netcdf(out_file)
+            os.makedirs(out_dir, exist_ok=True)
+
+            tseries_y.to_netcdf(
+                os.path.join(
+                    out_dir,
+                    ie_cordex_modvege_ncfile_name(
+                        cordex_data=tseries, output_data=tseries_y
+                    )
+                )
+            )

@@ -149,9 +149,9 @@ def modvege(params, tseries, enddoy=365):
     # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
     a2rFlag = False
-    # Harvested biomass
+    # harvested biomass
     harvestedBiomass = 0
-    # Harvested biomass
+    # ingested biomass
     ingestedBiomass = 0
     # biomass for compartments
     gv_biomass = params["W_GV"]
@@ -207,7 +207,7 @@ def modvege(params, tseries, enddoy=365):
     atr = []
 
     # daily loop
-    for i in range(0, enddoy):
+    for i in range(enddoy):
         #######################################################
         # Load additional input arrays into variables
         #######################################################
