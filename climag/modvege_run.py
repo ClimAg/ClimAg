@@ -122,11 +122,13 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
             #                   yet, so chunking must be disabled...
         )
 
+        # get the CRS
+        data_crs = tseries.rio.crs
+
         # list of input variables
         input_vars = list(tseries.data_vars)
 
         # use rsds as pari for now
-        # tseries["pari"] = tseries["rsds"]
         tseries = tseries.rename({"rsds": "pari"})
 
         # loop through each year
@@ -235,11 +237,20 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
             # save as a NetCDF file
             os.makedirs(out_dir, exist_ok=True)
 
-            tseries_y.to_netcdf(
-                os.path.join(
+            # reassign CRS
+            tseries_y.rio.write_crs(data_crs, inplace=True)
+
+            if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
+                FILENAME = os.path.join(
                     out_dir,
                     ie_cordex_modvege_ncfile_name(
                         cordex_data=tseries, output_data=tseries_y
                     )
                 )
-            )
+            else:
+                FILENAME = os.path.join(
+                    out_dir,
+                    f"modvege_{tseries.attrs['title']}_{year}.nc"
+                )
+
+            tseries_y.to_netcdf(FILENAME)
