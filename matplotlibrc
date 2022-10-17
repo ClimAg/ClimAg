@@ -41,6 +41,9 @@ xtick.labelcolor: darkslategrey
 ytick.labelcolor: darkslategrey
 figure.titleweight: semibold
 axes.titleweight: semibold
-# figure.titlesize: 13
-# axes.labelsize: 10
-# axes.titlesize: 12
+figure.titlesize: 14
+figure.labelsize: 14
+axes.labelsize: 14
+axes.titlesize: 14
+xtick.labelsize: 13
+ytick.labelsize: 13

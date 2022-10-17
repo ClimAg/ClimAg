@@ -109,7 +109,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
             xlabel="Day of the year", title=plot_title, legend=False
         )
 
-        plt.suptitle("ModVege outputs")
+        # plt.suptitle("ModVege outputs")
 
         plt.tight_layout()
 

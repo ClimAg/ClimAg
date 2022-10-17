@@ -13,3 +13,4 @@ dependencies:
   - nc-time-axis
   - aiohttp
   - odfpy
+  - seaborn

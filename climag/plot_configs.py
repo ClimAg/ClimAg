@@ -5,6 +5,7 @@ Functions to plot climate model datasets, e.g. CORDEX
 
 from datetime import datetime
 import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
 from dateutil.parser import parse
 
 
@@ -46,6 +47,16 @@ def rotated_pole_point(data, lon, lat):
     return rp_cds[0], rp_cds[1]
 
 
+def rotated_pole_transform_base(pole_longitude, pole_latitude):
+    """
+    Rotated pole transform for a given pole longitude and latitude.
+    """
+    transform = ccrs.RotatedPole(
+        pole_longitude=pole_longitude, pole_latitude=pole_latitude
+    )
+    return transform
+
+
 def rotated_pole_transform(data):
     """
     Rotated pole transform for plotting CORDEX data.
@@ -74,10 +85,26 @@ def rotated_pole_transform(data):
                 projjson=True
             )["conversion"]["parameters"][0]["value"]
         )
-    transform = ccrs.RotatedPole(
-        pole_longitude=pole_longitude, pole_latitude=pole_latitude
-    )
+    transform = rotated_pole_transform_base(pole_longitude, pole_latitude)
     return transform
+
+
+def longitude_tick_format(x, pos):
+    """
+    Return the longitude in degrees west.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+    return "{:,.0f}°W".format(x * -1)
+
+
+def latitude_tick_format(x, pos):
+    """
+    Return the latitude in degrees north.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+    return "{:.0f}°N".format(x)
 
 
 def cordex_plot_title_main(data):
@@ -105,6 +132,28 @@ def cordex_plot_title_main(data):
     return plot_title
 
 
+def hiresireland_date_format(data):
+    """
+    Format date
+    """
+    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
+    return date
+
+
+def cordex_date_format(data):
+    """
+    Format date
+    """
+    if data.attrs["frequency"] == "mon":
+        date_format = "%b %Y"
+    elif data.attrs["frequency"] == "day":
+        date_format = "%-d %b %Y"
+    else:
+        date_format = "%Y-%m-%d %H:%M:%S"
+    date = datetime.strftime(parse(str(data["time"].values)), date_format)
+    return date
+
+
 def cordex_plot_title(data, lon=None, lat=None):
     """
     Define the map plot title for CORDEX data with information about the time
@@ -121,15 +170,7 @@ def cordex_plot_title(data, lon=None, lat=None):
     - plot title
     """
     if lon is None and lat is None:
-        if data.attrs["frequency"] == "mon":
-            date_format = "%b %Y"
-        elif data.attrs["frequency"] == "day":
-            date_format = "%-d %b %Y"
-        else:
-            date_format = "%Y-%m-%d %H:%M:%S"
-        end_str = datetime.strftime(
-            parse(str(data["time"].values)), date_format
-        )
+        end_str = cordex_date_format(data)
     else:
         end_str = "(" + str(lon) + ", " + str(lat) + ")"
     plot_title = cordex_plot_title_main(data) + ", " + end_str
@@ -192,6 +233,106 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
         + "_IE.nc"
     )
     return filename
+
+
+def plot_facet_map_variables(data, boundary_data):
+    """
+    Create a facet plot of variables from an xarray dataset covering the
+    Island of Ireland.
+
+    Parameters
+    ----------
+    data : dataset (loaded using xarray)
+    boundary_data : Ireland boundary data (vector, loaded as a GeoPandas
+        dataframe), e.g. from Ordnance Survey Ireland, NUTS (Eurostat)
+    """
+    for v in data.data_vars:
+        cbar_label = (
+            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+        )  # colorbar label
+
+        if v == "pr":
+            cmap = "mako_r"
+        elif v == "evspsblpot":
+            cmap = "BrBG_r"
+        elif v in ("tas", "rsun"):
+            cmap = "Spectral_r"
+        else:
+            cmap = "YlGn"
+
+        fig = data[v].plot(
+            x="lon", y="lat", col="time", col_wrap=5, cmap=cmap, levels=15,
+            robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label)
+        )
+
+        fig.set_xlabels("")
+        fig.set_ylabels("")
+
+        for i, ax in enumerate(fig.axes.flat):
+            boundary_data.to_crs(4326).boundary.plot(
+                ax=ax, color="darkslategrey", linewidth=.5
+            )
+            ax.set_title(cordex_date_format(data.isel(time=i)))
+            ax.xaxis.set_major_formatter(longitude_tick_format)
+            ax.yaxis.set_major_formatter(latitude_tick_format)
+
+        plt.show()
+
+
+def plot_map_variables(data):
+    """
+    Create individual plots of the climate data variables covering the Island
+    of Ireland.
+
+    Parameters
+    ----------
+    data : climate model dataset (loaded using xarray)
+    """
+    for v in data.data_vars:
+        cbar_label = (
+            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+        )  # colorbar label
+        if v == "pr":
+            cmap = "GnBu"
+        elif v == "evspsblpot":
+            cmap = "BrBG_r"
+        else:
+            cmap = "Spectral_r"
+
+        plt.figure(figsize=(7.5, 7))
+
+        plot_transform = rotated_pole_transform(data)
+        ax = plt.axes(projection=plot_transform)
+
+        # specify gridline spacing and labels
+        ax.gridlines(
+            draw_labels=True,
+            xlocs=range(-180, 180, 2),
+            ylocs=range(-90, 90, 1),
+            color="lightslategrey",
+            linewidth=.5
+        )
+
+        # plot data for the variable
+        data[v].plot(
+            ax=ax,
+            cmap=cmap,
+            x="rlon",
+            y="rlat",
+            levels=15,
+            cbar_kwargs=dict(label=cbar_label),
+            robust=True
+        )
+
+        # add boundaries
+        ax.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+
+        # ax.set_title(cplt.cordex_plot_title(data_ie))  # set plot title
+        ax.set_title(None)
+
+        plt.axis("equal")
+        plt.tight_layout()
+        plt.show()
 
 
 # def data_plot(
