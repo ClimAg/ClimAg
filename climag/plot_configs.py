@@ -255,13 +255,21 @@ def plot_facet_map_variables(data, boundary_data):
             cmap = "mako_r"
         elif v == "evspsblpot":
             cmap = "BrBG_r"
-        elif v in ("tas", "rsun"):
+        elif v == "mrso":
+            cmap = "BrBG"
+        elif v in ("tas", "rsds"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
 
+        if len(data["time"]) == 12:
+            col_wrap = 4
+        elif len(data["time"]) == 30:
+            col_wrap = 5
+        else:
+            col_wrap = None
         fig = data[v].plot(
-            x="lon", y="lat", col="time", col_wrap=5, cmap=cmap, levels=15,
+            x="lon", y="lat", col="time", col_wrap=col_wrap, cmap=cmap, levels=15,
             robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label)
         )
 
@@ -296,7 +304,9 @@ def plot_map_variables(data):
             cmap = "GnBu"
         elif v == "evspsblpot":
             cmap = "BrBG_r"
-        else:
+        elif v == "mrso":
+            cmap = "BrBG"
+        elif v in ("tas", "rsds"):
             cmap = "Spectral_r"
 
         plt.figure(figsize=(7.5, 7))
@@ -333,48 +343,3 @@ def plot_map_variables(data):
         plt.axis("equal")
         plt.tight_layout()
         plt.show()
-
-
-# def data_plot(
-#     data,
-#     cmap="terrain",
-#     vmin=None,
-#     vmax=None,
-#     grid_color="lightslategrey",
-#     border_color="darkslategrey",
-#     border_width=.5,
-#     border_res="50m",
-#     cbar_label=None,
-#     transform=None,
-#     grid_xlocs=range(-180, 180, 10),
-#     grid_ylocs=range(-90, 90, 5),
-#     plot_title=None,
-#     plot_figsize=(20, 10)
-# ):
-#     """
-#     Custom plot function
-#     """
-#     plt.figure(figsize=plot_figsize)
-#     ax = plt.axes(projection=transform)
-#     ax.gridlines(
-#         draw_labels=True,
-#         linewidth=.5,
-#         color=grid_color,
-#         xlocs=grid_xlocs,
-#         ylocs=grid_ylocs
-#     )
-#     data.plot(
-#         ax=ax,
-#         cmap=cmap,
-#         transform=transform,
-#         vmin=vmin,
-#         vmax=vmax,
-#         x="rlon",
-#         y="rlat",
-#         cbar_kwargs=dict(label=cbar_label)
-#     )
-#     ax.coastlines(
-#         resolution=border_res, color=border_color, linewidth=border_width
-#     )
-#     if plot_title is not None:
-#         ax.set_title(plot_title)
