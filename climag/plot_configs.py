@@ -8,6 +8,11 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from dateutil.parser import parse
 
+# set plot projection to the projection of the HiResIreland dataset
+plot_projection = ccrs.RotatedPole(
+        pole_longitude=172.100006103516, pole_latitude=36.5999984741211
+)
+
 
 # convert lat/lon to rotated pole coordinates
 def rotated_pole_point(data, lon, lat):
@@ -47,16 +52,6 @@ def rotated_pole_point(data, lon, lat):
     return rp_cds[0], rp_cds[1]
 
 
-def rotated_pole_transform_base(pole_longitude, pole_latitude):
-    """
-    Rotated pole transform for a given pole longitude and latitude.
-    """
-    transform = ccrs.RotatedPole(
-        pole_longitude=pole_longitude, pole_latitude=pole_latitude
-    )
-    return transform
-
-
 def rotated_pole_transform(data):
     """
     Rotated pole transform for plotting CORDEX data.
@@ -85,7 +80,9 @@ def rotated_pole_transform(data):
                 projjson=True
             )["conversion"]["parameters"][0]["value"]
         )
-    transform = rotated_pole_transform_base(pole_longitude, pole_latitude)
+    transform = ccrs.RotatedPole(
+        pole_longitude=pole_longitude, pole_latitude=pole_latitude
+    )
     return transform
 
 
@@ -246,6 +243,8 @@ def plot_facet_map_variables(data, boundary_data):
     boundary_data : Ireland boundary data (vector, loaded as a GeoPandas
         dataframe), e.g. from Ordnance Survey Ireland, NUTS (Eurostat)
     """
+    plot_transform = rotated_pole_transform(data)
+
     for v in data.data_vars:
         cbar_label = (
             data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
@@ -264,25 +263,53 @@ def plot_facet_map_variables(data, boundary_data):
 
         if len(data["time"]) == 12:
             col_wrap = 4
+            y_ticks = [0, 4, 8]  # index of subplots with y tick labels
+            x_ticks = [8, 9, 10, 11]  # index of subplots with x tick labels
         elif len(data["time"]) == 30:
             col_wrap = 5
+            y_ticks = [0, 5, 10, 15, 20, 25]
+            x_ticks = [25, 26, 27, 28, 29]
         else:
             col_wrap = None
+            y_ticks = []
+            x_ticks = []
+
         fig = data[v].plot(
-            x="lon", y="lat", col="time", col_wrap=col_wrap, cmap=cmap, levels=15,
-            robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label)
+            x="rlon", y="rlat", col="time", col_wrap=col_wrap, cmap=cmap,
+            robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label),
+            levels=15, transform=plot_transform,
+            subplot_kws=dict(projection=plot_projection)
         )
 
         fig.set_xlabels("")
         fig.set_ylabels("")
 
         for i, ax in enumerate(fig.axes.flat):
-            boundary_data.to_crs(4326).boundary.plot(
+            boundary_data.to_crs(plot_projection).boundary.plot(
                 ax=ax, color="darkslategrey", linewidth=.5
             )
             ax.set_title(cordex_date_format(data.isel(time=i)))
-            ax.xaxis.set_major_formatter(longitude_tick_format)
-            ax.yaxis.set_major_formatter(latitude_tick_format)
+            ax.set_xlim(-1.9, 1.6)
+            ax.set_ylim(-2.1, 2.1)
+            # use gridlines to add tick labels (lon/lat)
+            if i in y_ticks:
+                ax.gridlines(
+                    draw_labels=["y", "left"],
+                    ylocs=range(-90, 90, 1),
+                    color="None",
+                    linewidth=.5,
+                    x_inline=False,
+                    y_inline=False
+                )
+            if i in x_ticks:
+                ax.gridlines(
+                    draw_labels=["x", "bottom"],
+                    xlocs=range(-180, 180, 2),
+                    color="None",
+                    linewidth=.5,
+                    x_inline=False,
+                    y_inline=False
+                )
 
         plt.show()
 
@@ -296,6 +323,8 @@ def plot_map_variables(data):
     ----------
     data : climate model dataset (loaded using xarray)
     """
+    plot_transform = rotated_pole_transform(data)
+
     for v in data.data_vars:
         cbar_label = (
             data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
@@ -309,19 +338,9 @@ def plot_map_variables(data):
         elif v in ("tas", "rsds"):
             cmap = "Spectral_r"
 
-        plt.figure(figsize=(7.5, 7))
+        plt.figure(figsize=(7, 7))
 
-        plot_transform = rotated_pole_transform(data)
-        ax = plt.axes(projection=plot_transform)
-
-        # specify gridline spacing and labels
-        ax.gridlines(
-            draw_labels=True,
-            xlocs=range(-180, 180, 2),
-            ylocs=range(-90, 90, 1),
-            color="lightslategrey",
-            linewidth=.5
-        )
+        ax = plt.axes(projection=plot_projection)
 
         # plot data for the variable
         data[v].plot(
@@ -331,7 +350,8 @@ def plot_map_variables(data):
             y="rlat",
             levels=15,
             cbar_kwargs=dict(label=cbar_label),
-            robust=True
+            robust=True,
+            transform=plot_transform
         )
 
         # add boundaries
@@ -342,4 +362,18 @@ def plot_map_variables(data):
 
         plt.axis("equal")
         plt.tight_layout()
+        plt.xlim(-1.5, 1.33)
+        plt.ylim(-2.05, 2.05)
+
+        # specify gridline spacing and labels
+        ax.gridlines(
+            draw_labels=dict(bottom="x", left="y"),
+            xlocs=range(-180, 180, 2),
+            ylocs=range(-90, 90, 1),
+            color="lightslategrey",
+            linewidth=.5,
+            x_inline=False,
+            y_inline=False
+        )
+
         plt.show()
