@@ -256,7 +256,7 @@ def plot_facet_map_variables(data, boundary_data):
             cmap = "BrBG_r"
         elif v == "mrso":
             cmap = "BrBG"
-        elif v in ("tas", "rsds"):
+        elif v in ("tas", "rsds", "rsus", "par"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
@@ -335,7 +335,7 @@ def plot_map_variables(data):
             cmap = "BrBG_r"
         elif v == "mrso":
             cmap = "BrBG"
-        elif v in ("tas", "rsds"):
+        elif v in ("tas", "rsds", "rsus", "par"):
             cmap = "Spectral_r"
 
         plt.figure(figsize=(7, 7))

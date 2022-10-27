@@ -40,7 +40,7 @@ Compartment description:
 List of timeseries variables
 ----------------------------
 - tas: Mean daily temperature (*T*) [°C]
-- pari: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+- par: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
 - pr: Precipitation (PP) [mm]
 - evspsblpot: Potential evapotranspiration (PET) [mm]
 
@@ -220,7 +220,7 @@ def modvege(params, tseries, enddoy=365):
                 [tseries["tas"][i - j] for j in range(10 - 1, 0 - 1, -1)]
             )
 
-        pari = tseries["pari"][i]
+        pari = tseries["par"][i]
         pmm = tseries["pr"][i]
         pet = tseries["evspsblpot"][i]
         eta = tseries["eta"][i]

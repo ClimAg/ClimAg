@@ -128,8 +128,8 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
         # list of input variables
         input_vars = list(tseries.data_vars)
 
-        # use rsds as pari for now
-        tseries = tseries.rename({"rsds": "pari"})
+        # use rsds as par for now
+        tseries = tseries.rename({"rsds": "par"})
 
         # loop through each year
         # for year in set(tseries_loc["time"].dt.year.values):

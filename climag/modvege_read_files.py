@@ -119,7 +119,7 @@ def read_timeseries(filename):
     --------------------
     - doy        : Day of the year
     - tas        : Temperature (*T*) [°C]
-    - pari       : Incident photosynthetically active radiation
+    - par       : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
     - pr         : Precipitation (PP) [mm]
     - evspsblpot : Potential evapotranspiration (PET) [mm]
