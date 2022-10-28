@@ -188,7 +188,7 @@ def ie_cordex_ncfile_name(data):
     - file name
     """
     filename = (
-        "_".join(list(data.data_vars)) + "_" +
+        "_".join(sorted(list(data.data_vars))) + "_" +
         data.attrs["CORDEX_domain"] + "_" +
         data.attrs["driving_model_id"] + "_" +
         data.attrs["driving_experiment_name"] + "_" +
