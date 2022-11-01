@@ -113,30 +113,30 @@ def read_params(filename):
 
 
 def read_timeseries(filename):
-    """Read the timeseries input data
+    """Read the time series input data
 
     Definition of inputs
     --------------------
     - doy        : Day of the year
     - tas        : Temperature (*T*) [°C]
-    - par       : Incident photosynthetically active radiation
+    - par        : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
     - pr         : Precipitation (PP) [mm]
     - evspsblpot : Potential evapotranspiration (PET) [mm]
     - eta        : Actual evapotranspiration (AET); from remote sensing [mm]
                    (if available)
     - lai        : Leaf area index (LAI); from remote sensing (if available)
-    - gcut       : Grass cut event cutHeight [m] (if cut, the default is 0.05)
+    - gcut       : Grass cut height [m] (if cut, the default is 0.05)
     - grazing    : Grazing animal count
-    - grazingw   : Grazing average animal weight [kg]
+    - grazingw   : Grazing animal average weight [kg]
 
     Parameters
     ----------
-    filename : Path to the input timeseries data file
+    filename : Path to the input time series data file
 
     Returns
     -------
-    - A dataframe of the input timeseries data
+    - A dataframe of the input time series data
     - The end day of the year
     """
     # timeseries = np.genfromtxt(

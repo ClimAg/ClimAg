@@ -1023,7 +1023,7 @@ def getSumTemperature(timeseries, doy, t0):
 
     Parameters
     ----------
-    timeseries : Input timeseries data
+    timeseries : Input time series data
     doy : Day of the year [1-366]
     t0 : Minimum temperature for growth [°C]
 

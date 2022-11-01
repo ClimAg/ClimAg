@@ -17,7 +17,6 @@ from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
 from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
-
 output_vars = {
     "gv_b": ["Green vegetative biomass", "kg DM ha⁻¹"],
     "dv_b": ["Dead vegetative biomass", "kg DM ha⁻¹"],
@@ -32,17 +31,18 @@ output_vars = {
     "dva": ["Dead vegetative biomass age", "°C d"],
     "gra": ["Green reproductive biomass age", "°C d"],
     "dra": ["Dead reproductive biomass age", "°C d"],
-    "sea": ["Seasonal effect"],
-    "ftm": ["Temperature function"],
-    "env": ["Environmental limitation of growth"],
+    "sea": ["Seasonal effect", "dimensionless"],
+    "ftm": ["Temperature function", "dimensionless"],
+    "env": ["Environmental limitation of growth", "dimensionless"],
     "pgr": ["Potential growth", "kg DM ha⁻¹"],
-    "atr": ["Reproductive function"]
+    "atr": ["Reproductive function", "dimensionless"]
 }
 
 
 def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     """
     Input time series: CSV
+    Also creates time series plots
     """
 
     # read parameter file into a dataframe
@@ -62,24 +62,18 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
-    # PLOT
     # plot all columns
     data_df.set_index("doy", inplace=True)
 
     plot_title = []
     for val in output_vars.values():
-        if len(val) > 1:
-            val = " [".join(val) + "]"
-        else:
-            val = val[0]
+        val = " [".join(val) + "]"
         plot_title.append(val)
 
     data_df.plot(
         subplots=True, layout=(6, 3), figsize=(15, 14),
         xlabel="Day of the year", title=plot_title, legend=False
     )
-
-    # plt.suptitle("ModVege outputs")
 
     plt.tight_layout()
 
@@ -126,24 +120,15 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
             tseries_y[key] = xr.full_like(
                 tseries_y["pr"], fill_value=np.nan
             )
-            if len(val) > 1:
-                tseries_y[key].attrs = {
-                    "standard_name": val[0].lower().replace(
-                        " ", "_"
-                    ),
-                    "long_name": val[0],
-                    "units": val[1]
-                }
-            else:
-                tseries_y[key].attrs = {
-                    "standard_name": val[0].lower().replace(
-                        " ", "_"
-                    ),
-                    "long_name": val[0],
-                    "units": "dimensionless"
-                }
+            tseries_y[key].attrs = {
+                # "standard_name": val[0].lower().replace(
+                #     " ", "_"
+                # ),
+                "long_name": val[0],
+                "units": val[1]
+            }
 
-        # create a dictionary to store the timeseries output
+        # create a dictionary to store the time series output
         # dataframes
         data_df = {}
 
@@ -267,7 +252,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
     Parameters
     ----------
     input_params_file : File path for the input parameters
-    input_timeseries_file : File path for the input timeseries
+    input_timeseries_file : File path for the input time series
     out_dir : Directory to store output file(s)
     """
 

@@ -37,7 +37,7 @@ Compartment description:
 - Age of biomass (AGE) [°C d] (degree day - units of thermal time)
 - Organic matter digestibility (OMD)
 
-List of timeseries variables
+List of time series variables
 ----------------------------
 - tas: Mean daily temperature (*T*) [°C]
 - par: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
@@ -119,7 +119,7 @@ def modvege(params, tseries, enddoy=365):
     Parameters
     ----------
     params : Parameters (constants)
-    tseries : Timeseries data (weather, grass cut, grazing)
+    tseries : Time series data (weather, grass cut, grazing)
     enddoy : End day of the year (default 365)
 
     Returns
@@ -248,11 +248,11 @@ def modvege(params, tseries, enddoy=365):
             )
         )
 
-        # grass cut flag modification if timeseries file has grass cut for that
-        # day
+        # grass cut flag modification if time series file has grass cut for
+        # that day
         isHarvested = bool(cutHeight != 0.0)
-        # grazing flag modification if timeseries file has BOTH animal related
-        # values
+        # grazing flag modification if time series file has BOTH animal
+        # related values
         isGrazed = bool(
             grazing_animal_count != 0 and grazing_avg_animal_weight != 0
         )
