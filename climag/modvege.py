@@ -149,11 +149,7 @@ def modvege(params, tseries, enddoy=365):
     # isGrazed = False
     # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
-    a2rFlag = False
-    # # harvested biomass
-    # harvestedBiomass = 0
-    # # ingested biomass
-    # ingestedBiomass = 0
+    # a2rFlag = False
     # biomass for compartments
     gv_biomass = params["W_GV"]
     gr_biomass = params["W_GR"]
@@ -256,19 +252,14 @@ def modvege(params, tseries, enddoy=365):
 
         # grass cut flag modification if time series file has grass cut for
         # that day
-        # don't harvest or graze beyond growing/grazing season
-        # if i < 275:
-        isHarvested = bool(cutHeight != 0.0)
-        # grazing flag modification if time series file has BOTH animal
-        # related values
-        isGrazed = bool(
-            params["livestock_units"] != 0 and params["grazing_area"] != 0
-        )
-        # else:
-        #     isHarvested = False
-        #     isGrazed = False
+        # isHarvested = bool(cutHeight != 0.0)
+        # # grazing flag modification if time series file has BOTH animal
+        # # related values
+        # isGrazed = bool(
+        #     params["livestock_units"] != 0 and params["grazing_area"] != 0
+        # )
         # reset the flag isCut
-        isCut = bool(isGrazed is True or isHarvested is True)
+        # isCut = bool(isGrazed is True or isHarvested is True)
         # if isGrazed is False and isHarvested is False:
         #     isCut = False
         # else:
@@ -305,10 +296,13 @@ def modvege(params, tseries, enddoy=365):
 
         # are we in vegetative growth period?
         if params["ST2"] > sumT > params["ST1"]:
+            isHarvested = bool(cutHeight != 0.0)
+            isGrazed = bool(
+                params["livestock_units"] != 0 and params["grazing_area"] != 0
+            )
+
             # look for flags to indicate mechanical cut
             if isHarvested:
-                # change status flag
-                # isCut = True
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
                 (
@@ -325,8 +319,6 @@ def modvege(params, tseries, enddoy=365):
 
             # look for flags to indicate livestock ingestion
             if isGrazed:
-                # change status flag
-                # isCut = True
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
                 # ingestedBiomassPart = lm.defoliation(
@@ -357,12 +349,13 @@ def modvege(params, tseries, enddoy=365):
         else:
             # if (sumT < st1 or st2 < sumT)
             a2r = 0
+            isHarvested = False
+            isGrazed = False
 
-        if isCut:
+        # isCut = bool(isGrazed is True or isHarvested is True)
+
+        if bool(isGrazed is True or isHarvested is True):
             # permanently stop reproduction
-            a2rFlag = True
-
-        if a2rFlag:
             a2r = 0
 
         atr.append(a2r)
