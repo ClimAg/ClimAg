@@ -70,6 +70,9 @@ def exeCut(cutHeight, bulkDensity, biomass):
     """
     Realise a cut so that the average height is under cutHeight.
     This height is calculated by using the bulkDensity given in parameter.
+    See Jouven et al. (2006), sec. "Harvested biomass", equation (19).
+    Assumption: during harvest, 10% of the harvestable biomass in each
+    structural component is lost.
 
     Parameters
     ----------
@@ -79,18 +82,17 @@ def exeCut(cutHeight, bulkDensity, biomass):
 
     Returns
     -------
-    - Biomass taken [kg DM ha⁻¹]
-    - Biomass after cut [kg DM ha⁻¹]
-        (biomass after cut = height * 10 * bulk density)
+    - Harvested biomass [kg DM ha⁻¹]
+    - Residual biomass [kg DM ha⁻¹]
     """
 
-    biomassAfterCut = cutHeight * bulkDensity * 10
-    if biomassAfterCut < biomass:
-        takenBiomass = biomass - biomassAfterCut
+    residual_biomass = cutHeight * bulkDensity * 10
+    if residual_biomass < biomass:
+        harvested_biomass = (biomass - residual_biomass) * .9
     else:
-        takenBiomass = 0
-        biomassAfterCut = biomass
-    return (takenBiomass, biomassAfterCut)
+        harvested_biomass = 0
+        residual_biomass = biomass
+    return (harvested_biomass, residual_biomass)
 
 
 def exeDefoliationByBiomass(biomass, biomassToIngest):
@@ -424,7 +426,7 @@ def gr_update(
     gr_biomass : GR biomass (BM_GR) [kg DM ha⁻¹]
     gr_avg_age : Average GR age (AGE_GR) [°C d]
     lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
-    rhogr : Volume GR [g m⁻³] (** UNUSED ARGUMENT!)
+    rhogr : Bulk density of GR [g m⁻³] (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -500,14 +502,14 @@ def cut(
     Parameters
     ----------
     cutHeight : the height of the cut [m]
-    rhogv : rho green vegetative
-    rhodv : rho dead vegetative
-    rhogr : rho green reproductive
-    rhodr : rho dead reproductive
-    gvb : the biomass of green vegetative
-    dvb : the biomass of dead vegetative
-    grb : the biomass of green reproductive
-    drb : the biomass of dead reproductive
+    rhogv : bulk density of green vegetative [g m⁻³]
+    rhodv : bulk density of dead vegetative [g m⁻³]
+    rhogr : bulk density of green reproductive [g m⁻³]
+    rhodr : bulk density of dead reproductive [g m⁻³]
+    gvb : standing biomass of green vegetative [kg DM ha⁻¹]
+    dvb : standing biomass of dead vegetative [kg DM ha⁻¹]
+    grb : standing biomass of green reproductive [kg DM ha⁻¹]
+    drb : standing biomass of dead reproductive [kg DM ha⁻¹]
 
     Returns
     -------
@@ -888,7 +890,7 @@ def defoliation(
     dv_biomass : biomass of dead vegetative
     gr_biomass : biomass of green reproductive
     dr_biomass : biomass of dead reproductive
-    cutHeight : height of the cut
+    cutHeight : height of the cut [m]
     rhogv : Volume VV [g m⁻³]
     rhodv : Volume DV [g m⁻³]
     rhogr : Volume GR [g m⁻³]
@@ -1054,11 +1056,11 @@ def getSumTemperature(timeseries, doy, t0):
     - Sum of temperatures above t0 corresponding to the DOY
     """
 
-    sumTemperature = 0
+    sum_temperature = 0
     for i in range(doy):
         if timeseries["tas"][i] > t0:
-            sumTemperature += timeseries["tas"][i] - t0
-    return sumTemperature
+            sum_temperature += timeseries["tas"][i] - t0
+    return sum_temperature
 
 
 # TO-DO: This set of functions are either not used or not useful
@@ -1088,13 +1090,18 @@ def stocking_rate(livestock_units, grazing_area):
     return stocking_rate_ha
 
 
-def ingested_biomass(stocking_rate_ha, ingestion_per_livestock_unit=13):
+def ingested_biomass(
+    livestock_units, grazing_area, ingestion_per_livestock_unit=13
+):
     """
-    Return the amount of biomass ingested by the livestock units.
+    Return the amount of biomass ingested by the livestock units based on the
+    stocking rate.
 
     Parameters
     ----------
-    stocking_rate_ha : stocking rate [LU ha⁻¹]
+    livestock_units : total number of livestock units [LU]
+    grazing_area : total grazing area (i.e. grassland available for grazing)
+        [ha]
     ingestion_per_livestock_unit : average ingestion of grass by a dairy cow
         [kg DM LU⁻¹]; default is 13 based on Teagasc data
 
@@ -1113,10 +1120,14 @@ def ingested_biomass(stocking_rate_ha, ingestion_per_livestock_unit=13):
         - 8-13 kg DM grass per cow in the spring
         - increase of 0.75-1.0 kg DM until peak intake is reached
         - peak intake of 16-18 kg DM
-        - average intake is 13 ((8 + 18) / 2)
+        - average intake is 13 kg DM ((8 + 18) / 2)
     - one dairy cow is equivalent to one livestock unit; see
       https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
-    total_consumption = stocking_rate_ha * ingestion_per_livestock_unit
-    return total_consumption
+    total_ingestion = (
+        stocking_rate(
+            livestock_units=livestock_units, grazing_area=grazing_area
+        ) * ingestion_per_livestock_unit
+    )
+    return total_ingestion

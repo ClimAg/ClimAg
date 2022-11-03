@@ -142,18 +142,18 @@ def modvege(params, tseries, enddoy=365):
 
     # Initialise state parameters
     # This is a status flag changed in lib_cell.updateCell()
-    isCut = False
+    # isCut = False
     # This is an actionable flag modified by gcut_height presence
-    isHarvested = False
+    # isHarvested = False
     # This is an actionable flag modified by grazing* presences
-    isGrazed = False
+    # isGrazed = False
     # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
     a2rFlag = False
-    # harvested biomass
-    harvestedBiomass = 0
-    # ingested biomass
-    ingestedBiomass = 0
+    # # harvested biomass
+    # harvestedBiomass = 0
+    # # ingested biomass
+    # ingestedBiomass = 0
     # biomass for compartments
     gv_biomass = params["W_GV"]
     gr_biomass = params["W_GR"]
@@ -233,6 +233,7 @@ def modvege(params, tseries, enddoy=365):
             cutHeight = params["cutHeight"]
         # grazing_animal_count = tseries["grazing_animal_count"][i]
         # grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][i]
+
         #######################################################
         # Prepare additional variables
         #######################################################
@@ -255,15 +256,23 @@ def modvege(params, tseries, enddoy=365):
 
         # grass cut flag modification if time series file has grass cut for
         # that day
+        # don't harvest or graze beyond growing/grazing season
+        # if i < 275:
         isHarvested = bool(cutHeight != 0.0)
         # grazing flag modification if time series file has BOTH animal
         # related values
         isGrazed = bool(
             params["livestock_units"] != 0 and params["grazing_area"] != 0
         )
+        # else:
+        #     isHarvested = False
+        #     isGrazed = False
         # reset the flag isCut
-        if isGrazed is False and isHarvested is False:
-            isCut = False
+        isCut = bool(isGrazed is True or isHarvested is True)
+        # if isGrazed is False and isHarvested is False:
+        #     isCut = False
+        # else:
+        #     isCut = True
         # TO-DO: This variable is not found in the manual/sourcecode, yet is
         # used widely
         correctiveFactorForAn = 1
@@ -293,12 +302,13 @@ def modvege(params, tseries, enddoy=365):
         # compute CUT
         harvestedBiomassPart = 0
         ingestedBiomassPart = 0
+
         # are we in vegetative growth period?
         if params["ST2"] > sumT > params["ST1"]:
             # look for flags to indicate mechanical cut
             if isHarvested:
                 # change status flag
-                isCut = True
+                # isCut = True
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
                 (
@@ -316,7 +326,7 @@ def modvege(params, tseries, enddoy=365):
             # look for flags to indicate livestock ingestion
             if isGrazed:
                 # change status flag
-                isCut = True
+                # isCut = True
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
                 # ingestedBiomassPart = lm.defoliation(
@@ -326,11 +336,10 @@ def modvege(params, tseries, enddoy=365):
                 #     rhodv=params["rho_DV"], rhogr=params["rho_GR"],
                 #     rhodr=params["rho_DR"]
                 # )  # ** MODIFIED -- NEED TO CHECK!
+                # ingested biomass based on stocking rate
                 ingestedBiomassPart = lm.ingested_biomass(
-                    stocking_rate_ha=lm.stocking_rate(
-                        livestock_units=params["livestock_units"],
-                        grazing_area=params["grazing_area"]
-                    )
+                    livestock_units=params["livestock_units"],
+                    grazing_area=params["grazing_area"]
                 )
             # allocation to reproductive
             a2r = lm.rep(ni=params["NI"])
@@ -357,6 +366,7 @@ def modvege(params, tseries, enddoy=365):
             a2r = 0
 
         atr.append(a2r)
+
         # compute biomass growth
         env.append(
             lm.mk_env(
@@ -431,9 +441,7 @@ def modvege(params, tseries, enddoy=365):
             st2=params["ST2"], temperature=temperature, kldr=params["Kl_DR"],
             dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
         )
-        # If we do not cut the grass, ensure default estimation is created
-        # if not isHarvested:
-        #     cutHeight = params["cutHeight"]
+
         # Compute available biomass for cut (output comparison requirement)
         avBiom4cut = lm.getAvailableBiomassForCut(
             gv_biomass=gv_biomass, dv_biomass=dv_biomass,
@@ -445,20 +453,20 @@ def modvege(params, tseries, enddoy=365):
         #####################################################################
         # The model stops here really
         #####################################################################
-        # Accumulate harvestedBiomass
-        if isHarvested:
-            # harvestedBiomass += abc[-1]
-            harvestedBiomass += harvestedBiomassPart
-        # Accumulate ingestedBiomass
-        if isGrazed:
-            ingestedBiomass += ingestedBiomassPart
+        # # Accumulate harvestedBiomass
+        # if isHarvested:
+        #     # harvestedBiomass += abc[-1]
+        #     harvestedBiomass += harvestedBiomassPart
+        # # Accumulate ingestedBiomass
+        # if isGrazed:
+        #     ingestedBiomass += ingestedBiomassPart
         # Recover output streams
         gvb.append(gv_biomass)
         dvb.append(dv_biomass)
         grb.append(gr_biomass)
         drb.append(dr_biomass)
-        hb.append(harvestedBiomass)
-        ib.append(ingestedBiomass)
+        hb.append(harvestedBiomassPart)
+        ib.append(ingestedBiomassPart)
         g.append(gro)
         abc.append(avBiom4cut)
         stp.append(sumT)
