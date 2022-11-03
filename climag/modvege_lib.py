@@ -20,13 +20,14 @@ import numpy as np
 #     -------
 #     - Average height [m]
 #     """
+
 #     avg_height = biomass / (bulkDensity * 10)
 #     return avg_height
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     """
-    Estimate biomass for ingestion.
+    Estimate biomass available for ingestion by livestock.
 
     Parameters
     ----------
@@ -38,6 +39,7 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     -------
     - Biomass for ingestion [kg DM ha⁻¹]
     """
+
     biomassAfterCut = cutHeight * bulkDensity * 10
     return max(0, biomass - biomassAfterCut)
 
@@ -57,6 +59,7 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
 #     -------
 #     - Updated biomass after defoliation [kg DM ha⁻¹] ?
 #     """
+
 #     biomass = biomass - cut_biomass / area
 #     if biomass < 0 | np.isnan(biomass):
 #         biomass = 0
@@ -72,14 +75,15 @@ def exeCut(cutHeight, bulkDensity, biomass):
     ----------
     cutHeight : Average height after the cut [m]
     bulkDensity : Bulk density [g DM m⁻³]
-        (biomass after cut = height * 10 * bulk density)
     biomass : Biomass [kg DM ha⁻¹]
 
     Returns
     -------
     - Biomass taken [kg DM ha⁻¹]
-    - Biomass after cut
+    - Biomass after cut [kg DM ha⁻¹]
+        (biomass after cut = height * 10 * bulk density)
     """
+
     biomassAfterCut = cutHeight * bulkDensity * 10
     if biomassAfterCut < biomass:
         takenBiomass = biomass - biomassAfterCut
@@ -102,8 +106,9 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
     -------
     - Biomass left [kg DM ha⁻¹]
     """
+
     biomass -= biomassToIngest
-    return biomassToIngest
+    return biomass
 
 
 # DEAD VEGETATIVE FUNCTIONS
@@ -125,6 +130,7 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     -------
     - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
     """
+
     # method to compute the age of DV for computing abcission of DV
     # f(AGE_DV) in Equation (18)
     if dv_avg_age / lls < 1.0 / 3.0:
@@ -167,6 +173,7 @@ def dv_update(
     - Dead vegetative biomass
     - Average DV age
     """
+
     abscissionBiomass = mk_dv_abscission(
         kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
         dv_avg_age=dv_avg_age, lls=lls
@@ -207,6 +214,7 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
     -------
     - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
     """
+
     # method to compute the age of DR for computing abscission of DR
     # f(AGE_DV) in Equation (18)
     if dr_avg_age / (st2 - st1) < 1.0 / 3.0:
@@ -250,6 +258,7 @@ def dr_update(
     - Updated biomass for DR
     - Average DR age
     """
+
     abscissionBiomass = mk_dr_abscission(
         kldr=kldr, dr_biomass=dr_biomass, temperature=temperature,
         dr_avg_age=dr_avg_age, st1=st1, st2=st2
@@ -289,6 +298,7 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     -------
     - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
     """
+
     # method to compute the age of GV for computing senescence of GV
     # f(AGE_GV) in Equation (16)
     if gv_avg_age / lls < 1.0 / 3.0:
@@ -331,6 +341,7 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
     - GV average age
     - Senescent biomass
     """
+
     senescentBiomass = mk_gv_senescence(
         kgv=kgv, gv_biomass=gv_biomass, temperature=temperature, t0=t0,
         lls=lls, gv_avg_age=gv_avg_age
@@ -375,6 +386,7 @@ def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
     -------
     - Senescent biomass [kg DM ha⁻¹]
     """
+
     # method to compute the age of GR for computing senescence of GR
     if gr_avg_age / (st2 - st1) < 1.0 / 3.0:
         age = 1
@@ -420,6 +432,7 @@ def gr_update(
     - Average GR age
     - Senescent biomass
     """
+
     senescentBiomass = mk_gr_senescence(
         kgr=kgr, gr_biomass=gr_biomass, temperature=temperature, t0=t0,
         gr_avg_age=gr_avg_age, st1=st1, st2=st2
@@ -474,16 +487,15 @@ def gr_update(
 #     -------
 #     - the maximum height of the 4 cs
 #     """
+
 #     return max(max(gv_avg_h, gr_avg_h), np.max(dv_avg_h, dr_avg_h))
 
 
 def cut(
-    cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb, cellSurface,
-    isHarvested
+    cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb
 ):
     """
-    Realise the harvest on each c. If the amount of cut biomass is not null,
-    then the flag isHarvested is set to True
+    Realise the harvest on each compartment.
 
     Parameters
     ----------
@@ -496,30 +508,24 @@ def cut(
     dvb : the biomass of dead vegetative
     grb : the biomass of green reproductive
     drb : the biomass of dead reproductive
-    cellSurface : Surface of the pixel [ha]
-    isHarvested : Status flag indicating harvest happened
 
     Returns
     -------
-    - Status flag indicating harvest happened
-    - the total amount of biomass cut [kg DM]
-    - the amount of GV biomass cut [kg DM]
-    - the amount of DV biomass cut [kg DM]
-    - the amount of GR biomass cut [kg DM]
-    - the amount of DR biomass cut [kg DM]
+    - the total amount of biomass cut [kg DM ha⁻¹]
+    - the amount of GV biomass cut [kg DM ha⁻¹]
+    - the amount of DV biomass cut [kg DM ha⁻¹]
+    - the amount of GR biomass cut [kg DM ha⁻¹]
+    - the amount of DR biomass cut [kg DM ha⁻¹]
     """
-    # exeCut returns harvested biomass in [kg DM m⁻²]
+
     gv_h, gv_b = exeCut(bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
     dv_h, dv_b = exeCut(bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
     gr_h, gr_b = exeCut(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
     dr_h, dr_b = exeCut(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
-    # sum of harvested biomass [kg DM m⁻²]
     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
-    if sumBiomassHarvested > 0:
-        isHarvested = True
-    return (
-        isHarvested, sumBiomassHarvested * cellSurface, gv_b, dv_b, gr_b, dr_b
-    )
+    # if sumBiomassHarvested > 0:
+    #     isHarvested = True
+    return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
 def mk_env(
@@ -547,6 +553,7 @@ def mk_env(
     -------
     - Environmental stress
     """
+
     return (
         fTemperature(
             meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
@@ -577,6 +584,7 @@ def mk_env(
 #     -------
 #     - Total biomass
 #     """
+
 #     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
@@ -596,6 +604,7 @@ def fTemperature(meanTenDaysT, t0, t1, t2):
     -------
     - the value given by the temperature f
     """
+
     if meanTenDaysT < t0 or meanTenDaysT >= 40:
         f_temp = 0
     elif t1 > meanTenDaysT >= t0:
@@ -625,6 +634,7 @@ def fsea(maxsea, minsea, sumT, st2, st1):
     -------
     - Value given by *f*(SEA)
     """
+
     if sumT < 200 or sumT >= st2:
         f_sea = minsea
     elif sumT < st1 - 200:
@@ -651,6 +661,7 @@ def fPARi(pari, alphapar):
     -------
     - the value given by the PAR_i [0-1]
     """
+
     if pari < 5:
         f_pari = 1
     else:
@@ -673,6 +684,7 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     -------
     - the value given by the waterstress f
     """
+
     waterStress = min(waterReserve / waterHoldingCapacity, 1)
     if pet <= 3.8:
         if waterStress <= 0.2:
@@ -711,6 +723,7 @@ def rep(ni):
     -------
     - the value of the rep f
     """
+
     return 0.25 + ((0.75 * (ni - 0.35)) / 0.65)
 
 
@@ -731,6 +744,7 @@ def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
     -------
     - the calculated pGRO [kg DM ha⁻¹]
     """
+
     if int(lai) == 0:
         try:
             lai = sla * pctlam * (gv_biomass / 10)
@@ -756,6 +770,7 @@ def fclai(pctlam, sla, gv_biomass):
     -------
     - the calculated LAI
     """
+
     return sla * (gv_biomass / 10) * pctlam
 
 
@@ -775,6 +790,7 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     -------
     - Actual evapotranspiration (AET) [mm]
     """
+
     if int(lai) == 0:
         lai = sla * pctlam * (gv_biomass / 10)
     lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
@@ -808,6 +824,7 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
 #     -------
 #     - Sum of temperatures
 #     """
+
 #     # TO-DO: return DOY in doc, but return sumT in code O_O?????
 #     if temperature >= t0:
 #         sumT += np.max(temperature - tbase, 0)
@@ -827,7 +844,7 @@ def getAvailableBiomassForCut(
     dv_biomass : Biomass of dead vegetative
     gr_biomass : Biomass of green reproductive
     dr_biomass : Biomass of dead reproductive
-    cutHeight : Height of the cut
+    cutHeight : Height of the cut [m]
     rhogv : Volume VV [g m⁻³]
     rhodv : Volume DV [g m⁻³]
     rhogr : Volume GR [g m⁻³]
@@ -835,8 +852,9 @@ def getAvailableBiomassForCut(
 
     Returns
     -------
-    - Amount of biomass av for cut
+    - Amount of biomass available for cut
     """
+
     avDefoliationBiomassGV = avDefoliationBiomass(
         biomass=gv_biomass, cutHeight=cutHeight, bulkDensity=rhogv
     )
@@ -859,7 +877,7 @@ def getAvailableBiomassForCut(
 
 def defoliation(
     gv_biomass, dv_biomass, gr_biomass, dr_biomass, cutHeight, rhogv, rhodv,
-    rhogr, rhodr, maxAmountToIngest=9999
+    rhogr, rhodr, maxAmountToIngest=9999999
 ):
     """
     Defoliation method
@@ -876,12 +894,13 @@ def defoliation(
     rhogr : Volume GR [g m⁻³]
     rhodr : Volume DR [g m⁻³]
     maxAmountToIngest : The maximum amount of biomass to ingest
-        (** USING A DEFAULT OF 9999 - NEED TO CHECK!)
+        (** USING A DEFAULT OF 9999999 - NEED TO CHECK!)
 
     Returns
     -------
     - the sum of ingested biomass
     """
+
     avDefoliationBiomassGV = avDefoliationBiomass(
         biomass=gv_biomass, cutHeight=cutHeight, bulkDensity=rhogv
     )
@@ -970,6 +989,7 @@ def defoliation(
 #     -------
 #     - Mass of green limbs
 #     """
+
 #     return gv_gamma * gv_biomass
 
 
@@ -989,6 +1009,7 @@ def defoliation(
 #     -------
 #     - the green vegetative organic matter digestibility
 #     """
+
 #     return max(
 #         gv_min_omd, gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
 #     )
@@ -1011,6 +1032,7 @@ def defoliation(
 #     -------
 #     - Green vegetative organic matter digestibility
 #     """
+
 #     return max(
 #         gr_min_omd,
 #         gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
@@ -1031,6 +1053,7 @@ def getSumTemperature(timeseries, doy, t0):
     -------
     - Sum of temperatures above t0 corresponding to the DOY
     """
+
     sumTemperature = 0
     for i in range(doy):
         if timeseries["tas"][i] > t0:
@@ -1041,3 +1064,59 @@ def getSumTemperature(timeseries, doy, t0):
 # TO-DO: This set of functions are either not used or not useful
 # def addNI(ni, amountToIncrease):
 #     return max(0, min(amountToIncrease + ni, 1.2))
+
+
+def stocking_rate(livestock_units, grazing_area):
+    """
+    Calculate the stocking rate
+
+    Parameters
+    ----------
+    livestock_units : total number of livestock units [LU]
+    grazing_area : total grazing area (i.e. grassland available for grazing)
+        [ha]
+
+    Returns
+    -------
+    stocking rate [LU ha⁻¹]
+    """
+
+    try:
+        stocking_rate_ha = livestock_units / grazing_area
+    except ZeroDivisionError:
+        stocking_rate_ha = 0
+    return stocking_rate_ha
+
+
+def ingested_biomass(stocking_rate_ha, ingestion_per_livestock_unit=13):
+    """
+    Return the amount of biomass ingested by the livestock units.
+
+    Parameters
+    ----------
+    stocking_rate_ha : stocking rate [LU ha⁻¹]
+    ingestion_per_livestock_unit : average ingestion of grass by a dairy cow
+        [kg DM LU⁻¹]; default is 13 based on Teagasc data
+
+    Returns
+    -------
+    total grass ingestion by livestock per hectare [kg DM ha⁻¹]
+
+    Notes
+    -----
+    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
+        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
+        - average ingestion of supplements (meal, concentrate, silage) is
+        4.25 kg DM LU⁻¹
+    - Teagasc Dairy Manual:
+      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
+        - 8-13 kg DM grass per cow in the spring
+        - increase of 0.75-1.0 kg DM until peak intake is reached
+        - peak intake of 16-18 kg DM
+        - average intake is 13 ((8 + 18) / 2)
+    - one dairy cow is equivalent to one livestock unit; see
+      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
+    """
+
+    total_consumption = stocking_rate_ha * ingestion_per_livestock_unit
+    return total_consumption

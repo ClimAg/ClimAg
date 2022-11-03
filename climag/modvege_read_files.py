@@ -64,10 +64,11 @@ def read_params(filename):
     - Kl_DR       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
     - cellSurface : Pixel area [ha]
-    - cutHeight   : Grass cut height [m]
+    - cutHeight   : Grass cut height; see sec. "Harvested biomass" in Jouven
+                    et al. (2005)  [0.05 m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 
-    - NI          : Initial nutritional index of cell
+    - NI          : Initial nitrogen nutritional index of cell
     - WHC         : Soil water-holding capacity (WHC) [mm]
     - WR          : Water reserve (WR) [mm]
     - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
