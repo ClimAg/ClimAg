@@ -525,8 +525,6 @@ def cut(
     gr_h, gr_b = exeCut(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
     dr_h, dr_b = exeCut(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
-    # if sumBiomassHarvested > 0:
-    #     isHarvested = True
     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
@@ -1091,7 +1089,8 @@ def stocking_rate(livestock_units, grazing_area):
 
 
 def ingested_biomass(
-    livestock_units, grazing_area, ingestion_per_livestock_unit=13
+    livestock_units, grazing_area, bulk_density, min_cut_height=0.05,
+    ingestion_per_livestock_unit=13
 ):
     """
     Return the amount of biomass ingested by the livestock units based on the
@@ -1102,8 +1101,12 @@ def ingested_biomass(
     livestock_units : total number of livestock units [LU]
     grazing_area : total grazing area (i.e. grassland available for grazing)
         [ha]
-    ingestion_per_livestock_unit : average ingestion of grass by a dairy cow
-        [kg DM LU⁻¹]; default is 13 based on Teagasc data
+    ingestion_per_livestock_unit : average ingestion of grass by a livestock
+        unit (e.g. dairy cow); default is 13 based on Teagasc data
+        [kg DM LU⁻¹]
+    min_cut_height : minimum grass height to be maintained; default is 0.05
+        [m]
+    bulk_density : bulk density of the biomass compartment [g DM m⁻³]
 
     Returns
     -------
@@ -1130,4 +1133,7 @@ def ingested_biomass(
             livestock_units=livestock_units, grazing_area=grazing_area
         ) * ingestion_per_livestock_unit
     )
+    # if the total ingestion exceeds the minimum cut height of 5 cm, reduce it
+    if total_ingestion > min_cut_height * bulk_density * 10:
+        total_ingestion = total_ingestion - min_cut_height * bulk_density * 10
     return total_ingestion

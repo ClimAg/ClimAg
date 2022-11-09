@@ -329,9 +329,16 @@ def modvege(params, tseries, enddoy=365):
                 #     rhodr=params["rho_DR"]
                 # )  # ** MODIFIED -- NEED TO CHECK!
                 # ingested biomass based on stocking rate
+                # for bd in ["rho_GV", "rho_GR", "rho_DV", "rho_DR"]:
+                #     ingestedBiomassPart += lm.ingested_biomass(
+                #         livestock_units=params["livestock_units"],
+                #         grazing_area=params["grazing_area"],
+                #         bulk_density=params[bd]
+                #     )
                 ingestedBiomassPart = lm.ingested_biomass(
                     livestock_units=params["livestock_units"],
-                    grazing_area=params["grazing_area"]
+                    grazing_area=params["grazing_area"],
+                    bulk_density=params["rho_GV"]
                 )
             # allocation to reproductive
             a2r = lm.rep(ni=params["NI"])
