@@ -175,53 +175,21 @@ def modvege(params, tseries, enddoy=365):
         "biomass_dv": [],
         "biomass_gr": [],
         "biomass_dr": [],
-        "bm_growth": [],
-        "bm_harvested": [],
-        "bm_ingested": [],
-        "abc": [],
-        "t_sum": [],
-        "gva": [],
-        "gra": [],
-        "dva": [],
-        "dra": [],
-        "sea": [],
-        "ftm": [],
+        "biomass_growth": [],
+        "biomass_harvested": [],
+        "biomass_ingested": [],
+        "biomass_cut_avail": [],
+        "temperature_sum": [],
+        "age_gv": [],
+        "age_gr": [],
+        "age_dv": [],
+        "age_dr": [],
+        "seasonality": [],
+        "temperature_fn": [],
         "env": [],
-        "pgr": [],
-        "atr": []
+        "biomass_growth_pot": [],
+        "reproductive_fn": []
     }
-
-    # biomass compartments
-    # biomass_gv = []
-    # biomass_dv = []
-    # biomass_gr = []
-    # biomass_dr = []
-
-    # # GRO biomass
-    # bm_growth = []
-    # # harvested biomass
-    # bm_harvested = []
-    # # ingested biomass
-    # bm_ingested = []
-    # # available biomass for cut
-    # abc = []
-    # sum of temperature
-    # t_sum = []
-    # ages
-    # gva = []
-    # gra = []
-    # dva = []
-    # dra = []
-    # fSEA
-    # sea = []
-    # # fTemperature
-    # ftm = []
-    # mk_env
-    # env = []
-    # pGRO
-    # pgr = []
-    # a2r
-    # atr = []
 
     # TO-DO: This variable is not found in the manual/sourcecode, yet is
     # used widely
@@ -263,14 +231,14 @@ def modvege(params, tseries, enddoy=365):
             timeseries=tseries, doy=(i + 1), t0=0
         )
         # fSEA array for graphs
-        outputs_dict["sea"].append(
+        outputs_dict["seasonality"].append(
             lm.fsea(
                 maxsea=params["maxSEA"], minsea=params["minSEA"],
                 sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
             )
         )
         # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
-        outputs_dict["ftm"].append(
+        outputs_dict["temperature_fn"].append(
             lm.fTemperature(
                 meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
                 t1=params["T1"], t2=params["T2"]
@@ -389,7 +357,7 @@ def modvege(params, tseries, enddoy=365):
             # permanently stop reproduction
             a2r = 0
 
-        outputs_dict["atr"].append(a2r)
+        outputs_dict["reproductive_fn"].append(a2r)
 
         # compute biomass growth
         outputs_dict["env"].append(
@@ -400,7 +368,7 @@ def modvege(params, tseries, enddoy=365):
                 waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
         )
-        outputs_dict["pgr"].append(
+        outputs_dict["biomass_growth_pot"].append(
             lm.pgro(
                 pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
                 sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
@@ -479,7 +447,7 @@ def modvege(params, tseries, enddoy=365):
         #####################################################################
         # # Accumulate harvestedBiomass
         # if isHarvested:
-        #     # harvestedBiomass += outputs_dict["abc"][-1]
+        #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
         #     harvestedBiomass += harvestedBiomassPart
         # # Accumulate ingestedBiomass
         # if isGrazed:
@@ -489,24 +457,24 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["biomass_dv"].append(dv_biomass)
         outputs_dict["biomass_gr"].append(gr_biomass)
         outputs_dict["biomass_dr"].append(dr_biomass)
-        outputs_dict["bm_harvested"].append(harvestedBiomassPart)
-        outputs_dict["bm_ingested"].append(ingestedBiomassPart)
-        outputs_dict["bm_growth"].append(gro)
-        outputs_dict["abc"].append(avBiom4cut)
-        outputs_dict["t_sum"].append(temperature_sum)
-        outputs_dict["gva"].append(gv_avg_age)
-        outputs_dict["gra"].append(gr_avg_age)
-        outputs_dict["dva"].append(dv_avg_age)
-        outputs_dict["dra"].append(dr_avg_age)
+        outputs_dict["biomass_harvested"].append(harvestedBiomassPart)
+        outputs_dict["biomass_ingested"].append(ingestedBiomassPart)
+        outputs_dict["biomass_growth"].append(gro)
+        outputs_dict["biomass_cut_avail"].append(avBiom4cut)
+        outputs_dict["temperature_sum"].append(temperature_sum)
+        outputs_dict["age_gv"].append(gv_avg_age)
+        outputs_dict["age_gr"].append(gr_avg_age)
+        outputs_dict["age_dv"].append(dv_avg_age)
+        outputs_dict["age_dr"].append(dr_avg_age)
 
     return (
         outputs_dict["biomass_gv"], outputs_dict["biomass_dv"],
         outputs_dict["biomass_gr"], outputs_dict["biomass_dr"],
-        outputs_dict["bm_harvested"], outputs_dict["bm_ingested"],
-        outputs_dict["bm_growth"], outputs_dict["abc"],
-        outputs_dict["t_sum"], outputs_dict["gva"],
-        outputs_dict["dva"], outputs_dict["gra"],
-        outputs_dict["dra"],
-        outputs_dict["sea"], outputs_dict["ftm"], outputs_dict["env"],
-        outputs_dict["pgr"], outputs_dict["atr"]
+        outputs_dict["biomass_harvested"], outputs_dict["biomass_ingested"],
+        outputs_dict["biomass_growth"], outputs_dict["biomass_cut_avail"],
+        outputs_dict["temperature_sum"], outputs_dict["age_gv"],
+        outputs_dict["age_dv"], outputs_dict["age_gr"], outputs_dict["age_dr"],
+        outputs_dict["seasonality"], outputs_dict["temperature_fn"],
+        outputs_dict["env"], outputs_dict["biomass_growth_pot"],
+        outputs_dict["reproductive_fn"]
     )
