@@ -144,9 +144,9 @@ def modvege(params, tseries, enddoy=365):
     # This is a status flag changed in lib_cell.updateCell()
     # isCut = False
     # This is an actionable flag modified by gcut_height presence
-    # isHarvested = False
+    # is_harvested = False
     # This is an actionable flag modified by grazing* presences
-    # isGrazed = False
+    # is_grazed = False
     # permanently stop reproduction after the first cut (isCut is True)
     # p116, Jouven et al. (2006)
     # a2rFlag = False
@@ -247,15 +247,15 @@ def modvege(params, tseries, enddoy=365):
 
         # grass cut flag modification if time series file has grass cut for
         # that day
-        # isHarvested = bool(cut_height != 0.0)
+        # is_harvested = bool(cut_height != 0.0)
         # # grazing flag modification if time series file has BOTH animal
         # # related values
-        # isGrazed = bool(
+        # is_grazed = bool(
         #     params["livestock_units"] != 0 and params["grazing_area"] != 0
         # )
         # reset the flag isCut
-        # isCut = bool(isGrazed is True or isHarvested is True)
-        # if isGrazed is False and isHarvested is False:
+        # isCut = bool(is_grazed is True or is_harvested is True)
+        # if is_grazed is False and is_harvested is False:
         #     isCut = False
         # else:
         #     isCut = True
@@ -283,22 +283,22 @@ def modvege(params, tseries, enddoy=365):
         params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
 
         # compute CUT
-        harvestedBiomassPart = 0
-        ingestedBiomassPart = 0
+        harvested_biomass_part = 0
+        ingested_biomass_part = 0
 
         # are we in vegetative growth period?
         if params["ST2"] > temperature_sum > params["ST1"]:
-            isHarvested = bool(cut_height != 0.0)
-            isGrazed = bool(
+            is_harvested = bool(cut_height != 0.0)
+            is_grazed = bool(
                 params["livestock_units"] != 0 and params["grazing_area"] != 0
             )
 
             # look for flags to indicate mechanical cut
-            if isHarvested:
+            if is_harvested:
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
                 (
-                    harvestedBiomassPart,
+                    harvested_biomass_part,
                     gv_biomass, dv_biomass, gr_biomass, dr_biomass
                 ) = (
                     lm.cut(
@@ -310,10 +310,10 @@ def modvege(params, tseries, enddoy=365):
                 )
 
             # look for flags to indicate livestock ingestion
-            if isGrazed:
+            if is_grazed:
                 # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
                 # of this henceforth wicked rabbit!"
-                # ingestedBiomassPart = lm.defoliation(
+                # ingested_biomass_part = lm.defoliation(
                 #     gv_biomass=gv_biomass, dv_biomass=dv_biomass,
                 #     gr_biomass=gr_biomass, dr_biomass=dr_biomass,
                 #     cutHeight=cut_height, rhogv=params["rho_GV"],
@@ -322,12 +322,12 @@ def modvege(params, tseries, enddoy=365):
                 # )  # ** MODIFIED -- NEED TO CHECK!
                 # ingested biomass based on stocking rate
                 # for bd in ["rho_GV", "rho_GR", "rho_DV", "rho_DR"]:
-                #     ingestedBiomassPart += lm.ingested_biomass(
+                #     ingested_biomass_part += lm.ingested_biomass(
                 #         livestock_units=params["livestock_units"],
                 #         grazing_area=params["grazing_area"],
                 #         bulk_density=params[bd]
                 #     )
-                ingestedBiomassPart = lm.ingested_biomass(
+                ingested_biomass_part = lm.ingested_biomass(
                     livestock_units=params["livestock_units"],
                     grazing_area=params["grazing_area"],
                     bulk_density=params["rho_GV"]
@@ -348,12 +348,12 @@ def modvege(params, tseries, enddoy=365):
         else:
             # if (temperature_sum < st1 or st2 < temperature_sum)
             a2r = 0
-            isHarvested = False
-            isGrazed = False
+            is_harvested = False
+            is_grazed = False
 
-        # isCut = bool(isGrazed is True or isHarvested is True)
+        # isCut = bool(is_grazed is True or is_harvested is True)
 
-        if bool(isGrazed is True or isHarvested is True):
+        if bool(is_grazed is True or is_harvested is True):
             # permanently stop reproduction
             a2r = 0
 
@@ -435,7 +435,7 @@ def modvege(params, tseries, enddoy=365):
         )
 
         # Compute available biomass for cut (output comparison requirement)
-        avBiom4cut = lm.getAvailableBiomassForCut(
+        biomass_cut_avail = lm.getAvailableBiomassForCut(
             gv_biomass=gv_biomass, dv_biomass=dv_biomass,
             gr_biomass=gr_biomass, dr_biomass=dr_biomass, cutHeight=cut_height,
             rhogv=params["rho_GV"], rhodv=params["rho_DV"],
@@ -446,21 +446,21 @@ def modvege(params, tseries, enddoy=365):
         # The model stops here really
         #####################################################################
         # # Accumulate harvestedBiomass
-        # if isHarvested:
+        # if is_harvested:
         #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
-        #     harvestedBiomass += harvestedBiomassPart
+        #     harvestedBiomass += harvested_biomass_part
         # # Accumulate ingestedBiomass
-        # if isGrazed:
-        #     ingestedBiomass += ingestedBiomassPart
+        # if is_grazed:
+        #     ingestedBiomass += ingested_biomass_part
         # Recover output streams
         outputs_dict["biomass_gv"].append(gv_biomass)
         outputs_dict["biomass_dv"].append(dv_biomass)
         outputs_dict["biomass_gr"].append(gr_biomass)
         outputs_dict["biomass_dr"].append(dr_biomass)
-        outputs_dict["biomass_harvested"].append(harvestedBiomassPart)
-        outputs_dict["biomass_ingested"].append(ingestedBiomassPart)
+        outputs_dict["biomass_harvested"].append(harvested_biomass_part)
+        outputs_dict["biomass_ingested"].append(ingested_biomass_part)
         outputs_dict["biomass_growth"].append(gro)
-        outputs_dict["biomass_cut_avail"].append(avBiom4cut)
+        outputs_dict["biomass_cut_avail"].append(biomass_cut_avail)
         outputs_dict["temperature_sum"].append(temperature_sum)
         outputs_dict["age_gv"].append(gv_avg_age)
         outputs_dict["age_gr"].append(gr_avg_age)
