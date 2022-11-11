@@ -768,7 +768,7 @@ def rep(ni):
     return 0.25 + ((0.75 * (ni - 0.35)) / 0.65)
 
 
-def pgro(pari, gv_biomass, lai, sla=0.033, pctlam=0.68, ruemax=3):
+def potential_growth(pari, lai, ruemax=3):
     """
     Calculate potential growth
 
@@ -779,9 +779,6 @@ def pgro(pari, gv_biomass, lai, sla=0.033, pctlam=0.68, ruemax=3):
     pari : Incident PAR (PAR_i) [MJ m⁻²]
     ruemax : Maximum radiation use efficiency (RUE_max); default is 3
         [g DM MJ⁻¹]
-    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
-    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
-    gv_biomass : Green vegetative biomass (BM_GV) [kg DM ha⁻¹]
     lai : the LAI from remote sensing (if available)
 
     Returns
@@ -789,14 +786,15 @@ def pgro(pari, gv_biomass, lai, sla=0.033, pctlam=0.68, ruemax=3):
     - potential growth (PGRO) [kg DM ha⁻¹]
     """
 
-    if int(lai) == 0:
-        try:
-            lai = leaf_area_index(
-                pctlam=pctlam, sla=sla, gv_biomass=gv_biomass
-            )
-        except (IOError, ValueError):
-            # in case of input malfunction
-            lai = sla * pctlam * 1.0
+    # if int(lai) == 0:
+    #     try:
+    #         lai = leaf_area_index(
+    #             pctlam=pctlam, sla=sla, gv_biomass=gv_biomass
+    #         )
+    #     except (IOError, ValueError):
+    #         # in case of input malfunction
+    #         lai = sla * pctlam * 1.0
+    # lai = leaf_area_index(pctlam=pctlam, sla=sla, gv_biomass=gv_biomass)
     p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
     return p_gro
 
@@ -827,12 +825,7 @@ def actual_evapotranspiration(pet, lai):
 
     See Equation (14) in Jouven et al. (2006)
 
-    pet : Potential evapotranspiration (PET) [mm]
-    pctlam : Percentage of laminae in GV (%LAM)
-    sla : Specific leaf area (SLA) [m² g⁻¹]
-    gv_biomass : GV biomass
-    waterReserve : Water reserves (WR) [mm]
-    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    pet : Potential evapotranspiration (PET) [mm]]
     lai : Leaf area index (LAI)
 
     Returns
@@ -841,20 +834,6 @@ def actual_evapotranspiration(pet, lai):
     """
 
     return min(pet, pet * (lai / 3))
-
-    # if int(lai) == 0:
-    #     lai = sla * pctlam * (gv_biomass / 10)
-    # lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
-    # pt = pet * lightInterceptionByPlant
-    # pe = pet - pt
-    # ta = pt * fWaterStress(
-    #     waterReserve=waterReserve,
-    #     waterHoldingCapacity=waterHoldingCapacity,
-    #     pet=pet
-    # )
-    # ea = pe * min(waterReserve / waterHoldingCapacity, 1)
-    # return ta + ea
-
 
 # def updateSumTemperature(temperature, t0, sumT, tbase):
 #     """

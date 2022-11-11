@@ -271,19 +271,22 @@ def modvege(params, tseries, enddoy=365):
         #####################################################################
         # The model starts here really
         #####################################################################
-        # if ETA from remote sensing not available, then compute it
-        if int(eta) == 0:
-            # if LAI from remote sensing not available, then compute it
-            if int(lai) == 0:
-                lai = lm.leaf_area_index(
-                    pctlam=params["pctLAM"], sla=params["SLA"],
-                    gv_biomass=gv_biomass
-                )
-            eta = lm.actual_evapotranspiration(
-                pet=pet, pctlam=params["pctLAM"], sla=params["SLA"],
-                gv_biomass=gv_biomass, waterReserve=params["WR"],
-                waterHoldingCapacity=params["WHC"], lai=lai
-            )
+        # # if ETA from remote sensing not available, then compute it
+        # if int(eta) == 0:
+        #     # if LAI from remote sensing not available, then compute it
+        #     if int(lai) == 0:
+        #         lai = lm.leaf_area_index(
+        #             pctlam=params["pctLAM"], sla=params["SLA"],
+        #             gv_biomass=gv_biomass
+        #         )
+        #     eta = lm.actual_evapotranspiration(
+        #         pet=pet, pctlam=params["pctLAM"], sla=params["SLA"],
+        #         gv_biomass=gv_biomass
+        #     )
+        lai = lm.leaf_area_index(
+            pctlam=params["pctLAM"], sla=params["SLA"], gv_biomass=gv_biomass
+        )
+        eta = lm.actual_evapotranspiration(pet=pet, lai=lai)
         # compute WR
         params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
 
@@ -374,10 +377,7 @@ def modvege(params, tseries, enddoy=365):
             )  # ** UNUSED ARGUMENT REMOVED!
         )
         outputs_dict["biomass_growth_pot"].append(
-            lm.pgro(
-                pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
-                sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
-            )
+            lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
         )
         gro = (
             lm.mk_env(
@@ -386,10 +386,7 @@ def modvege(params, tseries, enddoy=365):
                 alphapar=params["alpha_PAR"], pet=pet,
                 waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
-            * lm.pgro(
-                pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
-                sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
-            )
+            * lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
             * lm.seasonal_effect(
                 maxsea=params["maxSEA"], minsea=params["minSEA"],
                 sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
@@ -402,10 +399,7 @@ def modvege(params, tseries, enddoy=365):
         #     temperature_sum, params["NI"], pari, params["alpha_PAR"], pet,
         #     params["WR"], params["WHC"]
         # )
-        # ggro = lm.pgro(
-        #     pari, params["RUEmax"], params["pctLAM"], params["SLA"],
-        #     gv_biomass, lai
-        # )
+        # ggro = lm.potential_growth(pari, params["RUEmax"], lai)
         # sgro = lm.seasonal_effect(
         #     params["maxSEA"], params["minSEA"], temperature_sum,
         #     params["ST2"], params["ST1"]
