@@ -1,6 +1,17 @@
 """modvege_lib.py
 
 https://github.com/YannChemin/modvege
+
+References
+----------
+- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+  of biomass, structure and digestibility of herbage in managed permanent
+  pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
+  pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
+- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+  of biomass, structure and digestibility of herbage in managed permanent
+  pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
+  pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
 """
 
 import numpy as np
@@ -588,35 +599,59 @@ def mk_env(
 #     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
-def fTemperature(meanTenDaysT, t0, t1, t2):
+def temperature_fn(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
     """
-    f of temperature to compute ENV
+    Temperature function, *f*(*T*)
+
+    See Figure 2 of Jouven et al. (2006) and the accompanying text for more
+    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
+
+    Assume no growth takes place after a maximum temperature
+
+    Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
+    B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
+    productivity in Europe', European Journal of Agronomy, vol. 9, no. 2,
+    pp. 87-100. DOI: 10.1016/S1161-0301(98)00027-6.
 
     Parameters
     ----------
-    meanTenDaysT : Mean of the ten days of temperature
-    t0 : Minimum temperature for growth
-    t1 : Sum of temperature at the beginning (growth activation threshold)
-    t2 : Sum of temperature in the end (growth decline threshold)
-    sumT : Sum of temperatures (** UNUSED ARGUMENT!)
+    meanTenDaysT : Mean of the ten days of temperature [°C]
+    t0 : Minimum temperature for growth; default is 4 [°C]
+    t1 : Minimum temperature for optimal growth; default is 10 [°C]
+    t2 : Maximum temperature for optimal growth; default is 20 [°C]
+    tmax : Maximum temperature for growth; default is 40 [°C]
 
     Returns
     -------
-    - the value given by the temperature f
+    - Temperature function
     """
 
-    if meanTenDaysT < t0 or meanTenDaysT >= 40:
+    if meanTenDaysT < t0 or meanTenDaysT >= tmax:
         f_temp = 0
-    elif t1 > meanTenDaysT >= t0:
-        f_temp = (meanTenDaysT - t0) / (t1 - t0)
-    elif t2 > meanTenDaysT >= t1:
+    elif t0 <= meanTenDaysT < t1:
+        # linear relationship
+        gradient = (1 - 0) / (t1 - t0)
+        intercept = 1 - gradient * t1
+        f_temp = gradient * meanTenDaysT + intercept
+    elif t1 <= meanTenDaysT <= t2:
         f_temp = 1
-    else:
-        f_temp = (40 - meanTenDaysT) / (40 - t2)
+    elif t2 < meanTenDaysT < tmax:
+        # linear relationship
+        gradient = (1 - 0) / (t2 - tmax)
+        intercept = 1 - gradient * t2
+        f_temp = gradient * meanTenDaysT + intercept
+    # if meanTenDaysT < t0 or meanTenDaysT >= 40:
+    #     f_temp = 0
+    # elif t1 > meanTenDaysT >= t0:
+    #     f_temp = (meanTenDaysT - t0) / (t1 - t0)
+    # elif t2 > meanTenDaysT >= t1:
+    #     f_temp = 1
+    # else:
+    #     f_temp = (40 - meanTenDaysT) / (40 - t2)
     return f_temp
 
 
-def fsea(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
+def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
     temperatures
@@ -645,29 +680,20 @@ def fsea(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
     - Seasonal effect
     """
 
-    if sumT <= 200 or sumT >= st2:
+    if sumT < 200 or sumT > st2:
         f_sea = minsea
     elif (st1 - 200) <= sumT <= (st1 - 100):
         f_sea = maxsea
-    elif 200 < sumT < (st1 - 200):
+    elif 200 <= sumT < (st1 - 200):
         # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
         gradient = (maxsea - minsea) / ((st1 - 200) - 200)
         intercept = minsea - gradient * 200
         f_sea = gradient * sumT + intercept
-    elif (st1 - 100) < sumT < st2:
+    elif (st1 - 100) < sumT <= st2:
         # SEA decreases linearly from maxSEA to minSEA at ST_2
         gradient = (maxsea - minsea) / ((st1 - 100) - st2)
         intercept = minsea - gradient * st2
         f_sea = gradient * sumT + intercept
-    # elif sumT < st1 - 200:
-    #     f_sea = minsea + (maxsea - minsea) * (sumT - 200) / (st1 - 400)
-    # elif sumT < st1 - 100:
-    #     f_sea = maxsea
-    # else:
-    #     f_sea = (
-    #         maxsea + (minsea - maxsea) *
-    #         (sumT - st1 + 100) / (st2 - st1 + 100)
-    #     )
     return f_sea
 
 
@@ -1062,12 +1088,9 @@ def defoliation(
 #     )
 
 
-def getSumTemperature(timeseries, doy, t0=4):
+def sum_of_temperatures(timeseries, doy, t0=4):
     """
-    Return the sum temperature corresponding to the DOY
-
-    degree days
-    https://hort.extension.wisc.edu/articles/degree-day-calculation/
+    Return the sum of temperatures for the day of the year
 
     Parameters
     ----------
@@ -1078,6 +1101,27 @@ def getSumTemperature(timeseries, doy, t0=4):
     Returns
     -------
     - Sum of temperatures above t0 corresponding to the DOY [°C d]
+
+    Notes
+    -----
+    - Degree days are measures of how cold or warm a location is
+    - A *degree day* compares the mean (the average of the high and low)
+      outdoor temperatures recorded for a location to a
+      *standard temperature*
+    - Also known as heat units or thermal units
+    - All species of plants have a cutoff temperature below which no
+      development occurs (developmental threshold)
+    - Degree days are accumulated whenever the temperature exceeds the
+      predetermined developmental threshold
+    - Calculate degree days by subtracting the developmental threshold from
+      the average daily temperature
+    - If the average degree day value for a given day is less than zero, just
+      record zero, not a negative number
+
+    References
+    ----------
+    - https://hort.extension.wisc.edu/articles/degree-day-calculation/
+    - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
     """
 
     sum_temperature = 0

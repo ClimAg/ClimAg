@@ -7,6 +7,13 @@ Green vegetative          (GV)
 Green reproductive        (GR)
 Dead vegetative           (DV)
 Dead reproductive         (DR)
+
+References
+----------
+- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+  of biomass, structure and digestibility of herbage in managed permanent
+  pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
+  pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
 """
 
 # import numpy as np

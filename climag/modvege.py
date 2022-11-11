@@ -23,6 +23,12 @@ References
   'Testing the ability of a simple grassland model to simulate the seasonal
   effects of drought on herbage growth', Field Crops Research, vol. 187, pp.
   12-23. DOI: 10.1016/j.fcr.2015.12.008.
+- Lardy, R., Bellocchi, G. G., Bachelet, B. and Hill, D. (2011). 'Climate
+  Change Vulnerability Assessment with Constrained Design of Experiments,
+  Using a Model-Driven Engineering Approach', Guimaraes, Portugal, pp.
+  354-362. [Online]. Available at
+  https://hal.archives-ouvertes.fr/hal-02802688 (Accessed 4 November 2022).
+
 
 Model definition
 ----------------
@@ -226,21 +232,21 @@ def modvege(params, tseries, enddoy=365):
         #######################################################
         # Prepare additional variables
         #######################################################
-        temperature_sum = lm.getSumTemperature(
+        temperature_sum = lm.sum_of_temperatures(
             timeseries=tseries, doy=(i + 1), t0=params["T0"]
         )
         # fSEA array for graphs
         outputs_dict["seasonality"].append(
-            lm.fsea(
+            lm.seasonal_effect(
                 maxsea=params["maxSEA"], minsea=params["minSEA"],
                 sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
             )
         )
         # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
         outputs_dict["temperature_fn"].append(
-            lm.fTemperature(
+            lm.temperature_fn(
                 meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
-                t1=params["T1"], t2=params["T2"]
+                t1=params["T1"], t2=params["T2"], tmax=params["Tmax"]
             )
         )
 
@@ -384,7 +390,7 @@ def modvege(params, tseries, enddoy=365):
                 pari=pari, ruemax=params["RUEmax"], pctlam=params["pctLAM"],
                 sla=params["SLA"], gv_biomass=gv_biomass, lai=lai
             )
-            * lm.fsea(
+            * lm.seasonal_effect(
                 maxsea=params["maxSEA"], minsea=params["minSEA"],
                 sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
             )
@@ -400,7 +406,7 @@ def modvege(params, tseries, enddoy=365):
         #     pari, params["RUEmax"], params["pctLAM"], params["SLA"],
         #     gv_biomass, lai
         # )
-        # sgro = lm.fsea(
+        # sgro = lm.seasonal_effect(
         #     params["maxSEA"], params["minSEA"], temperature_sum,
         #     params["ST2"], params["ST1"]
         # )
