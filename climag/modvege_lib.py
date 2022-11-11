@@ -616,35 +616,58 @@ def fTemperature(meanTenDaysT, t0, t1, t2):
     return f_temp
 
 
-def fsea(maxsea, minsea, sumT, st2, st1):
+def fsea(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
     """
-    Function for seasonality (SEA) to compute the potential growth.
+    Calculate seasonal effect (SEA) on growth, driven by the sum of
+    temperatures
+
+    SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
+    SEA < 1 indicates growth limitation by storage of reserves
+
+    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
+    more info
+
+    minSEA and maxSEA are functional traits arranged symmetrically around 1:
+    (minSEA + maxSEA) / 2 = 1
 
     Parameters
     ----------
-    maxsea : Maximum seasonal effect (maxSEA) [1.20]
-    minsea : Minimum seasonal effect (minSEA) [0.80]
+    maxsea : Maximum seasonal effect (maxSEA); default is 1.2
+    minsea : Minimum seasonal effect (minSEA); default is 0.8
     sumT : Sum of temperatures (ST) [°C d]
     st1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁) [600 °C d]
+        (ST₁); default is 600 [°C d]
     st2 : Sum of temperatures at the end of the reproductive period
-        (ST₂) [1200 °C d]
+        (ST₂); default is 1200 [°C d]
 
     Returns
     -------
-    - Value given by *f*(SEA)
+    - Seasonal effect
     """
 
-    if sumT < 200 or sumT >= st2:
+    if sumT <= 200 or sumT >= st2:
         f_sea = minsea
-    elif sumT < st1 - 200:
-        f_sea = minsea + (maxsea - minsea) * (sumT - 200) / (st1 - 400)
-    elif sumT < st1 - 100:
+    elif (st1 - 200) <= sumT <= (st1 - 100):
         f_sea = maxsea
-    else:
-        f_sea = (
-            maxsea + (minsea - maxsea) * (sumT - st1 + 100) / (st2 - st1 + 100)
-        )
+    elif 200 < sumT < (st1 - 200):
+        # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
+        gradient = (maxsea - minsea) / ((st1 - 200) - 200)
+        intercept = minsea - gradient * 200
+        f_sea = gradient * sumT + intercept
+    elif (st1 - 100) < sumT < st2:
+        # SEA decreases linearly from maxSEA to minSEA at ST_2
+        gradient = (maxsea - minsea) / ((st1 - 100) - st2)
+        intercept = minsea - gradient * st2
+        f_sea = gradient * sumT + intercept
+    # elif sumT < st1 - 200:
+    #     f_sea = minsea + (maxsea - minsea) * (sumT - 200) / (st1 - 400)
+    # elif sumT < st1 - 100:
+    #     f_sea = maxsea
+    # else:
+    #     f_sea = (
+    #         maxsea + (minsea - maxsea) *
+    #         (sumT - st1 + 100) / (st2 - st1 + 100)
+    #     )
     return f_sea
 
 
@@ -1039,19 +1062,22 @@ def defoliation(
 #     )
 
 
-def getSumTemperature(timeseries, doy, t0):
+def getSumTemperature(timeseries, doy, t0=4):
     """
     Return the sum temperature corresponding to the DOY
+
+    degree days
+    https://hort.extension.wisc.edu/articles/degree-day-calculation/
 
     Parameters
     ----------
     timeseries : Input time series data
     doy : Day of the year [1-366]
-    t0 : Minimum temperature for growth [°C]
+    t0 : Minimum temperature for growth; default is 4 [°C]
 
     Returns
     -------
-    - Sum of temperatures above t0 corresponding to the DOY
+    - Sum of temperatures above t0 corresponding to the DOY [°C d]
     """
 
     sum_temperature = 0
@@ -1104,8 +1130,8 @@ def ingested_biomass(
     ingestion_per_livestock_unit : average ingestion of grass by a livestock
         unit (e.g. dairy cow); default is 13 based on Teagasc data
         [kg DM LU⁻¹]
-    min_cut_height : minimum grass height to be maintained; default is 0.05
-        [m]
+    min_cut_height : minimum residual grass height to be maintained; default
+        is 0.05 [m]
     bulk_density : bulk density of the biomass compartment [g DM m⁻³]
 
     Returns

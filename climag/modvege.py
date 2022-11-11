@@ -156,12 +156,12 @@ def modvege(params, tseries, enddoy=365):
     dv_biomass = params["W_DV"]
     dr_biomass = params["W_DR"]
     # an==gro: biomass growth
-    # an = 0.0
+    # an = 0
     # allocate to reproductive
-    a2r = 0.0
+    a2r = 0
     # senescent biomass for compartments
-    gv_senescent_biomass = 0.0
-    gr_senescent_biomass = 0.0
+    gv_senescent_biomass = 0
+    gr_senescent_biomass = 0
     # average age of grass
     gv_avg_age = params["init_AGE_GV"]
     dv_avg_age = params["init_AGE_DV"]
@@ -218,7 +218,7 @@ def modvege(params, tseries, enddoy=365):
         cut_height = tseries["gcut_height"][i]
         # use default cut height if time series value is zero
         # see sec. "Harvested biomass" in Jouven et al. (2006)
-        if cut_height == 0.0:
+        if cut_height == 0:
             cut_height = params["cutHeight"]
         # grazing_animal_count = tseries["grazing_animal_count"][i]
         # grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][i]
@@ -226,9 +226,8 @@ def modvege(params, tseries, enddoy=365):
         #######################################################
         # Prepare additional variables
         #######################################################
-        # mk sumTemperature uses T0=0 and not T0
         temperature_sum = lm.getSumTemperature(
-            timeseries=tseries, doy=(i + 1), t0=0
+            timeseries=tseries, doy=(i + 1), t0=params["T0"]
         )
         # fSEA array for graphs
         outputs_dict["seasonality"].append(
@@ -288,7 +287,7 @@ def modvege(params, tseries, enddoy=365):
 
         # are we in vegetative growth period?
         if params["ST2"] > temperature_sum > params["ST1"]:
-            is_harvested = bool(cut_height != 0.0)
+            is_harvested = bool(cut_height != 0)
             is_grazed = bool(
                 params["livestock_units"] != 0 and params["grazing_area"] != 0
             )

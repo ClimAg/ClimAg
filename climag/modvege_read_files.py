@@ -123,7 +123,7 @@ def read_timeseries(filename):
     - par        : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
     - pr         : Precipitation (PP) [mm]
-    - evspsblpot : Potential evapotranspiration (PET) [mm]
+    - evspsblpot : (Potential or reference) evapotranspiration (ET) [mm]
     - eta        : Actual evapotranspiration (AET); from remote sensing [mm]
                    (if available)
     - lai        : Leaf area index (LAI); from remote sensing (if available)
