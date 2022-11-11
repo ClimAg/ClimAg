@@ -566,7 +566,7 @@ def mk_env(
     """
 
     return (
-        fTemperature(
+        temperature_function(
             meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
         )  # ** UNUSED ARGUMENT REMOVED!
         * ni
@@ -599,7 +599,7 @@ def mk_env(
 #     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
-def temperature_fn(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
+def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
     """
     Temperature function, *f*(*T*)
 
@@ -640,14 +640,6 @@ def temperature_fn(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
         gradient = (1 - 0) / (t2 - tmax)
         intercept = 1 - gradient * t2
         f_temp = gradient * meanTenDaysT + intercept
-    # if meanTenDaysT < t0 or meanTenDaysT >= 40:
-    #     f_temp = 0
-    # elif t1 > meanTenDaysT >= t0:
-    #     f_temp = (meanTenDaysT - t0) / (t1 - t0)
-    # elif t2 > meanTenDaysT >= t1:
-    #     f_temp = 1
-    # else:
-    #     f_temp = (40 - meanTenDaysT) / (40 - t2)
     return f_temp
 
 
@@ -776,43 +768,49 @@ def rep(ni):
     return 0.25 + ((0.75 * (ni - 0.35)) / 0.65)
 
 
-def pgro(pari, ruemax, pctlam, sla, gv_biomass, lai):
+def pgro(pari, gv_biomass, lai, sla=0.033, pctlam=0.68, ruemax=3):
     """
-    Compute and return potential growth
+    Calculate potential growth
+
+    See Equation (12) in Jouven et al. (2006)
 
     Parameters
     ----------
     pari : Incident PAR (PAR_i) [MJ m⁻²]
-    ruemax : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
-    pctlam : Percentage of laminae in GV (%LAM)
-    sla : Specific leaf area (SLA) [m² g⁻¹]
+    ruemax : Maximum radiation use efficiency (RUE_max); default is 3
+        [g DM MJ⁻¹]
+    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
+    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
     gv_biomass : Green vegetative biomass (BM_GV) [kg DM ha⁻¹]
     lai : the LAI from remote sensing (if available)
 
     Returns
     -------
-    - the calculated pGRO [kg DM ha⁻¹]
+    - potential growth (PGRO) [kg DM ha⁻¹]
     """
 
     if int(lai) == 0:
         try:
-            lai = sla * pctlam * (gv_biomass / 10)
+            lai = leaf_area_index(
+                pctlam=pctlam, sla=sla, gv_biomass=gv_biomass
+            )
         except (IOError, ValueError):
             # in case of input malfunction
             lai = sla * pctlam * 1.0
-    lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
-    p_gro = pari * ruemax * lightInterceptionByPlant * 10
+    p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
     return p_gro
 
 
-def fclai(pctlam, sla, gv_biomass):
+def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
     """
-    Compute and return the leaf area index
+    Calculate the leaf area index
+
+    Equation (12) in Jouven et al. (2006)
 
     Parameters
     ----------
-    pctlam : Percentage of laminae in GV (%LAM)
-    sla : Specific leaf area (SLA) [m² g⁻¹]
+    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
+    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
     gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
 
     Returns
@@ -823,9 +821,11 @@ def fclai(pctlam, sla, gv_biomass):
     return sla * (gv_biomass / 10) * pctlam
 
 
-def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
+def actual_evapotranspiration(pet, lai):
     """
-    Return the actual evapotranspiration (AET)
+    Calculate the actual evapotranspiration (AET)
+
+    See Equation (14) in Jouven et al. (2006)
 
     pet : Potential evapotranspiration (PET) [mm]
     pctlam : Percentage of laminae in GV (%LAM)
@@ -840,18 +840,20 @@ def aet(pet, pctlam, sla, gv_biomass, waterReserve, waterHoldingCapacity, lai):
     - Actual evapotranspiration (AET) [mm]
     """
 
-    if int(lai) == 0:
-        lai = sla * pctlam * (gv_biomass / 10)
-    lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
-    pt = pet * lightInterceptionByPlant
-    pe = pet - pt
-    ta = pt * fWaterStress(
-        waterReserve=waterReserve,
-        waterHoldingCapacity=waterHoldingCapacity,
-        pet=pet
-    )
-    ea = pe * min(waterReserve / waterHoldingCapacity, 1)
-    return ta + ea
+    return min(pet, pet * (lai / 3))
+
+    # if int(lai) == 0:
+    #     lai = sla * pctlam * (gv_biomass / 10)
+    # lightInterceptionByPlant = 1 - np.exp(-0.6 * lai)
+    # pt = pet * lightInterceptionByPlant
+    # pe = pet - pt
+    # ta = pt * fWaterStress(
+    #     waterReserve=waterReserve,
+    #     waterHoldingCapacity=waterHoldingCapacity,
+    #     pet=pet
+    # )
+    # ea = pe * min(waterReserve / waterHoldingCapacity, 1)
+    # return ta + ea
 
 
 # def updateSumTemperature(temperature, t0, sumT, tbase):
@@ -1060,7 +1062,8 @@ def defoliation(
 #     """
 
 #     return max(
-#         gv_min_omd, gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
+#         gv_min_omd,
+#         gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
 #     )
 
 
@@ -1187,7 +1190,7 @@ def ingested_biomass(
     - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
         - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
         - average ingestion of supplements (meal, concentrate, silage) is
-        4.25 kg DM LU⁻¹
+          4.25 kg DM LU⁻¹
     - Teagasc Dairy Manual:
       https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
         - 8-13 kg DM grass per cow in the spring

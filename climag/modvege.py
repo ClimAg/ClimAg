@@ -244,7 +244,7 @@ def modvege(params, tseries, enddoy=365):
         )
         # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
         outputs_dict["temperature_fn"].append(
-            lm.temperature_fn(
+            lm.temperature_function(
                 meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
                 t1=params["T1"], t2=params["T2"], tmax=params["Tmax"]
             )
@@ -275,11 +275,11 @@ def modvege(params, tseries, enddoy=365):
         if int(eta) == 0:
             # if LAI from remote sensing not available, then compute it
             if int(lai) == 0:
-                lai = lm.fclai(
+                lai = lm.leaf_area_index(
                     pctlam=params["pctLAM"], sla=params["SLA"],
                     gv_biomass=gv_biomass
                 )
-            eta = lm.aet(
+            eta = lm.actual_evapotranspiration(
                 pet=pet, pctlam=params["pctLAM"], sla=params["SLA"],
                 gv_biomass=gv_biomass, waterReserve=params["WR"],
                 waterHoldingCapacity=params["WHC"], lai=lai
