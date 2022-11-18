@@ -14,4 +14,3 @@ dependencies:
   - aiohttp
   - odfpy
   - seaborn
-  - cfgrib

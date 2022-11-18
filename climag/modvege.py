@@ -29,7 +29,6 @@ References
   354-362. [Online]. Available at
   https://hal.archives-ouvertes.fr/hal-02802688 (Accessed 4 November 2022).
 
-
 Model definition
 ----------------
 Compartments representing the structural components of herbage:
@@ -271,18 +270,6 @@ def modvege(params, tseries, enddoy=365):
         #####################################################################
         # The model starts here really
         #####################################################################
-        # # if ETA from remote sensing not available, then compute it
-        # if int(eta) == 0:
-        #     # if LAI from remote sensing not available, then compute it
-        #     if int(lai) == 0:
-        #         lai = lm.leaf_area_index(
-        #             pctlam=params["pctLAM"], sla=params["SLA"],
-        #             gv_biomass=gv_biomass
-        #         )
-        #     eta = lm.actual_evapotranspiration(
-        #         pet=pet, pctlam=params["pctLAM"], sla=params["SLA"],
-        #         gv_biomass=gv_biomass
-        #     )
         lai = lm.leaf_area_index(
             pctlam=params["pctLAM"], sla=params["SLA"], gv_biomass=gv_biomass
         )
@@ -290,7 +277,7 @@ def modvege(params, tseries, enddoy=365):
         # compute WR
         params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
 
-        # compute CUT
+        # compute grazing and harvesting
         harvested_biomass_part = 0
         ingested_biomass_part = 0
 
@@ -305,17 +292,35 @@ def modvege(params, tseries, enddoy=365):
             if is_harvested:
                 # The Holy Grail: The Holy Hand Grenade:
                 # "Thou Shalst Make the CUT!"
-                (
-                    harvested_biomass_part,
-                    gv_biomass, dv_biomass, gr_biomass, dr_biomass
-                ) = (
-                    lm.cut(
-                        cutHeight=cut_height, rhogv=params["rho_GV"],
-                        rhodv=params["rho_DV"], rhogr=params["rho_GR"],
-                        rhodr=params["rho_DR"], gvb=gv_biomass,
-                        dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass
-                    )
+                harvested_biomass_part = [0, 0, 0, 0]
+                harvested_biomass_part[0], gv_biomass = lm.harvest_biomass(
+                    cutHeight=cut_height, bulkDensity=params["rho_GV"],
+                    biomass=gv_biomass
                 )
+                harvested_biomass_part[1], dv_biomass = lm.harvest_biomass(
+                    cutHeight=cut_height, bulkDensity=params["rho_DV"],
+                    biomass=dv_biomass
+                )
+                harvested_biomass_part[2], gr_biomass = lm.harvest_biomass(
+                    cutHeight=cut_height, bulkDensity=params["rho_GR"],
+                    biomass=gr_biomass
+                )
+                harvested_biomass_part[3], dr_biomass = lm.harvest_biomass(
+                    cutHeight=cut_height, bulkDensity=params["rho_DR"],
+                    biomass=dr_biomass
+                )
+                harvested_biomass_part = sum(harvested_biomass_part)
+                # (
+                #     harvested_biomass_part,
+                #     gv_biomass, dv_biomass, gr_biomass, dr_biomass
+                # ) = (
+                #     lm.cut(
+                #         cutHeight=cut_height, rhogv=params["rho_GV"],
+                #         rhodv=params["rho_DV"], rhogr=params["rho_GR"],
+                #         rhodr=params["rho_DR"], gvb=gv_biomass,
+                #         dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass
+                #     )
+                # )
 
             # look for flags to indicate livestock ingestion
             if is_grazed:
@@ -338,7 +343,8 @@ def modvege(params, tseries, enddoy=365):
                 ingested_biomass_part = lm.ingested_biomass(
                     livestock_units=params["livestock_units"],
                     grazing_area=params["grazing_area"],
-                    bulk_density=params["rho_GV"]
+                    bulk_density=params["rho_GV"],
+                    min_cut_height=params["cutHeight"]
                 )
             # allocation to reproductive
             a2r = lm.rep(ni=params["NI"])

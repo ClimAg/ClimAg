@@ -77,7 +77,7 @@ def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
 #     return biomass
 
 
-def exeCut(cutHeight, bulkDensity, biomass):
+def harvest_biomass(bulkDensity, biomass, cutHeight=0.05):
     """
     Realise a cut so that the average height is under cutHeight.
     This height is calculated by using the bulkDensity given in parameter.
@@ -504,39 +504,39 @@ def gr_update(
 #     return max(max(gv_avg_h, gr_avg_h), np.max(dv_avg_h, dr_avg_h))
 
 
-def cut(
-    cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb
-):
-    """
-    Realise the harvest on each compartment.
+# def cut(
+#     cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb
+# ):
+#     """
+#     Realise the harvest on each compartment.
 
-    Parameters
-    ----------
-    cutHeight : the height of the cut [m]
-    rhogv : bulk density of green vegetative [g m⁻³]
-    rhodv : bulk density of dead vegetative [g m⁻³]
-    rhogr : bulk density of green reproductive [g m⁻³]
-    rhodr : bulk density of dead reproductive [g m⁻³]
-    gvb : standing biomass of green vegetative [kg DM ha⁻¹]
-    dvb : standing biomass of dead vegetative [kg DM ha⁻¹]
-    grb : standing biomass of green reproductive [kg DM ha⁻¹]
-    drb : standing biomass of dead reproductive [kg DM ha⁻¹]
+#     Parameters
+#     ----------
+#     cutHeight : the height of the cut [m]
+#     rhogv : bulk density of green vegetative [g m⁻³]
+#     rhodv : bulk density of dead vegetative [g m⁻³]
+#     rhogr : bulk density of green reproductive [g m⁻³]
+#     rhodr : bulk density of dead reproductive [g m⁻³]
+#     gvb : standing biomass of green vegetative [kg DM ha⁻¹]
+#     dvb : standing biomass of dead vegetative [kg DM ha⁻¹]
+#     grb : standing biomass of green reproductive [kg DM ha⁻¹]
+#     drb : standing biomass of dead reproductive [kg DM ha⁻¹]
 
-    Returns
-    -------
-    - the total amount of biomass cut [kg DM ha⁻¹]
-    - the amount of GV biomass cut [kg DM ha⁻¹]
-    - the amount of DV biomass cut [kg DM ha⁻¹]
-    - the amount of GR biomass cut [kg DM ha⁻¹]
-    - the amount of DR biomass cut [kg DM ha⁻¹]
-    """
+#     Returns
+#     -------
+#     - the total amount of biomass cut [kg DM ha⁻¹]
+#     - the amount of GV biomass cut [kg DM ha⁻¹]
+#     - the amount of DV biomass cut [kg DM ha⁻¹]
+#     - the amount of GR biomass cut [kg DM ha⁻¹]
+#     - the amount of DR biomass cut [kg DM ha⁻¹]
+#     """
 
-    gv_h, gv_b = exeCut(bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
-    dv_h, dv_b = exeCut(bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
-    gr_h, gr_b = exeCut(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
-    dr_h, dr_b = exeCut(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
-    sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
-    return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
+#     gv_h, gv_b = harvest_biomass(bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
+#     dv_h, dv_b = harvest_biomass(bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
+#     gr_h, gr_b = harvest_biomass(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
+#     dr_h, dr_b = harvest_biomass(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
+#     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
+#     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
 def mk_env(
@@ -786,15 +786,6 @@ def potential_growth(pari, lai, ruemax=3):
     - potential growth (PGRO) [kg DM ha⁻¹]
     """
 
-    # if int(lai) == 0:
-    #     try:
-    #         lai = leaf_area_index(
-    #             pctlam=pctlam, sla=sla, gv_biomass=gv_biomass
-    #         )
-    #     except (IOError, ValueError):
-    #         # in case of input malfunction
-    #         lai = sla * pctlam * 1.0
-    # lai = leaf_area_index(pctlam=pctlam, sla=sla, gv_biomass=gv_biomass)
     p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
     return p_gro
 
