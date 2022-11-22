@@ -114,6 +114,7 @@ def read_params(filename):
     -------
     - A dictionary of the input parameters
     """
+
     params = pd.read_csv(
         filename, header=None, index_col=0
     ).squeeze().to_dict()
@@ -131,9 +132,6 @@ def read_timeseries(filename):
                    (PAR_i) [MJ m⁻²]
     - pr         : Precipitation (PP) [mm]
     - evspsblpot : (Potential or reference) evapotranspiration (ET) [mm]
-    - eta        : Actual evapotranspiration (AET); from remote sensing [mm]
-                   (if available)
-    - lai        : Leaf area index (LAI); from remote sensing (if available)
     - gcut       : Grass cut height [m] (if cut, the default is 0.05)
     - grazing    : Grazing animal count
     - grazingw   : Grazing animal average weight [kg]
@@ -147,6 +145,7 @@ def read_timeseries(filename):
     - A dataframe of the input time series data
     - The end day of the year
     """
+
     # timeseries = np.genfromtxt(
     #     filename, delimiter=",", skip_header=0, names=True
     # )

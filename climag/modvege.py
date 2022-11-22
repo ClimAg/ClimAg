@@ -139,12 +139,6 @@ def modvege(params, tseries, enddoy=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    # Pixel area [m2]
-    # cellSurfaceMeter = 10000 * params["cellSurface"]
-
-    # distance minimum between center of the cell and border of the cell
-    # r = np.sqrt(6 * np.sqrt(3) * cellSurfaceMeter) / 6
-
     # Initialise state parameters
     # This is a status flag changed in lib_cell.updateCell()
     # isCut = False
@@ -218,15 +212,13 @@ def modvege(params, tseries, enddoy=365):
         pari = tseries["par"][i]
         pmm = tseries["pr"][i]
         pet = tseries["evspsblpot"][i]
-        eta = tseries["eta"][i]
-        lai = tseries["lai"][i]
+        # eta = tseries["eta"][i]
+        # lai = tseries["lai"][i]
         cut_height = tseries["gcut_height"][i]
         # use default cut height if time series value is zero
         # see sec. "Harvested biomass" in Jouven et al. (2006)
         if cut_height == 0:
             cut_height = params["cutHeight"]
-        # grazing_animal_count = tseries["grazing_animal_count"][i]
-        # grazing_avg_animal_weight = tseries["grazing_avg_animal_weight"][i]
 
         #######################################################
         # Prepare additional variables
@@ -290,8 +282,6 @@ def modvege(params, tseries, enddoy=365):
 
             # look for flags to indicate mechanical cut
             if is_harvested:
-                # The Holy Grail: The Holy Hand Grenade:
-                # "Thou Shalst Make the CUT!"
                 harvested_biomass_part = [0, 0, 0, 0]
                 harvested_biomass_part[0], gv_biomass = lm.harvest_biomass(
                     cutHeight=cut_height, bulkDensity=params["rho_GV"],
@@ -324,8 +314,6 @@ def modvege(params, tseries, enddoy=365):
 
             # look for flags to indicate livestock ingestion
             if is_grazed:
-                # The Holy Grail: The Holy Hand Grenade: "Thou Shalst be wary
-                # of this henceforth wicked rabbit!"
                 # ingested_biomass_part = lm.defoliation(
                 #     gv_biomass=gv_biomass, dv_biomass=dv_biomass,
                 #     gr_biomass=gr_biomass, dr_biomass=dr_biomass,
