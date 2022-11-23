@@ -719,8 +719,8 @@ def par_function(pari):
     if pari < 5:
         f_pari = 1
     else:
-        # linear approximation
-        gradient = 1 / (5 - (30 - 25)/2)
+        # linear gradient
+        gradient = 1 / (5 - 27.5 / 2)
         intercept = 1 - gradient * 5
         f_pari = max(gradient * pari + intercept, 0)
     return f_pari
@@ -728,7 +728,11 @@ def par_function(pari):
 
 def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     """
-    f of water stress to compute ENV
+    Water stress function.
+
+    See Figure 2(c) of Jouven et al. (2006).
+
+    Based on McCall and Bishop-Hurley (2003)
 
     Parameters
     ----------
@@ -743,23 +747,36 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     """
 
     waterStress = min(waterReserve / waterHoldingCapacity, 1)
-    if pet <= 3.8:
-        if waterStress <= 0.2:
-            f_waterstress = 4 * waterStress
-        elif waterStress <= 0.4:
-            f_waterstress = 0.75 * waterStress + 0.65
-        elif waterStress <= 0.6:
-            f_waterstress = 0.25 * waterStress + 0.85
+    if pet < 3.8:
+        # linear gradients
+        if waterStress < 0.2:
+            gradient = 0.8 / 0.2
+            f_waterstress = gradient * waterStress
+        elif waterStress < 0.4:
+            gradient = (0.95 - 0.8) / (0.4 - 0.2)
+            intercept = 0.8 - gradient * 0.2
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.6:
+            gradient = (1 - 0.95) / (0.6 - 0.4)
+            intercept = 1 - gradient * 0.6
+            f_waterstress = gradient * waterStress + intercept
         else:
             f_waterstress = 1
     elif pet <= 6.5:
-        if waterStress <= 0.2:
-            f_waterstress = 2 * waterStress
-        elif waterStress <= 0.4:
-            f_waterstress = 1.5 * waterStress + 0.1
-        elif waterStress <= 0.6:
-            f_waterstress = waterStress + 0.3
-        elif waterStress <= 0.8:
+        if waterStress < 0.2:
+            gradient = 0.4 / 0.2
+            f_waterstress = gradient * waterStress
+        elif waterStress < 0.4:
+            gradient = (0.7 - 0.4) / (0.4 - 0.2)
+            intercept = 0.4 - gradient * 0.2
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.6:
+            gradient = (0.9 - 0.7) / (0.6 - 0.4)
+            intercept = 0.9 - gradient * 0.6
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.8:
+            gradient = (1 - 0.9) / (0.8 - 0.6)
+            intercept = 1 - gradient * 0.8
             f_waterstress = 0.5 * waterStress + 0.6
         else:
             f_waterstress = 1

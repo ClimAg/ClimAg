@@ -406,6 +406,7 @@ def modvege(params, tseries, enddoy=365):
             kldv=params["Kl_DV"], temperature=temperature,
             dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
         )
+
         # Start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
             temperature=temperature, a2r=a2r, gro=gro, st1=params["ST1"],
