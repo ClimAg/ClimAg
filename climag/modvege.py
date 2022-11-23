@@ -248,7 +248,7 @@ def modvege(params, tseries, enddoy=365):
         #     isCut = True
 
         # nitrogen nutritional index (NI)
-        # if NI is below 0.35, force it to 0.35 (Belanger et al. 1994)
+        # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
         params["NI"] = max(params["NI"], 0.35)
 
         # leaf area index
@@ -260,7 +260,10 @@ def modvege(params, tseries, enddoy=365):
         eta = lm.actual_evapotranspiration(pet=pet, lai=lai)
 
         # water reserves (WR)
-        params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
+        params["WR"] = lm.water_reserves(
+            precipitation=pmm, water_reserve=params["WR"],
+            actual_et=eta, soil_whc=params["WHC"]
+        )
 
         # compute grazing and harvesting
         harvested_biomass_part = 0
@@ -330,7 +333,7 @@ def modvege(params, tseries, enddoy=365):
                 )
                 # ingested_biomass_part = sum(ingested_biomass_part)
             # allocation to reproductive
-            a2r = lm.rep(ni=params["NI"])
+            a2r = lm.reproductive_function(n_index=params["NI"])
             # TO-DO: When to change NI, and by how much?
             # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
@@ -394,10 +397,9 @@ def modvege(params, tseries, enddoy=365):
         # gro = egro * ggro * sgro * cgro
 
         # Update the state of the vegetative parts
-        # Used T0 = 0 instead of T0 to match output data!
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
             gro=gro, a2r=a2r, lls=params["LLS"], temperature=temperature,
-            kgv=params["K_GV"], t0=0, gv_biomass=gv_biomass,
+            kgv=params["K_GV"], t0=params["T0"], gv_biomass=gv_biomass,
             gv_avg_age=gv_avg_age
         )
         dv_biomass, dv_avg_age = lm.dv_update(

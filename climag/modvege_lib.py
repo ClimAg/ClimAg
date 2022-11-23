@@ -577,32 +577,12 @@ def environmental_limitation(
 
     return (
         temperature_fn * ni * par_function(pari=pari)
-        * fWaterStress(
+        * water_stress_function(
             waterReserve=waterReserve,
             waterHoldingCapacity=waterHoldingCapacity,
             pet=pet
         )
     )
-
-
-# def getTotalBiomass(gv_biomass, dv_biomass, gr_biomass, dr_biomass):
-#     """
-#     Return the total biomass of the cell (by adding the biomass of the 4 cs)
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     gv_biomass : Green vegetative biomass
-#     dv_biomass : Dead vegetative biomass
-#     gr_biomass : Green reproductive biomass
-#     dr_biomass : Dead reproductive biomass
-
-#     Returns
-#     -------
-#     - Total biomass
-#     """
-
-#     return gv_biomass + dv_biomass + gr_biomass + dr_biomass
 
 
 def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
@@ -726,27 +706,55 @@ def par_function(pari):
     return f_pari
 
 
-def fWaterStress(waterReserve, waterHoldingCapacity, pet):
+def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
     """
-    Water stress function.
+    Calculate the water reserves (WR).
 
-    See Figure 2(c) of Jouven et al. (2006).
+    WR vary between zero and the soil water-holding capacity (WHC).
+    Precipitation (PP) fill the WHC, increasing WR, while actual
+    evapotranspiration (AET) empties it.
 
-    Based on McCall and Bishop-Hurley (2003)
+    See Equation (14) in Jouven et al. (2006).
 
     Parameters
     ----------
-    waterReserve : Reserve of water in the soil
-    waterHoldingCapacity : Capacity of the soil to hold a certain volume
-        of water
-    pet : Potential evapotranspiration
+    precipitation : Precipitation (PP) [mm]
+    water_reserve : Water reserve (WR) [mm]
+    actual_et : Actual evapotranspiration (AET) [mm]
+    soil_whc : Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
-    - the value given by the waterstress f
+    - Water reserves [mm]
+    """
+
+    water_reserve = min(
+        max(0, water_reserve + precipitation - actual_et), soil_whc
+    )
+    return water_reserve
+
+
+def water_stress_function(waterReserve, waterHoldingCapacity, pet):
+    """
+    Water stress function.
+
+    See Figure 2(c) and Equation (14) of Jouven et al. (2006).
+
+    Based on McCall and Bishop-Hurley (2003).
+
+    Parameters
+    ----------
+    waterReserve : Water reserves (WR) [mm]
+    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    pet : Potential evapotranspiration (PET) [mm]
+
+    Returns
+    -------
+    - water stress function [dimensionless]
     """
 
     waterStress = min(waterReserve / waterHoldingCapacity, 1)
+
     if pet < 3.8:
         # linear gradients
         if waterStress < 0.2:
@@ -785,20 +793,23 @@ def fWaterStress(waterReserve, waterHoldingCapacity, pet):
     return f_waterstress
 
 
-def rep(ni):
+def reproductive_function(n_index):
     """
-    Replace the value of NI (Nutrition Index (Belanger et al. 1992))
+    Reproductive function.
+
+    See Equation (15) in Jouven et al. (2006)
 
     Parameters
     ----------
-    ni : The Nutrition Index (Belanger et al. 1992)
+    n_index : Nitrogen nutritional index (NI) [dimensionless]
 
     Returns
     -------
-    - the value of the rep f
+    - Reproductive function [dimensionless]
     """
 
-    return 0.25 + ((0.75 * (ni - 0.35)) / 0.65)
+    rep_fn = (0.25 + ((1 - 0.25) * (n_index - 0.35)) / (1 - 0.35))
+    return rep_fn
 
 
 def potential_growth(pari, lai, ruemax=3):
@@ -876,6 +887,13 @@ def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
 def actual_evapotranspiration(pet, lai):
     """
     Calculate the actual evapotranspiration (AET)
+
+    AET is equivalent to potential evapotranspiration (PET) when the cover
+    intercepts approximately 0.95 of the incident photosynthetically active
+    radiation (PAR), i.e., when the leaf area index (LAI) > 3,
+    based on Johnson and Parsons (1985).
+    AET is proportional to LAI when the proportion of intercepted radiation
+    is lower than 0.95, i.e. LAI < 3.
 
     See Equation (14) in Jouven et al. (2006)
 
