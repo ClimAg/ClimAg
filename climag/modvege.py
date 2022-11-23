@@ -189,10 +189,6 @@ def modvege(params, tseries, enddoy=365):
         "reproductive_fn": []
     }
 
-    # TO-DO: This variable is not found in the manual/source code, yet is
-    # used widely
-    corrective_factor = 1
-
     # daily loop
     for i in range(enddoy):
         #######################################################
@@ -360,7 +356,7 @@ def modvege(params, tseries, enddoy=365):
 
         outputs_dict["reproductive_fn"].append(a2r)
 
-        # compute biomass growth
+        # environmental limitation of growth (ENV)
         env = lm.environmental_limitation(
             temperature_fn=temperature_fn,
             pari=pari,
@@ -371,19 +367,17 @@ def modvege(params, tseries, enddoy=365):
         )
         outputs_dict["env"].append(env)
 
+        # potential growth (PGRO)
         biomass_growth_pot = lm.potential_growth(
             pari=pari, ruemax=params["RUEmax"], lai=lai
         )
         outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
 
-        gro = (
-            env
-            * biomass_growth_pot
-            * lm.seasonal_effect(
-                maxsea=params["maxSEA"], minsea=params["minSEA"],
-                sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
-            )
-            * corrective_factor
+        # total biomass growth (GRO)
+        gro = lm.total_growth(
+            biomass_growth_pot=biomass_growth_pot,
+            env=env,
+            seasonality=seasonality
         )
 
         # egro = lm.environmental_limitation(

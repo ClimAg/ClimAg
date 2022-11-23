@@ -128,7 +128,9 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
 def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     """
     Compute abscission biomass for the DV compartment.
-    See Equation (18) in Jouven et al. (2006).
+    See Equation (18) and Figure 4(c) in in Jouven et al. (2006).
+
+    Note that abscission only occurs when T > 0.
 
     Parameters
     ----------
@@ -146,9 +148,9 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
 
     # method to compute the age of DV for computing abcission of DV
     # f(AGE_DV) in Equation (18)
-    if dv_avg_age / lls < 1.0 / 3.0:
+    if dv_avg_age / lls < 1 / 3:
         age = 1
-    elif dv_avg_age / lls < 2.0 / 3.0:
+    elif dv_avg_age / lls < 2 / 3:
         age = 2
     else:
         age = 3
@@ -209,7 +211,9 @@ def dv_update(
 def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
     """
     Compute abscission biomass for the DR compartment.
-    See Equation (18) in Jouven et al. (2006).
+    See Equation (18) and Figure 4(d) in Jouven et al. (2006).
+
+    Note that abscission only occurs when T > 0.
 
     Parameters
     ----------
@@ -230,9 +234,9 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
 
     # method to compute the age of DR for computing abscission of DR
     # f(AGE_DV) in Equation (18)
-    if dr_avg_age / (st2 - st1) < 1.0 / 3.0:
+    if dr_avg_age / (st2 - st1) < 1 / 3:
         age = 1
-    elif dr_avg_age / (st2 - st1) < 2.0 / 3.0:
+    elif dr_avg_age / (st2 - st1) < 2 / 3:
         age = 2
     else:
         age = 3
@@ -293,9 +297,12 @@ def dr_update(
 # GREEN VEGETATIVE FUNCTIONS
 def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     """
-    Extract about 2-6% (kDV=0.002, T=10C, gv_fAge=[1-3]) of gv_biomass as
-    senescent.
-    See Equations (16) and (17) in Jouven et al. (2006).
+    Senescent biomass for GV compartment.
+    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
+
+    No senescence occurs when *T* is between zero and T0.
+    When T drops below zero, senescence is driven by freezing effects and is
+    proportional to |*T*|.
 
     Parameters
     ----------
@@ -314,10 +321,13 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
     # method to compute the age of GV for computing senescence of GV
     # f(AGE_GV) in Equation (16)
-    if gv_avg_age / lls < 1.0 / 3.0:
+    if gv_avg_age / lls < 1 / 3:
         age = 1
     elif gv_avg_age / lls < 1:
-        age = 3 * gv_avg_age / lls
+        # linear gradient
+        gradient = (3 - 1) / (1 - 1 / 3)
+        intercept = 3 - gradient * 1
+        age = gradient * gv_avg_age / lls + intercept
     else:
         age = 3
     # compute senescence of GV
@@ -338,14 +348,14 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
 
     Parameters
     ----------
-    gro : in Jouven et al. (2006), total growth (GRO)
+    gro : total biomass growth (GRO) [kg DM ha⁻¹]
     a2r : Allocate to reproductive
         (REP in Jouven et al. (2006), reproductive function)
     lls : Leaf lifespan (LLS) [500 °C d]
     temperature : Mean daily temperature (*T*) [°C]
     kgv : Senescence coefficient GV [°C d]
     t0 : Minimum temperature for growth (*T*₀) [4 °C]
-    gv_biomass : Updated biomass
+    gv_biomass : Updated biomass [kg DM ha⁻¹]
     gv_avg_age : Average GV age [°C day]
 
     Returns
@@ -379,7 +389,7 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
 # GREEN REPRODUCTIVE FUNCTIONS
 def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
     """
-    See Equations (16) and (17) in Jouven et al. (2006).
+    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006).
 
     Parameters
     ----------
@@ -400,18 +410,21 @@ def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
     - Senescent biomass [kg DM ha⁻¹]
     """
 
-    # method to compute the age of GR for computing senescence of GR
-    if gr_avg_age / (st2 - st1) < 1.0 / 3.0:
+    if gr_avg_age / (st2 - st1) < 1 / 3:
         age = 1
-    elif gr_avg_age / (st2 - st1) < 1.0:
-        age = 3 * gr_avg_age / (st2 - st1)
+    elif gr_avg_age / (st2 - st1) < 1:
+        # linear gradient
+        gradient = (3 - 1) / (1 - 1 / 3)
+        intercept = 3 - gradient * 1
+        age = gradient * gr_avg_age / (st2 - st1) + intercept
     else:
         age = 3
-    # Compute senescence of GV
+
     if temperature > t0:
-        # T=10C kgr = 0.001 gr_fAge=[1-3] => 1-3% of gr_biomass
+        # Equation (16)
         senescence_biomass = kgr * gr_biomass * temperature * age
     elif temperature < 0:
+        # Equation (17)
         senescence_biomass = kgr * gr_biomass * abs(temperature)
     else:
         senescence_biomass = 0
@@ -550,10 +563,7 @@ def environmental_limitation(
 
     Parameters
     ----------
-    meanTenDaysT : the mean of the ten days of temperature
-    t0 : minimum temperature for growth (T_0) [°C]
-    t1 : sum of temperature at the beginning (growth activation threshold)
-    t2 : sum of temperature in the end (growth decline threshold)
+    temperature_fn : temperature function (f(T)) [dimensionless]
     ni : Nutritional index of pixel (NI)
     pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
     pet : Potential evapotranspiration (PET) [mm]
@@ -599,7 +609,7 @@ def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
     """
     Temperature function, *f*(*T*)
 
-    See Figure 2 of Jouven et al. (2006) and the accompanying text for more
+    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
     info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
 
     Assume no growth takes place after a maximum temperature
@@ -785,6 +795,9 @@ def potential_growth(pari, lai, ruemax=3):
     The model extinction coefficient is set to a constant value of 0.6
     according to Schapendonk et al. (1998) and Bonesmo and Bélanger (2002).
 
+    The maximum radiation use efficiency is 3 g DM MJ⁻¹ based on
+    Schapendonk et al. (1998).
+
     Parameters
     ----------
     pari : Incident PAR (PAR_i) [MJ m⁻²]
@@ -799,6 +812,27 @@ def potential_growth(pari, lai, ruemax=3):
 
     p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
     return p_gro
+
+
+def total_growth(biomass_growth_pot, env, seasonality):
+    """
+    Calculate the total biomass growth (GRO)
+
+    See Equation (11) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    - biomass_growth_pot : Potential growth (PGRO) [kg DM ha⁻¹]
+    - env : environmental limitation of growth (ENV) [dimensionless]
+    - seasonality : seasonal effect (SEA) [dimensionless]
+
+    Returns
+    -------
+    - total biomass growth [kg DM ha⁻¹]
+    """
+
+    biomass_growth = biomass_growth_pot * env * seasonality
+    return biomass_growth
 
 
 def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
@@ -870,7 +904,7 @@ def getAvailableBiomassForCut(
     rhogr, rhodr
 ):
     """
-    Return the amount of biomass av for cut
+    Return the amount of biomass available for cut
 
     Parameters
     ----------
