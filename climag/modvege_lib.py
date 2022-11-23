@@ -540,7 +540,7 @@ def gr_update(
 
 
 def mk_env(
-    meanTenDaysT, t0, t1, t2, ni, pari, alphapar, pet, waterReserve,
+    meanTenDaysT, t0, t1, t2, ni, pari, pet, waterReserve,
     waterHoldingCapacity
 ):
     """
@@ -554,7 +554,6 @@ def mk_env(
     t2 : sum of temperature in the end (growth decline threshold)
     ni : Nutritional index of pixel (NI)
     pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    alphapar : Light use interception
     pet : Potential evapotranspiration (PET) [mm]
     waterReserve : Water reserves (WR) [mm]
     waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
@@ -570,7 +569,7 @@ def mk_env(
             meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
         )  # ** UNUSED ARGUMENT REMOVED!
         * ni
-        * fPARi(pari=pari, alphapar=alphapar)
+        * par_function(pari=pari)
         * fWaterStress(
             waterReserve=waterReserve,
             waterHoldingCapacity=waterHoldingCapacity,
@@ -623,21 +622,21 @@ def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
 
     Returns
     -------
-    - Temperature function
+    - Temperature function [dimensionless]
     """
 
     if meanTenDaysT < t0 or meanTenDaysT >= tmax:
         f_temp = 0
     elif t0 <= meanTenDaysT < t1:
         # linear relationship
-        gradient = (1 - 0) / (t1 - t0)
+        gradient = 1 / (t1 - t0)
         intercept = 1 - gradient * t1
         f_temp = gradient * meanTenDaysT + intercept
     elif t1 <= meanTenDaysT <= t2:
         f_temp = 1
     elif t2 < meanTenDaysT < tmax:
         # linear relationship
-        gradient = (1 - 0) / (t2 - tmax)
+        gradient = 1 / (t2 - tmax)
         intercept = 1 - gradient * t2
         f_temp = gradient * meanTenDaysT + intercept
     return f_temp
@@ -659,8 +658,8 @@ def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
 
     Parameters
     ----------
-    maxsea : Maximum seasonal effect (maxSEA); default is 1.2
-    minsea : Minimum seasonal effect (minSEA); default is 0.8
+    maxsea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
+    minsea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
     sumT : Sum of temperatures (ST) [°C d]
     st1 : Sum of temperatures at the beginning of the reproductive period
         (ST₁); default is 600 [°C d]
@@ -669,7 +668,7 @@ def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
 
     Returns
     -------
-    - Seasonal effect
+    - Seasonal effect [dimensionless]
     """
 
     if sumT < 200 or sumT > st2:
@@ -680,33 +679,43 @@ def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
         # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
         gradient = (maxsea - minsea) / ((st1 - 200) - 200)
         intercept = minsea - gradient * 200
-        f_sea = gradient * sumT + intercept
+        f_sea = max(gradient * sumT + intercept, minsea)
     elif (st1 - 100) < sumT <= st2:
         # SEA decreases linearly from maxSEA to minSEA at ST_2
         gradient = (maxsea - minsea) / ((st1 - 100) - st2)
         intercept = minsea - gradient * st2
-        f_sea = gradient * sumT + intercept
+        f_sea = max(gradient * sumT + intercept, minsea)
     return f_sea
 
 
-def fPARi(pari, alphapar):
+def par_function(pari):
     """
-    Function of PAR interception (PAR_i) to compute ENV
+    Incident photosynthetically active radiation (PARi) function (fPARi)
+    needed to calculate the environmental limitation of growth (ENV).
+
+    The definition has been derived from Schapendonk et al. (1998).
+    This function accounts for the decrease in radiation use efficiency (RUE)
+    at light intensities higher than 5 MJ m⁻².
+
+    See Figure 2(a), Equation (13), and the section on "Growth functions" in
+    Jouven et al. (2006).
 
     Parameters
     ----------
     pari : Photosynthetic radiation incident (PAR_i) [MJ m⁻²]
-    alphapar : the light use interception
 
     Returns
     -------
-    - the value given by the PAR_i [0-1]
+    - PARi function [dimensionless]
     """
 
     if pari < 5:
         f_pari = 1
     else:
-        f_pari = max(1 - alphapar * (pari - 5), 0)
+        # linear approximation
+        gradient = 1 / (5 - (30 - 25)/2)
+        intercept = 1 - gradient * 5
+        f_pari = max(gradient * pari + intercept, 0)
     return f_pari
 
 
@@ -770,16 +779,21 @@ def rep(ni):
 
 def potential_growth(pari, lai, ruemax=3):
     """
-    Calculate potential growth
+    Calculate potential growth (PGRO)
 
     See Equation (12) in Jouven et al. (2006)
+
+    Based on Schapendonk et al. (1998).
+
+    The model extinction coefficient is set to a constant value of 0.6
+    according to Schapendonk et al. (1998) and Bonesmo and Bélanger (2002).
 
     Parameters
     ----------
     pari : Incident PAR (PAR_i) [MJ m⁻²]
     ruemax : Maximum radiation use efficiency (RUE_max); default is 3
         [g DM MJ⁻¹]
-    lai : the LAI from remote sensing (if available)
+    lai : Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -799,12 +813,13 @@ def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
     Parameters
     ----------
     pctlam : Percentage of laminae in GV (%LAM); default is 0.68
+        [dimensionless]
     sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
     gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
 
     Returns
     -------
-    - the calculated LAI
+    - Leaf area index (LAI) [dimensionless]
     """
 
     return sla * (gv_biomass / 10) * pctlam
@@ -817,7 +832,7 @@ def actual_evapotranspiration(pet, lai):
     See Equation (14) in Jouven et al. (2006)
 
     pet : Potential evapotranspiration (PET) [mm]]
-    lai : Leaf area index (LAI)
+    lai : Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -825,6 +840,7 @@ def actual_evapotranspiration(pet, lai):
     """
 
     return min(pet, pet * (lai / 3))
+
 
 # def updateSumTemperature(temperature, t0, sumT, tbase):
 #     """
@@ -1153,7 +1169,7 @@ def ingested_biomass(
 
     Returns
     -------
-    total grass ingestion by livestock per hectare [kg DM ha⁻¹]
+    - total grass ingestion by livestock per hectare [kg DM ha⁻¹]
 
     Notes
     -----

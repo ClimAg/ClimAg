@@ -328,12 +328,32 @@ def modvege(params, tseries, enddoy=365):
                 #         grazing_area=params["grazing_area"],
                 #         bulk_density=params[bd]
                 #     )
+                # ingested_biomass_part = [0, 0, 0, 0]
                 ingested_biomass_part = lm.ingested_biomass(
                     livestock_units=params["livestock_units"],
                     grazing_area=params["grazing_area"],
                     bulk_density=params["rho_GV"],
                     min_cut_height=params["cutHeight"]
                 )
+                # ingested_biomass_part[1] = lm.ingested_biomass(
+                #     livestock_units=params["livestock_units"],
+                #     grazing_area=params["grazing_area"],
+                #     bulk_density=params["rho_DV"],
+                #     min_cut_height=params["cutHeight"]
+                # )
+                # ingested_biomass_part[2] = lm.ingested_biomass(
+                #     livestock_units=params["livestock_units"],
+                #     grazing_area=params["grazing_area"],
+                #     bulk_density=params["rho_GR"],
+                #     min_cut_height=params["cutHeight"]
+                # )
+                # ingested_biomass_part[3] = lm.ingested_biomass(
+                #     livestock_units=params["livestock_units"],
+                #     grazing_area=params["grazing_area"],
+                #     bulk_density=params["rho_DR"],
+                #     min_cut_height=params["cutHeight"]
+                # )
+                # ingested_biomass_part = sum(ingested_biomass_part)
             # allocation to reproductive
             a2r = lm.rep(ni=params["NI"])
             # TO-DO: When to change NI, and by how much?
