@@ -539,12 +539,14 @@ def gr_update(
 #     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
-def mk_env(
+def environmental_limitation(
     meanTenDaysT, t0, t1, t2, ni, pari, pet, waterReserve,
     waterHoldingCapacity
 ):
     """
-    Environmental stress.
+    Environmental limitation of growth (ENV).
+
+    See Equation (13) of Jouven et al. (2006).
 
     Parameters
     ----------
@@ -557,17 +559,16 @@ def mk_env(
     pet : Potential evapotranspiration (PET) [mm]
     waterReserve : Water reserves (WR) [mm]
     waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
-    sumT : sum of temperatures (** UNUSED ARGUMENT!)
 
     Returns
     -------
-    - Environmental stress
+    - Environmental limitation of growth (ENV) [dimensionless]
     """
 
     return (
         temperature_function(
             meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
-        )  # ** UNUSED ARGUMENT REMOVED!
+        )
         * ni
         * par_function(pari=pari)
         * fWaterStress(

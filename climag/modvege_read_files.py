@@ -100,7 +100,6 @@ def read_params(filename):
     - meanOMDdr   : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
 
-    - alpha_PAR   : Light extinction coefficient
     - beta_T      : Decrease in LUE after T2
     - b_IN        : Impact of IN on LUE at IN=0
     - a_IN        : Value of ALLOC at IN=0

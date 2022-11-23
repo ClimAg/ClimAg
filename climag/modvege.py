@@ -212,8 +212,6 @@ def modvege(params, tseries, enddoy=365):
         pari = tseries["par"][i]
         pmm = tseries["pr"][i]
         pet = tseries["evspsblpot"][i]
-        # eta = tseries["eta"][i]
-        # lai = tseries["lai"][i]
         cut_height = tseries["gcut_height"][i]
         # use default cut height if time series value is zero
         # see sec. "Harvested biomass" in Jouven et al. (2006)
@@ -383,10 +381,10 @@ def modvege(params, tseries, enddoy=365):
 
         # compute biomass growth
         outputs_dict["env"].append(
-            lm.mk_env(
+            lm.environmental_limitation(
                 meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
                 t1=params["T1"], t2=params["T2"], ni=params["NI"], pari=pari,
-                alphapar=params["alpha_PAR"], pet=pet,
+                pet=pet,
                 waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
         )
@@ -394,10 +392,10 @@ def modvege(params, tseries, enddoy=365):
             lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
         )
         gro = (
-            lm.mk_env(
+            lm.environmental_limitation(
                 meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
                 t1=params["T1"], t2=params["T2"], ni=params["NI"], pari=pari,
-                alphapar=params["alpha_PAR"], pet=pet,
+                pet=pet,
                 waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
             )  # ** UNUSED ARGUMENT REMOVED!
             * lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
@@ -408,9 +406,9 @@ def modvege(params, tseries, enddoy=365):
             * corrective_factor
         )
 
-        # egro = lm.mk_env(
+        # egro = lm.environmental_limitation(
         #     meanTenDaysT, params["T0"], params["T1"], params["T2"],
-        #     temperature_sum, params["NI"], pari, params["alpha_PAR"], pet,
+        #     temperature_sum, params["NI"], pari, pet,
         #     params["WR"], params["WHC"]
         # )
         # ggro = lm.potential_growth(pari, params["RUEmax"], lai)
