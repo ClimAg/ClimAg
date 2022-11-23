@@ -540,7 +540,7 @@ def gr_update(
 
 
 def environmental_limitation(
-    meanTenDaysT, t0, t1, t2, ni, pari, pet, waterReserve,
+    temperature_fn, ni, pari, pet, waterReserve,
     waterHoldingCapacity
 ):
     """
@@ -566,11 +566,7 @@ def environmental_limitation(
     """
 
     return (
-        temperature_function(
-            meanTenDaysT=meanTenDaysT, t0=t0, t1=t1, t2=t2
-        )
-        * ni
-        * par_function(pari=pari)
+        temperature_fn * ni * par_function(pari=pari)
         * fWaterStress(
             waterReserve=waterReserve,
             waterHoldingCapacity=waterHoldingCapacity,

@@ -168,7 +168,6 @@ def modvege(params, tseries, enddoy=365):
     dr_avg_age = params["init_AGE_DR"]
 
     # outputs
-    # GV biomass
     outputs_dict = {
         "biomass_gv": [],
         "biomass_dv": [],
@@ -190,7 +189,7 @@ def modvege(params, tseries, enddoy=365):
         "reproductive_fn": []
     }
 
-    # TO-DO: This variable is not found in the manual/sourcecode, yet is
+    # TO-DO: This variable is not found in the manual/source code, yet is
     # used widely
     corrective_factor = 1
 
@@ -200,7 +199,7 @@ def modvege(params, tseries, enddoy=365):
         # Load additional input arrays into variables
         #######################################################
         temperature = tseries["tas"][i]
-        # mean ten days temperature
+        # mean ten days temperature (Tm10)
         if i < (10 - 1):
             # ** USING THE TEMP, NOT 10-d AVG!
             temperature_mean_ten_days = temperature
@@ -218,26 +217,24 @@ def modvege(params, tseries, enddoy=365):
         if cut_height == 0:
             cut_height = params["cutHeight"]
 
-        #######################################################
-        # Prepare additional variables
-        #######################################################
+        # sum of temperatures (ST)
         temperature_sum = lm.sum_of_temperatures(
             timeseries=tseries, doy=(i + 1), t0=params["T0"]
         )
-        # fSEA array for graphs
-        outputs_dict["seasonality"].append(
-            lm.seasonal_effect(
-                maxsea=params["maxSEA"], minsea=params["minSEA"],
-                sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
-            )
+
+        # seasonal effect (SEA)
+        seasonality = lm.seasonal_effect(
+            maxsea=params["maxSEA"], minsea=params["minSEA"],
+            sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
         )
-        # fTemperature the array for graphs (** UNUSED ARGUMENT REMOVED!)
-        outputs_dict["temperature_fn"].append(
-            lm.temperature_function(
-                meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
-                t1=params["T1"], t2=params["T2"], tmax=params["Tmax"]
-            )
+        outputs_dict["seasonality"].append(seasonality)
+
+        # temperature function (f(T))
+        temperature_fn = lm.temperature_function(
+            meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
+            t1=params["T1"], t2=params["T2"], tmax=params["Tmax"]
         )
+        outputs_dict["temperature_fn"].append(temperature_fn)
 
         # grass cut flag modification if time series file has grass cut for
         # that day
@@ -253,18 +250,20 @@ def modvege(params, tseries, enddoy=365):
         #     isCut = False
         # else:
         #     isCut = True
-        # if the Nitrogen Nutrition Index (NI) is below 0.35, force it to 0.35
-        # (Belanger et al. 1994)
+
+        # nitrogen nutritional index (NI)
+        # if NI is below 0.35, force it to 0.35 (Belanger et al. 1994)
         params["NI"] = max(params["NI"], 0.35)
 
-        #####################################################################
-        # The model starts here really
-        #####################################################################
+        # leaf area index
         lai = lm.leaf_area_index(
             pctlam=params["pctLAM"], sla=params["SLA"], gv_biomass=gv_biomass
         )
+
+        # actual evapotranspiration (AET)
         eta = lm.actual_evapotranspiration(pet=pet, lai=lai)
-        # compute WR
+
+        # water reserves (WR)
         params["WR"] = min(max(0, params["WR"] + pmm - eta), params["WHC"])
 
         # compute grazing and harvesting
@@ -333,24 +332,6 @@ def modvege(params, tseries, enddoy=365):
                     bulk_density=params["rho_GV"],
                     min_cut_height=params["cutHeight"]
                 )
-                # ingested_biomass_part[1] = lm.ingested_biomass(
-                #     livestock_units=params["livestock_units"],
-                #     grazing_area=params["grazing_area"],
-                #     bulk_density=params["rho_DV"],
-                #     min_cut_height=params["cutHeight"]
-                # )
-                # ingested_biomass_part[2] = lm.ingested_biomass(
-                #     livestock_units=params["livestock_units"],
-                #     grazing_area=params["grazing_area"],
-                #     bulk_density=params["rho_GR"],
-                #     min_cut_height=params["cutHeight"]
-                # )
-                # ingested_biomass_part[3] = lm.ingested_biomass(
-                #     livestock_units=params["livestock_units"],
-                #     grazing_area=params["grazing_area"],
-                #     bulk_density=params["rho_DR"],
-                #     min_cut_height=params["cutHeight"]
-                # )
                 # ingested_biomass_part = sum(ingested_biomass_part)
             # allocation to reproductive
             a2r = lm.rep(ni=params["NI"])
@@ -380,25 +361,24 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["reproductive_fn"].append(a2r)
 
         # compute biomass growth
-        outputs_dict["env"].append(
-            lm.environmental_limitation(
-                meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
-                t1=params["T1"], t2=params["T2"], ni=params["NI"], pari=pari,
-                pet=pet,
-                waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
-            )  # ** UNUSED ARGUMENT REMOVED!
+        env = lm.environmental_limitation(
+            temperature_fn=temperature_fn,
+            pari=pari,
+            ni=params["NI"],
+            pet=pet,
+            waterReserve=params["WR"],
+            waterHoldingCapacity=params["WHC"]
         )
-        outputs_dict["biomass_growth_pot"].append(
-            lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
+        outputs_dict["env"].append(env)
+
+        biomass_growth_pot = lm.potential_growth(
+            pari=pari, ruemax=params["RUEmax"], lai=lai
         )
+        outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
+
         gro = (
-            lm.environmental_limitation(
-                meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
-                t1=params["T1"], t2=params["T2"], ni=params["NI"], pari=pari,
-                pet=pet,
-                waterReserve=params["WR"], waterHoldingCapacity=params["WHC"]
-            )  # ** UNUSED ARGUMENT REMOVED!
-            * lm.potential_growth(pari=pari, ruemax=params["RUEmax"], lai=lai)
+            env
+            * biomass_growth_pot
             * lm.seasonal_effect(
                 maxsea=params["maxSEA"], minsea=params["minSEA"],
                 sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
@@ -453,9 +433,6 @@ def modvege(params, tseries, enddoy=365):
             rhogr=params["rho_GR"], rhodr=params["rho_DR"]
         )
 
-        #####################################################################
-        # The model stops here really
-        #####################################################################
         # # Accumulate harvestedBiomass
         # if is_harvested:
         #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
@@ -463,6 +440,7 @@ def modvege(params, tseries, enddoy=365):
         # # Accumulate ingestedBiomass
         # if is_grazed:
         #     ingestedBiomass += ingested_biomass_part
+
         # Recover output streams
         outputs_dict["biomass_gv"].append(gv_biomass)
         outputs_dict["biomass_dv"].append(dv_biomass)
