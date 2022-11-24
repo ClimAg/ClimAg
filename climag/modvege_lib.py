@@ -418,6 +418,177 @@ def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
     )
 
 
+# ABSCISSION
+def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
+    """
+    Compute abscission biomass for the DV compartment.
+    See Equation (18) and Figure 4(c) in in Jouven et al. (2006).
+
+    Note that abscission only occurs when T > 0.
+
+    Parameters
+    ----------
+    lls : Leaf lifespan (LLS) [500 °C d]
+    kldv : Basic abscission rate for the dead vegetative compartment
+        (Kl_DV) [0.001]
+    temperature : Mean daily temperature (T) [°C]
+    dv_biomass : DV biomass (BM_DV) [kg DM ha⁻¹]
+    dv_avg_age : Average DV age (AGE_DV) [°C d]
+
+    Returns
+    -------
+    - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
+    """
+
+    # method to compute the age of DV for computing abcission of DV
+    # f(AGE_DV) in Equation (18)
+    if dv_avg_age / lls < 1 / 3:
+        age = 1
+    elif dv_avg_age / lls < 2 / 3:
+        age = 2
+    else:
+        age = 3
+    # compute the abscission for dead vegetative part
+    # abscission only occurs when T > 0
+    if temperature > 0:
+        abscission_biomass = kldv * dv_biomass * temperature * age
+    else:
+        abscission_biomass = 0
+    return abscission_biomass
+
+
+def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
+    """
+    Compute abscission biomass for the DR compartment.
+    See Equation (18) and Figure 4(d) in Jouven et al. (2006).
+
+    Note that abscission only occurs when T > 0.
+
+    Parameters
+    ----------
+    kldr : Basic abscission rate for the dead reproductive compartment
+        (Kl_DR) [0.0005]
+    dr_biomass : DR biomass (BM_DR) [kg DM ha⁻¹]
+    temperature : Mean daily temperature (*T*) [°C]
+    dr_avg_age : Average DR age (AGE_DR) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
+
+    Returns
+    -------
+    - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
+    """
+
+    # method to compute the age of DR for computing abscission of DR
+    # f(AGE_DV) in Equation (18)
+    if dr_avg_age / (st2 - st1) < 1 / 3:
+        age = 1
+    elif dr_avg_age / (st2 - st1) < 2 / 3:
+        age = 2
+    else:
+        age = 3
+    # compute abscission for dead reproductive
+    # abscission only occurs when T > 0
+    if temperature > 0:
+        abscission_biomass = kldr * dr_biomass * temperature * age
+    else:
+        abscission_biomass = 0
+    return abscission_biomass
+
+
+# SENESCENCE
+def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
+    """
+    Senescent biomass for GV compartment.
+    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
+
+    No senescence occurs when *T* is between zero and T0.
+    When T drops below zero, senescence is driven by freezing effects and is
+    proportional to |*T*|.
+
+    Parameters
+    ----------
+    kgv : Basic senescence rate for the green vegetative compartment
+        (K_GV) [0.002]
+    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
+    temperature : Mean daily temperature (*T*) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [°C]
+    lls : Leaf lifespan (LLS) [500 °C d]
+    gv_avg_age : Average GV age (AGE_GV) [°C d]
+
+    Returns
+    -------
+    - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
+    """
+
+    # method to compute the age of GV for computing senescence of GV
+    # f(AGE_GV) in Equation (16)
+    if gv_avg_age / lls < 1 / 3:
+        age = 1
+    elif gv_avg_age / lls < 1:
+        # linear gradient
+        gradient = (3 - 1) / (1 - 1 / 3)
+        intercept = 3 - gradient * 1
+        age = gradient * gv_avg_age / lls + intercept
+    else:
+        age = 3
+    # compute senescence of GV
+    if temperature > t0:
+        # Equation (16)
+        senescence_biomass = kgv * gv_biomass * temperature * age
+    elif temperature < 0:
+        # Equation (17)
+        senescence_biomass = kgv * gv_biomass * abs(temperature)
+    else:
+        senescence_biomass = 0
+    return senescence_biomass
+
+
+def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
+    """
+    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    kgr : Basic senescence rate for the green reproductive compartment
+        (K_GR) [0.001]
+    gr_biomass : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
+    temperature : Mean daily temperature (*T*) [°C]
+    t0 : Minimum temperature for growth (*T*₀) [4 °C]
+    gr_avg_age : Average GR age (AGE_GR) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁) [600 °C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂) [1200 °C d]
+
+    Returns
+    -------
+    - Senescent biomass [kg DM ha⁻¹]
+    """
+
+    if gr_avg_age / (st2 - st1) < 1 / 3:
+        age = 1
+    elif gr_avg_age / (st2 - st1) < 1:
+        # linear gradient
+        gradient = (3 - 1) / (1 - 1 / 3)
+        intercept = 3 - gradient * 1
+        age = gradient * gr_avg_age / (st2 - st1) + intercept
+    else:
+        age = 3
+
+    if temperature > t0:
+        # Equation (16)
+        senescence_biomass = kgr * gr_biomass * temperature * age
+    elif temperature < 0:
+        # Equation (17)
+        senescence_biomass = kgr * gr_biomass * abs(temperature)
+    else:
+        senescence_biomass = 0
+    return senescence_biomass
+
+
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     """
     Estimate biomass available for ingestion by livestock.
@@ -506,45 +677,7 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
     return biomass
 
 
-# DEAD VEGETATIVE FUNCTIONS
-def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
-    """
-    Compute abscission biomass for the DV compartment.
-    See Equation (18) and Figure 4(c) in in Jouven et al. (2006).
-
-    Note that abscission only occurs when T > 0.
-
-    Parameters
-    ----------
-    lls : Leaf lifespan (LLS) [500 °C d]
-    kldv : Basic abscission rate for the dead vegetative compartment
-        (Kl_DV) [0.001]
-    temperature : Mean daily temperature (T) [°C]
-    dv_biomass : DV biomass (BM_DV) [kg DM ha⁻¹]
-    dv_avg_age : Average DV age (AGE_DV) [°C d]
-
-    Returns
-    -------
-    - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
-    """
-
-    # method to compute the age of DV for computing abcission of DV
-    # f(AGE_DV) in Equation (18)
-    if dv_avg_age / lls < 1 / 3:
-        age = 1
-    elif dv_avg_age / lls < 2 / 3:
-        age = 2
-    else:
-        age = 3
-    # compute the abscission for dead vegetative part
-    # abscission only occurs when T > 0
-    if temperature > 0:
-        abscission_biomass = kldv * dv_biomass * temperature * age
-    else:
-        abscission_biomass = 0
-    return abscission_biomass
-
-
+# DEAD VEGETATIVE FUNCTION
 def dv_update(
     gv_gamma, gv_senescent_biomass, lls, kldv, temperature, dv_biomass,
     dv_avg_age
@@ -589,48 +722,7 @@ def dv_update(
     return (dv_biomass, dv_avg_age)
 
 
-# DEAD REPRODUCTIVE FUNCTIONS
-def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
-    """
-    Compute abscission biomass for the DR compartment.
-    See Equation (18) and Figure 4(d) in Jouven et al. (2006).
-
-    Note that abscission only occurs when T > 0.
-
-    Parameters
-    ----------
-    kldr : Basic abscission rate for the dead reproductive compartment
-        (Kl_DR) [0.0005]
-    dr_biomass : DR biomass (BM_DR) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (*T*) [°C]
-    dr_avg_age : Average DR age (AGE_DR) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁) [600 °C d]
-    st2 : Sum of temperatures at the end of the reproductive period
-        (ST₂) [1200 °C d]
-
-    Returns
-    -------
-    - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
-    """
-
-    # method to compute the age of DR for computing abscission of DR
-    # f(AGE_DV) in Equation (18)
-    if dr_avg_age / (st2 - st1) < 1 / 3:
-        age = 1
-    elif dr_avg_age / (st2 - st1) < 2 / 3:
-        age = 2
-    else:
-        age = 3
-    # compute abscission for dead reproductive
-    # abscission only occurs when T > 0
-    if temperature > 0:
-        abscission_biomass = kldr * dr_biomass * temperature * age
-    else:
-        abscission_biomass = 0
-    return abscission_biomass
-
-
+# DEAD REPRODUCTIVE FUNCTION
 def dr_update(
     gr_gamma, gr_senescent_biomass, st1, st2, temperature, kldr, dr_biomass,
     dr_avg_age
@@ -676,54 +768,7 @@ def dr_update(
     return (dr_biomass, dr_avg_age)
 
 
-# GREEN VEGETATIVE FUNCTIONS
-def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
-    """
-    Senescent biomass for GV compartment.
-    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
-
-    No senescence occurs when *T* is between zero and T0.
-    When T drops below zero, senescence is driven by freezing effects and is
-    proportional to |*T*|.
-
-    Parameters
-    ----------
-    kgv : Basic senescence rate for the green vegetative compartment
-        (K_GV) [0.002]
-    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (*T*) [°C]
-    t0 : Minimum temperature for growth (*T*₀) [°C]
-    lls : Leaf lifespan (LLS) [500 °C d]
-    gv_avg_age : Average GV age (AGE_GV) [°C d]
-
-    Returns
-    -------
-    - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
-    """
-
-    # method to compute the age of GV for computing senescence of GV
-    # f(AGE_GV) in Equation (16)
-    if gv_avg_age / lls < 1 / 3:
-        age = 1
-    elif gv_avg_age / lls < 1:
-        # linear gradient
-        gradient = (3 - 1) / (1 - 1 / 3)
-        intercept = 3 - gradient * 1
-        age = gradient * gv_avg_age / lls + intercept
-    else:
-        age = 3
-    # compute senescence of GV
-    if temperature > t0:
-        # Equation (16)
-        senescence_biomass = kgv * gv_biomass * temperature * age
-    elif temperature < 0:
-        # Equation (17)
-        senescence_biomass = kgv * gv_biomass * abs(temperature)
-    else:
-        senescence_biomass = 0
-    return senescence_biomass
-
-
+# GREEN VEGETATIVE FUNCTION
 def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
     """
     Update green vegetative compartment.
@@ -768,50 +813,7 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
     return (gv_biomass, gv_avg_age, senescentBiomass)
 
 
-# GREEN REPRODUCTIVE FUNCTIONS
-def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
-    """
-    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006).
-
-    Parameters
-    ----------
-    kgr : Basic senescence rate for the green reproductive compartment
-        (K_GR) [0.001]
-    gr_biomass : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (*T*) [°C]
-    t0 : Minimum temperature for growth (*T*₀) [4 °C]
-    gr_avg_age : Average GR age (AGE_GR) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁) [600 °C d]
-    st2 : Sum of temperatures at the end of the reproductive period
-        (ST₂) [1200 °C d]
-
-    Returns
-    -------
-    - Senescent biomass [kg DM ha⁻¹]
-    """
-
-    if gr_avg_age / (st2 - st1) < 1 / 3:
-        age = 1
-    elif gr_avg_age / (st2 - st1) < 1:
-        # linear gradient
-        gradient = (3 - 1) / (1 - 1 / 3)
-        intercept = 3 - gradient * 1
-        age = gradient * gr_avg_age / (st2 - st1) + intercept
-    else:
-        age = 3
-
-    if temperature > t0:
-        # Equation (16)
-        senescence_biomass = kgr * gr_biomass * temperature * age
-    elif temperature < 0:
-        # Equation (17)
-        senescence_biomass = kgr * gr_biomass * abs(temperature)
-    else:
-        senescence_biomass = 0
-    return senescence_biomass
-
-
+# GREEN REPRODUCTIVE FUNCTION
 def gr_update(
     temperature, a2r, gro, st1, st2, kgr, t0, gr_biomass, gr_avg_age
 ):
