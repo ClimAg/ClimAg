@@ -209,9 +209,8 @@ def modvege(params, tseries, enddoy=365):
         )
 
         # seasonal effect (SEA)
-        seasonality = lm.seasonal_effect(
-            maxsea=params["maxSEA"], minsea=params["minSEA"],
-            sumT=temperature_sum, st2=params["ST2"], st1=params["ST1"]
+        seasonality = (
+            lm.SeasonalEffect(t_sum=temperature_sum).seasonal_effect()
         )
         outputs_dict["seasonality"].append(seasonality)
 
@@ -242,12 +241,12 @@ def modvege(params, tseries, enddoy=365):
         params["NI"] = max(params["NI"], 0.35)
 
         # leaf area index (LAI)
-        lai = lm.leaf_area_index(
-            pctlam=params["pctLAM"], sla=params["SLA"], gv_biomass=gv_biomass
-        )
+        lai = lm.LeafAreaIndex(bm_gv=gv_biomass).leaf_area_index()
 
         # actual evapotranspiration (AET)
-        eta = lm.actual_evapotranspiration(pet=pet, lai=lai)
+        eta = lm.ActualEvapotranspiration(
+            pet=pet, lai=lai
+        ).actual_evapotranspiration()
 
         # water reserves (WR)
         params["WR"] = lm.water_reserves(
@@ -366,9 +365,9 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["env"].append(env)
 
         # potential growth (PGRO)
-        biomass_growth_pot = lm.potential_growth(
-            pari=pari, ruemax=params["RUEmax"], lai=lai
-        )
+        biomass_growth_pot = lm.PotentialGrowth(
+            par_i=pari, lai=lai
+        ).potential_growth()
         outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
 
         # total biomass growth (GRO)

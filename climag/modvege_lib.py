@@ -26,108 +26,42 @@ References
   87-100. DOI: 10.1016/S1161-0301(98)00027-6.
 """
 
+from dataclasses import dataclass
 import numpy as np
 
 
-def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
+@dataclass
+class LeafAreaIndex:
     """
-    Calculate the leaf area index
+    Calculate the leaf area index (LAI)
 
     Equation (12) in Jouven et al. (2006)
 
     Parameters
     ----------
-    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
-        [dimensionless]
+    pct_lam : Percentage of laminae in the green vegetative (GV) biomass
+        compartment (%LAM); default is 0.68 [dimensionless]
     sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
-    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
+    bm_gv : Standing biomass of the green vegetative (GV) compartment (BM_GV)
+        [kg DM ha⁻¹]
 
     Returns
     -------
     - Leaf area index (LAI) [dimensionless]
     """
 
-    return sla * (gv_biomass / 10) * pctlam
+    bm_gv: float
+    pct_lam: float = 0.68
+    sla: float = 0.033
+
+    def leaf_area_index(self) -> float:
+        """Calculate the leaf area index (LAI)"""
+
+        return self.sla * self.bm_gv / 10 * self.pct_lam
 
 
-def par_function(pari):
-    """
-    Incident photosynthetically active radiation (PARi) function (fPARi)
-    needed to calculate the environmental limitation of growth (ENV).
-
-    The definition has been derived from Schapendonk et al. (1998).
-    This function accounts for the decrease in radiation use efficiency (RUE)
-    at light intensities higher than 5 MJ m⁻².
-
-    See Figure 2(a), Equation (13), and the section on "Growth functions" in
-    Jouven et al. (2006).
-
-    Parameters
-    ----------
-    pari : Photosynthetic radiation incident (PAR_i) [MJ m⁻²]
-
-    Returns
-    -------
-    - PARi function [dimensionless]
-    """
-
-    if pari < 5:
-        f_pari = 1
-    else:
-        # linear gradient
-        gradient = 1 / (5 - (25 + 30) / 2)
-        intercept = 1 - gradient * 5
-        f_pari = max(gradient * pari + intercept, 0)
-    return f_pari
-
-
-def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
-    """
-    Calculate seasonal effect (SEA) on growth, driven by the sum of
-    temperatures
-
-    SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
-    SEA < 1 indicates growth limitation by storage of reserves
-
-    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
-    more info
-
-    minSEA and maxSEA are functional traits arranged symmetrically around 1:
-    (minSEA + maxSEA) / 2 = 1
-
-    Parameters
-    ----------
-    maxsea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
-    minsea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
-    sumT : Sum of temperatures (ST) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁); default is 600 [°C d]
-    st2 : Sum of temperatures at the end of the reproductive period
-        (ST₂); default is 1200 [°C d]
-
-    Returns
-    -------
-    - Seasonal effect [dimensionless]
-    """
-
-    if sumT < 200 or sumT > st2:
-        f_sea = minsea
-    elif (st1 - 200) <= sumT <= (st1 - 100):
-        f_sea = maxsea
-    elif 200 <= sumT < (st1 - 200):
-        # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
-        gradient = (maxsea - minsea) / ((st1 - 200) - 200)
-        intercept = minsea - gradient * 200
-        f_sea = max(gradient * sumT + intercept, minsea)
-    elif (st1 - 100) < sumT <= st2:
-        # SEA decreases linearly from maxSEA to minSEA at ST_2
-        gradient = (maxsea - minsea) / ((st1 - 100) - st2)
-        intercept = minsea - gradient * st2
-        f_sea = max(gradient * sumT + intercept, minsea)
-    return f_sea
-
-
-def actual_evapotranspiration(pet, lai):
+@dataclass
+class ActualEvapotranspiration:
     """
     Calculate the actual evapotranspiration (AET)
 
@@ -140,7 +74,7 @@ def actual_evapotranspiration(pet, lai):
 
     See Equation (14) in Jouven et al. (2006)
 
-    pet : Potential evapotranspiration (PET) [mm]]
+    pet : Potential evapotranspiration (PET) [mm]
     lai : Leaf area index (LAI) [dimensionless]
 
     Returns
@@ -148,10 +82,17 @@ def actual_evapotranspiration(pet, lai):
     - Actual evapotranspiration (AET) [mm]
     """
 
-    return min(pet, pet * (lai / 3))
+    pet: float
+    lai: float
+
+    def actual_evapotranspiration(self) -> float:
+        """Calculate the actual evapotranspiration (AET)"""
+
+        return min(self.pet, self.pet * self.lai / 3)
 
 
-def potential_growth(pari, lai, ruemax=3):
+@dataclass
+class PotentialGrowth:
     """
     Calculate potential growth (PGRO)
 
@@ -167,18 +108,123 @@ def potential_growth(pari, lai, ruemax=3):
 
     Parameters
     ----------
-    pari : Incident PAR (PAR_i) [MJ m⁻²]
-    ruemax : Maximum radiation use efficiency (RUE_max); default is 3
+    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    rue_max : Maximum radiation use efficiency (RUE_max); default is 3
         [g DM MJ⁻¹]
     lai : Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
-    - potential growth (PGRO) [kg DM ha⁻¹]
+    - Potential growth (PGRO) [kg DM ha⁻¹]
     """
 
-    p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
-    return p_gro
+    par_i: float
+    lai: float
+    rue_max: float = 3
+
+    def potential_growth(self) -> float:
+        """Calculate potential growth (PGRO)"""
+
+        return (
+            self.par_i * self.rue_max * (1 - np.exp(-0.6 * self.lai)) * 10
+        )
+
+
+@dataclass
+class PARFunction:
+    """
+    Incident photosynthetically active radiation (PARi) function (fPARi)
+    needed to calculate the environmental limitation of growth (ENV).
+
+    The definition has been derived from Schapendonk et al. (1998).
+    This function accounts for the decrease in radiation use efficiency (RUE)
+    at light intensities higher than 5 MJ m⁻².
+
+    See Figure 2(a), Equation (13), and the section on "Growth functions" in
+    Jouven et al. (2006).
+
+    Parameters
+    ----------
+    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+
+    Returns
+    -------
+    - PARi function [dimensionless]
+    """
+
+    par_i: float
+
+    def par_function(self) -> float:
+        """Calculate the PARi function"""
+
+        if self.par_i < 5:
+            val = 1
+        else:
+            # linear gradient
+            gradient = 1 / (5 - (25 + 30) / 2)
+            intercept = 1 - gradient * 5
+            val = max(gradient * self.par_i + intercept, 0)
+        return val
+
+
+@dataclass
+class SeasonalEffect:
+    """
+    Calculate seasonal effect (SEA) on growth, driven by the sum of
+    temperatures
+
+    SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
+    SEA < 1 indicates growth limitation by storage of reserves
+
+    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
+    more info
+
+    minSEA and maxSEA are functional traits arranged symmetrically around 1:
+    (minSEA + maxSEA) / 2 = 1
+
+    Parameters
+    ----------
+    max_sea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
+    min_sea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
+    t_sum : Sum of temperatures (ST) [°C d]
+    st_1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁); default is 600 [°C d]
+    st_2 : Sum of temperatures at the end of the reproductive period
+        (ST₂); default is 1200 [°C d]
+
+    Returns
+    -------
+    - Seasonal effect [dimensionless]
+    """
+
+    t_sum: float
+    min_sea: float = 0.8
+    max_sea: float = 1.2
+    st_1: float = 600
+    st_2: float = 1200
+
+    def seasonal_effect(self) -> float:
+        """Calculate the seasonal effect (SEA)"""
+
+        if self.t_sum < 200 or self.t_sum > self.st_2:
+            val = self.min_sea
+        elif (self.st_1 - 200) <= self.t_sum <= (self.st_1 - 100):
+            val = self.max_sea
+        elif 200 <= self.t_sum < (self.st_1 - 200):
+            # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
+            gradient = (
+                (self.max_sea - self.min_sea) / ((self.st_1 - 200) - 200)
+            )
+            intercept = self.min_sea - gradient * 200
+            val = max(gradient * self.t_sum + intercept, self.min_sea)
+        elif (self.st_1 - 100) < self.t_sum <= self.st_2:
+            # SEA decreases linearly from maxSEA to minSEA at ST_2
+            gradient = (
+                (self.max_sea - self.min_sea) / ((self.st_1 - 100) - self.st_2)
+            )
+            intercept = self.min_sea - gradient * self.st_2
+            val = max(gradient * self.t_sum + intercept, self.min_sea)
+        return val
 
 
 def sum_of_temperatures(temperature_ts, doy, t0=4):
@@ -441,7 +487,8 @@ def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
     """
 
     return (
-        temperature_fn * ni * par_function(pari=pari) * waterstress_fn
+        temperature_fn * ni * PARFunction(par_i=pari).par_function() *
+        waterstress_fn
     )
 
 
