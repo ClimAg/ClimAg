@@ -1,7 +1,5 @@
 """modvege_lib.py
 
-https://github.com/YannChemin/modvege
-
 References
 ----------
 - Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
@@ -12,28 +10,23 @@ References
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
+- Bélanger, G., Gastal, F. and Warembourg, F. R. (1994). 'Carbon Balance of
+  Tall Fescue (Festuca arundinacea Schreb.): Effects of Nitrogen Fertilization
+  and the Growing Season', Annals of Botany, vol. 74, no. 6, pp. 653-659.
+  DOI: 10.1006/anbo.1994.1167.
+- Bonesmo, H. and Bélanger, G. (2002). 'Timothy Yield and Nutritive Value by
+  the CATIMO Model', Agronomy Journal, vol. 94, no. 2, pp. 337-345.
+  DOI: 10.2134/agronj2002.3370.
+- McCall, D. G. and Bishop-Hurley, G. J. (2003). 'A pasture growth model for
+  use in a whole-farm dairy production model', Agricultural Systems, vol. 76,
+  no. 3, pp. 1183-1205. DOI: 10.1016/S0308-521X(02)00104-X.
+- Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
+  B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
+  productivity in Europe', European Journal of Agronomy, vol. 9, no. 2, pp.
+  87-100. DOI: 10.1016/S1161-0301(98)00027-6.
 """
 
 import numpy as np
-
-
-# def getAverageHeight(biomass, bulkDensity):
-#     """
-#     Return the average height based on biomass and bulk density.
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     biomass : Biomass (BM) [kg DM ha⁻¹]
-#     bulkDensity : Bulk density (BD) [g DM m⁻³]
-
-#     Returns
-#     -------
-#     - Average height [m]
-#     """
-
-#     avg_height = biomass / (bulkDensity * 10)
-#     return avg_height
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
@@ -89,7 +82,7 @@ def harvest_biomass(bulkDensity, biomass, cutHeight=0.05):
     ----------
     cutHeight : Average height after the cut [m]
     bulkDensity : Bulk density [g DM m⁻³]
-    biomass : Biomass [kg DM ha⁻¹]
+    biomass : Biomass available [kg DM ha⁻¹]
 
     Returns
     -------
@@ -403,7 +396,6 @@ def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
         (ST₁) [600 °C d]
     st2 : Sum of temperatures at the end of the reproductive period
         (ST₂) [1200 °C d]
-    lls : Leaf lifespan (LLS) [°C d] (** UNUSED ARGUMENT!)
 
     Returns
     -------
@@ -480,43 +472,6 @@ def gr_update(
     return (gr_biomass, gr_avg_age, senescentBiomass)
 
 
-#############################################################################
-# Nutrition Index                   # double ni
-# water reserves WR                 # double waterReserve
-# Compartment green vegetative      # CompartmentGreenVegetative cGV
-# Compartment green reproductive    # CompartmentGreenReproductive cGR
-# Compartment dead vegetative       # CompartmentDeadVegetative cDV
-# Compartment dead reproductive     # CompartmentDeadReproductive cDR
-# Indicate if the cell was previously cut during a certain period
-#     # boolean isCut
-# Cut tag shows if there is a cut event
-#     # boolean isHarvested
-# Cut tag shows if there is a grazed event
-#     # boolean isGrazed
-# Sum of GRO                        # double sumGRO
-# GRO                               # double gro
-
-
-# def getHeight(gv_avg_h, gr_avg_h, dv_avg_h, dr_avg_h):
-#     """
-#     Return the height of this cell
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     gv_avg_h : ?
-#     gr_avg_h : ?
-#     dv_avg_h : ?
-#     dr_avg_h : ?
-
-#     Returns
-#     -------
-#     - the maximum height of the 4 cs
-#     """
-
-#     return max(max(gv_avg_h, gr_avg_h), np.max(dv_avg_h, dr_avg_h))
-
-
 # def cut(
 #     cutHeight, rhogv, rhodv, rhogr, rhodr, gvb, dvb, grb, drb
 # ):
@@ -544,18 +499,19 @@ def gr_update(
 #     - the amount of DR biomass cut [kg DM ha⁻¹]
 #     """
 
-#     gv_h, gv_b = harvest_biomass(bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
-#     dv_h, dv_b = harvest_biomass(bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
-#     gr_h, gr_b = harvest_biomass(bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
-#     dr_h, dr_b = harvest_biomass(bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
+#     gv_h, gv_b = harvest_biomass(
+#         bulkDensity=rhogv, cutHeight=cutHeight, biomass=gvb)
+#     dv_h, dv_b = harvest_biomass(
+#         bulkDensity=rhodv, cutHeight=cutHeight, biomass=dvb)
+#     gr_h, gr_b = harvest_biomass(
+#         bulkDensity=rhogr, cutHeight=cutHeight, biomass=grb)
+#     dr_h, dr_b = harvest_biomass(
+#         bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
 #     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
 #     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
-def environmental_limitation(
-    temperature_fn, ni, pari, pet, waterReserve,
-    waterHoldingCapacity
-):
+def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
     """
     Environmental limitation of growth (ENV).
 
@@ -563,12 +519,10 @@ def environmental_limitation(
 
     Parameters
     ----------
-    temperature_fn : temperature function (f(T)) [dimensionless]
+    temperature_fn : temperature function (*f*(*T*)) [dimensionless]
     ni : Nutritional index of pixel (NI)
     pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    pet : Potential evapotranspiration (PET) [mm]
-    waterReserve : Water reserves (WR) [mm]
-    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    waterstress_fn : Water stress function (*f*(*W*)) [dimensionless]
 
     Returns
     -------
@@ -576,12 +530,7 @@ def environmental_limitation(
     """
 
     return (
-        temperature_fn * ni * par_function(pari=pari)
-        * water_stress_function(
-            waterReserve=waterReserve,
-            waterHoldingCapacity=waterHoldingCapacity,
-            pet=pet
-        )
+        temperature_fn * ni * par_function(pari=pari) * waterstress_fn
     )
 
 
@@ -700,7 +649,7 @@ def par_function(pari):
         f_pari = 1
     else:
         # linear gradient
-        gradient = 1 / (5 - 27.5 / 2)
+        gradient = 1 / (5 - (25 + 30) / 2)
         intercept = 1 - gradient * 5
         f_pari = max(gradient * pari + intercept, 0)
     return f_pari
@@ -1075,25 +1024,6 @@ def defoliation(
                 )
             )
     return sumBiomassIngested
-
-
-# def greenLimbsMass(gv_gamma, gv_biomass):
-#     """
-#     Calculation of mass of green limbs for the cell
-#     (old name: mlv)
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     gv_biomass : Biomass of green vegetative
-#     gv_gamma : ?
-
-#     Returns
-#     -------
-#     - Mass of green limbs
-#     """
-
-#     return gv_gamma * gv_biomass
 
 
 # def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):

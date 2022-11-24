@@ -19,10 +19,6 @@ References
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
-- Calanca, P., Deléglise, C., Martin, R., Carrère, P. and Mosimann, E. (2016).
-  'Testing the ability of a simple grassland model to simulate the seasonal
-  effects of drought on herbage growth', Field Crops Research, vol. 187, pp.
-  12-23. DOI: 10.1016/j.fcr.2015.12.008.
 - Lardy, R., Bellocchi, G. G., Bachelet, B. and Hill, D. (2011). 'Climate
   Change Vulnerability Assessment with Constrained Design of Experiments,
   Using a Model-Driven Engineering Approach', Guimaraes, Portugal, pp.
@@ -140,7 +136,6 @@ def modvege(params, tseries, enddoy=365):
     """
 
     # Initialise state parameters
-    # This is a status flag changed in lib_cell.updateCell()
     # isCut = False
     # This is an actionable flag modified by gcut_height presence
     # is_harvested = False
@@ -192,7 +187,7 @@ def modvege(params, tseries, enddoy=365):
     # daily loop
     for i in range(enddoy):
         #######################################################
-        # Load additional input arrays into variables
+        # load additional input arrays into variables
         #######################################################
         temperature = tseries["tas"][i]
         # mean ten days temperature (Tm10)
@@ -251,7 +246,7 @@ def modvege(params, tseries, enddoy=365):
         # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
         params["NI"] = max(params["NI"], 0.35)
 
-        # leaf area index
+        # leaf area index (LAI)
         lai = lm.leaf_area_index(
             pctlam=params["pctLAM"], sla=params["SLA"], gv_biomass=gv_biomass
         )
@@ -263,6 +258,13 @@ def modvege(params, tseries, enddoy=365):
         params["WR"] = lm.water_reserves(
             precipitation=pmm, water_reserve=params["WR"],
             actual_et=eta, soil_whc=params["WHC"]
+        )
+
+        # water stress function (f(W))
+        waterstress_fn = lm.water_stress_function(
+            waterReserve=params["WR"],
+            waterHoldingCapacity=params["WHC"],
+            pet=pet
         )
 
         # compute grazing and harvesting
@@ -334,7 +336,7 @@ def modvege(params, tseries, enddoy=365):
                 # ingested_biomass_part = sum(ingested_biomass_part)
             # allocation to reproductive
             a2r = lm.reproductive_function(n_index=params["NI"])
-            # TO-DO: When to change NI, and by how much?
+            # TO-DO: when to change NI, and by how much?
             # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
             # 0.5       0.42307
@@ -364,9 +366,7 @@ def modvege(params, tseries, enddoy=365):
             temperature_fn=temperature_fn,
             pari=pari,
             ni=params["NI"],
-            pet=pet,
-            waterReserve=params["WR"],
-            waterHoldingCapacity=params["WHC"]
+            waterstress_fn=waterstress_fn
         )
         outputs_dict["env"].append(env)
 
@@ -383,20 +383,7 @@ def modvege(params, tseries, enddoy=365):
             seasonality=seasonality
         )
 
-        # egro = lm.environmental_limitation(
-        #     meanTenDaysT, params["T0"], params["T1"], params["T2"],
-        #     temperature_sum, params["NI"], pari, pet,
-        #     params["WR"], params["WHC"]
-        # )
-        # ggro = lm.potential_growth(pari, params["RUEmax"], lai)
-        # sgro = lm.seasonal_effect(
-        #     params["maxSEA"], params["minSEA"], temperature_sum,
-        #     params["ST2"], params["ST1"]
-        # )
-        # cgro = corrective_factor
-        # gro = egro * ggro * sgro * cgro
-
-        # Update the state of the vegetative parts
+        # update the state of the vegetative parts
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
             gro=gro, a2r=a2r, lls=params["LLS"], temperature=temperature,
             kgv=params["K_GV"], t0=params["T0"], gv_biomass=gv_biomass,
@@ -409,7 +396,7 @@ def modvege(params, tseries, enddoy=365):
             dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
         )
 
-        # Start the reproductive phase of the vegetation
+        # start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
             temperature=temperature, a2r=a2r, gro=gro, st1=params["ST1"],
             st2=params["ST2"], kgr=params["K_GR"], t0=params["T0"],
@@ -422,7 +409,7 @@ def modvege(params, tseries, enddoy=365):
             dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
         )
 
-        # Compute available biomass for cut (output comparison requirement)
+        # compute available biomass for cut (output comparison requirement)
         biomass_cut_avail = lm.getAvailableBiomassForCut(
             gv_biomass=gv_biomass, dv_biomass=dv_biomass,
             gr_biomass=gr_biomass, dr_biomass=dr_biomass, cutHeight=cut_height,
@@ -430,7 +417,7 @@ def modvege(params, tseries, enddoy=365):
             rhogr=params["rho_GR"], rhodr=params["rho_DR"]
         )
 
-        # # Accumulate harvestedBiomass
+        # # accumulate harvestedBiomass
         # if is_harvested:
         #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
         #     harvestedBiomass += harvested_biomass_part
