@@ -103,7 +103,6 @@ short leaf lifespan, and early reproductive growth and flowering).
 - Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
-import numpy as np
 import climag.modvege_lib as lm
 
 
@@ -191,13 +190,9 @@ def modvege(params, tseries, enddoy=365):
         #######################################################
         temperature = tseries["tas"][i]
         # mean ten days temperature (Tm10)
-        if i < (10 - 1):
-            # ** USING THE TEMP, NOT 10-d AVG!
-            temperature_mean_ten_days = temperature
-        else:
-            temperature_mean_ten_days = np.mean(
-                [tseries["tas"][i - j] for j in range(10 - 1, 0 - 1, -1)]
-            )
+        temperature_mean_ten_days = lm.mean_ten_days_temperature(
+            temperature_ts=tseries["tas"], idx=i
+        )
 
         pari = tseries["par"][i]
         pmm = tseries["pr"][i]
@@ -210,7 +205,7 @@ def modvege(params, tseries, enddoy=365):
 
         # sum of temperatures (ST)
         temperature_sum = lm.sum_of_temperatures(
-            timeseries=tseries, doy=(i + 1), t0=params["T0"]
+            temperature_ts=tseries["tas"], doy=(i + 1), t0=params["T0"]
         )
 
         # seasonal effect (SEA)

@@ -181,13 +181,13 @@ def potential_growth(pari, lai, ruemax=3):
     return p_gro
 
 
-def sum_of_temperatures(timeseries, doy, t0=4):
+def sum_of_temperatures(temperature_ts, doy, t0=4):
     """
     Return the sum of temperatures for the day of the year
 
     Parameters
     ----------
-    timeseries : Input time series data
+    temperature_ts : Temperature field of the input time series data
     doy : Day of the year [1-366]
     t0 : Minimum temperature for growth; default is 4 [°C]
 
@@ -219,9 +219,36 @@ def sum_of_temperatures(timeseries, doy, t0=4):
 
     sum_temperature = 0
     for i in range(doy):
-        if timeseries["tas"][i] > t0:
-            sum_temperature += timeseries["tas"][i] - t0
+        if temperature_ts[i] > t0:
+            sum_temperature += temperature_ts[i] - t0
     return sum_temperature
+
+
+def mean_ten_days_temperature(temperature_ts, idx):
+    """
+    Calculate the 10-d moving average temperature.
+
+    See sec. "Growth functions", par. above Equation (13) in Jouven et al.
+    (2006).
+
+    Parameters
+    ----------
+    temperature_ts : Temperature time series
+    idx : index (day of the year - 1)
+
+    Returns
+    -------
+    - 10-d moving average temperature
+    """
+
+    if idx < (10 - 1):
+        # ** USING THE TEMP, NOT 10-d MOVING AVG!
+        temperature_mean_ten_days = temperature_ts[idx]
+    else:
+        temperature_mean_ten_days = np.mean(
+            [temperature_ts[idx - j] for j in range(10 - 1, 0 - 1, -1)]
+        )
+    return temperature_mean_ten_days
 
 
 def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
