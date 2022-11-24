@@ -29,6 +29,395 @@ References
 import numpy as np
 
 
+def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
+    """
+    Calculate the leaf area index
+
+    Equation (12) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
+        [dimensionless]
+    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
+    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
+
+    Returns
+    -------
+    - Leaf area index (LAI) [dimensionless]
+    """
+
+    return sla * (gv_biomass / 10) * pctlam
+
+
+def par_function(pari):
+    """
+    Incident photosynthetically active radiation (PARi) function (fPARi)
+    needed to calculate the environmental limitation of growth (ENV).
+
+    The definition has been derived from Schapendonk et al. (1998).
+    This function accounts for the decrease in radiation use efficiency (RUE)
+    at light intensities higher than 5 MJ m⁻².
+
+    See Figure 2(a), Equation (13), and the section on "Growth functions" in
+    Jouven et al. (2006).
+
+    Parameters
+    ----------
+    pari : Photosynthetic radiation incident (PAR_i) [MJ m⁻²]
+
+    Returns
+    -------
+    - PARi function [dimensionless]
+    """
+
+    if pari < 5:
+        f_pari = 1
+    else:
+        # linear gradient
+        gradient = 1 / (5 - (25 + 30) / 2)
+        intercept = 1 - gradient * 5
+        f_pari = max(gradient * pari + intercept, 0)
+    return f_pari
+
+
+def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
+    """
+    Calculate seasonal effect (SEA) on growth, driven by the sum of
+    temperatures
+
+    SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
+    SEA < 1 indicates growth limitation by storage of reserves
+
+    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
+    more info
+
+    minSEA and maxSEA are functional traits arranged symmetrically around 1:
+    (minSEA + maxSEA) / 2 = 1
+
+    Parameters
+    ----------
+    maxsea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
+    minsea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
+    sumT : Sum of temperatures (ST) [°C d]
+    st1 : Sum of temperatures at the beginning of the reproductive period
+        (ST₁); default is 600 [°C d]
+    st2 : Sum of temperatures at the end of the reproductive period
+        (ST₂); default is 1200 [°C d]
+
+    Returns
+    -------
+    - Seasonal effect [dimensionless]
+    """
+
+    if sumT < 200 or sumT > st2:
+        f_sea = minsea
+    elif (st1 - 200) <= sumT <= (st1 - 100):
+        f_sea = maxsea
+    elif 200 <= sumT < (st1 - 200):
+        # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
+        gradient = (maxsea - minsea) / ((st1 - 200) - 200)
+        intercept = minsea - gradient * 200
+        f_sea = max(gradient * sumT + intercept, minsea)
+    elif (st1 - 100) < sumT <= st2:
+        # SEA decreases linearly from maxSEA to minSEA at ST_2
+        gradient = (maxsea - minsea) / ((st1 - 100) - st2)
+        intercept = minsea - gradient * st2
+        f_sea = max(gradient * sumT + intercept, minsea)
+    return f_sea
+
+
+def actual_evapotranspiration(pet, lai):
+    """
+    Calculate the actual evapotranspiration (AET)
+
+    AET is equivalent to potential evapotranspiration (PET) when the cover
+    intercepts approximately 0.95 of the incident photosynthetically active
+    radiation (PAR), i.e., when the leaf area index (LAI) > 3,
+    based on Johnson and Parsons (1985).
+    AET is proportional to LAI when the proportion of intercepted radiation
+    is lower than 0.95, i.e. LAI < 3.
+
+    See Equation (14) in Jouven et al. (2006)
+
+    pet : Potential evapotranspiration (PET) [mm]]
+    lai : Leaf area index (LAI) [dimensionless]
+
+    Returns
+    -------
+    - Actual evapotranspiration (AET) [mm]
+    """
+
+    return min(pet, pet * (lai / 3))
+
+
+def potential_growth(pari, lai, ruemax=3):
+    """
+    Calculate potential growth (PGRO)
+
+    See Equation (12) in Jouven et al. (2006)
+
+    Based on Schapendonk et al. (1998).
+
+    The model extinction coefficient is set to a constant value of 0.6
+    according to Schapendonk et al. (1998) and Bonesmo and Bélanger (2002).
+
+    The maximum radiation use efficiency is 3 g DM MJ⁻¹ based on
+    Schapendonk et al. (1998).
+
+    Parameters
+    ----------
+    pari : Incident PAR (PAR_i) [MJ m⁻²]
+    ruemax : Maximum radiation use efficiency (RUE_max); default is 3
+        [g DM MJ⁻¹]
+    lai : Leaf area index (LAI) [dimensionless]
+
+    Returns
+    -------
+    - potential growth (PGRO) [kg DM ha⁻¹]
+    """
+
+    p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
+    return p_gro
+
+
+def sum_of_temperatures(timeseries, doy, t0=4):
+    """
+    Return the sum of temperatures for the day of the year
+
+    Parameters
+    ----------
+    timeseries : Input time series data
+    doy : Day of the year [1-366]
+    t0 : Minimum temperature for growth; default is 4 [°C]
+
+    Returns
+    -------
+    - Sum of temperatures above t0 corresponding to the DOY [°C d]
+
+    Notes
+    -----
+    - Degree days are measures of how cold or warm a location is
+    - A *degree day* compares the mean (the average of the high and low)
+      outdoor temperatures recorded for a location to a
+      *standard temperature*
+    - Also known as heat units or thermal units
+    - All species of plants have a cutoff temperature below which no
+      development occurs (developmental threshold)
+    - Degree days are accumulated whenever the temperature exceeds the
+      predetermined developmental threshold
+    - Calculate degree days by subtracting the developmental threshold from
+      the average daily temperature
+    - If the average degree day value for a given day is less than zero, just
+      record zero, not a negative number
+
+    References
+    ----------
+    - https://hort.extension.wisc.edu/articles/degree-day-calculation/
+    - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
+    """
+
+    sum_temperature = 0
+    for i in range(doy):
+        if timeseries["tas"][i] > t0:
+            sum_temperature += timeseries["tas"][i] - t0
+    return sum_temperature
+
+
+def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
+    """
+    Calculate the water reserves (WR).
+
+    WR vary between zero and the soil water-holding capacity (WHC).
+    Precipitation (PP) fill the WHC, increasing WR, while actual
+    evapotranspiration (AET) empties it.
+
+    See Equation (14) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    precipitation : Precipitation (PP) [mm]
+    water_reserve : Water reserve (WR) [mm]
+    actual_et : Actual evapotranspiration (AET) [mm]
+    soil_whc : Soil water-holding capacity (WHC) [mm]
+
+    Returns
+    -------
+    - Water reserves (WR) [mm]
+    """
+
+    water_reserve = min(
+        max(0, water_reserve + precipitation - actual_et), soil_whc
+    )
+    return water_reserve
+
+
+def water_stress_function(waterReserve, waterHoldingCapacity, pet):
+    """
+    Water stress function.
+
+    See Figure 2(c) and Equation (14) of Jouven et al. (2006).
+
+    Based on McCall and Bishop-Hurley (2003).
+
+    Parameters
+    ----------
+    waterReserve : Water reserves (WR) [mm]
+    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    pet : Potential evapotranspiration (PET) [mm]
+
+    Returns
+    -------
+    - water stress function [dimensionless]
+    """
+
+    waterStress = min(waterReserve / waterHoldingCapacity, 1)
+
+    if pet < 3.8:
+        # linear gradients
+        if waterStress < 0.2:
+            gradient = 0.8 / 0.2
+            f_waterstress = gradient * waterStress
+        elif waterStress < 0.4:
+            gradient = (0.95 - 0.8) / (0.4 - 0.2)
+            intercept = 0.8 - gradient * 0.2
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.6:
+            gradient = (1 - 0.95) / (0.6 - 0.4)
+            intercept = 1 - gradient * 0.6
+            f_waterstress = gradient * waterStress + intercept
+        else:
+            f_waterstress = 1
+    elif pet <= 6.5:
+        if waterStress < 0.2:
+            gradient = 0.4 / 0.2
+            f_waterstress = gradient * waterStress
+        elif waterStress < 0.4:
+            gradient = (0.7 - 0.4) / (0.4 - 0.2)
+            intercept = 0.4 - gradient * 0.2
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.6:
+            gradient = (0.9 - 0.7) / (0.6 - 0.4)
+            intercept = 0.9 - gradient * 0.6
+            f_waterstress = gradient * waterStress + intercept
+        elif waterStress < 0.8:
+            gradient = (1 - 0.9) / (0.8 - 0.6)
+            intercept = 1 - gradient * 0.8
+            f_waterstress = 0.5 * waterStress + 0.6
+        else:
+            f_waterstress = 1
+    else:
+        f_waterstress = waterStress
+    return f_waterstress
+
+
+def reproductive_function(n_index):
+    """
+    Reproductive function.
+
+    See Equation (15) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    n_index : Nitrogen nutritional index (NI) [dimensionless]
+
+    Returns
+    -------
+    - Reproductive function [dimensionless]
+    """
+
+    rep_fn = (0.25 + ((1 - 0.25) * (n_index - 0.35)) / (1 - 0.35))
+    return rep_fn
+
+
+def total_growth(biomass_growth_pot, env, seasonality):
+    """
+    Calculate the total biomass growth (GRO)
+
+    See Equation (11) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    - biomass_growth_pot : Potential growth (PGRO) [kg DM ha⁻¹]
+    - env : environmental limitation of growth (ENV) [dimensionless]
+    - seasonality : seasonal effect (SEA) [dimensionless]
+
+    Returns
+    -------
+    - total biomass growth [kg DM ha⁻¹]
+    """
+
+    biomass_growth = biomass_growth_pot * env * seasonality
+    return biomass_growth
+
+
+def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
+    """
+    Temperature function, *f*(*T*)
+
+    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
+    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
+
+    Assume no growth takes place after a maximum temperature
+
+    Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
+    B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
+    productivity in Europe', European Journal of Agronomy, vol. 9, no. 2,
+    pp. 87-100. DOI: 10.1016/S1161-0301(98)00027-6.
+
+    Parameters
+    ----------
+    meanTenDaysT : Mean of the ten days of temperature [°C]
+    t0 : Minimum temperature for growth; default is 4 [°C]
+    t1 : Minimum temperature for optimal growth; default is 10 [°C]
+    t2 : Maximum temperature for optimal growth; default is 20 [°C]
+    tmax : Maximum temperature for growth; default is 40 [°C]
+
+    Returns
+    -------
+    - Temperature function [dimensionless]
+    """
+
+    if meanTenDaysT < t0 or meanTenDaysT >= tmax:
+        f_temp = 0
+    elif t0 <= meanTenDaysT < t1:
+        # linear relationship
+        gradient = 1 / (t1 - t0)
+        intercept = 1 - gradient * t1
+        f_temp = gradient * meanTenDaysT + intercept
+    elif t1 <= meanTenDaysT <= t2:
+        f_temp = 1
+    elif t2 < meanTenDaysT < tmax:
+        # linear relationship
+        gradient = 1 / (t2 - tmax)
+        intercept = 1 - gradient * t2
+        f_temp = gradient * meanTenDaysT + intercept
+    return f_temp
+
+
+def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
+    """
+    Environmental limitation of growth (ENV).
+
+    See Equation (13) of Jouven et al. (2006).
+
+    Parameters
+    ----------
+    temperature_fn : temperature function (*f*(*T*)) [dimensionless]
+    ni : Nutritional index of pixel (NI)
+    pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    waterstress_fn : Water stress function (*f*(*W*)) [dimensionless]
+
+    Returns
+    -------
+    - Environmental limitation of growth (ENV) [dimensionless]
+    """
+
+    return (
+        temperature_fn * ni * par_function(pari=pari) * waterstress_fn
+    )
+
+
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
     """
     Estimate biomass available for ingestion by livestock.
@@ -74,7 +463,7 @@ def harvest_biomass(bulkDensity, biomass, cutHeight=0.05):
     """
     Realise a cut so that the average height is under cutHeight.
     This height is calculated by using the bulkDensity given in parameter.
-    See Jouven et al. (2006), sec. "Harvested biomass", equation (19).
+    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
     Assumption: during harvest, 10% of the harvestable biomass in each
     structural component is lost.
 
@@ -511,352 +900,6 @@ def gr_update(
 #     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
 
 
-def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
-    """
-    Environmental limitation of growth (ENV).
-
-    See Equation (13) of Jouven et al. (2006).
-
-    Parameters
-    ----------
-    temperature_fn : temperature function (*f*(*T*)) [dimensionless]
-    ni : Nutritional index of pixel (NI)
-    pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    waterstress_fn : Water stress function (*f*(*W*)) [dimensionless]
-
-    Returns
-    -------
-    - Environmental limitation of growth (ENV) [dimensionless]
-    """
-
-    return (
-        temperature_fn * ni * par_function(pari=pari) * waterstress_fn
-    )
-
-
-def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
-    """
-    Temperature function, *f*(*T*)
-
-    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
-    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
-
-    Assume no growth takes place after a maximum temperature
-
-    Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
-    B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
-    productivity in Europe', European Journal of Agronomy, vol. 9, no. 2,
-    pp. 87-100. DOI: 10.1016/S1161-0301(98)00027-6.
-
-    Parameters
-    ----------
-    meanTenDaysT : Mean of the ten days of temperature [°C]
-    t0 : Minimum temperature for growth; default is 4 [°C]
-    t1 : Minimum temperature for optimal growth; default is 10 [°C]
-    t2 : Maximum temperature for optimal growth; default is 20 [°C]
-    tmax : Maximum temperature for growth; default is 40 [°C]
-
-    Returns
-    -------
-    - Temperature function [dimensionless]
-    """
-
-    if meanTenDaysT < t0 or meanTenDaysT >= tmax:
-        f_temp = 0
-    elif t0 <= meanTenDaysT < t1:
-        # linear relationship
-        gradient = 1 / (t1 - t0)
-        intercept = 1 - gradient * t1
-        f_temp = gradient * meanTenDaysT + intercept
-    elif t1 <= meanTenDaysT <= t2:
-        f_temp = 1
-    elif t2 < meanTenDaysT < tmax:
-        # linear relationship
-        gradient = 1 / (t2 - tmax)
-        intercept = 1 - gradient * t2
-        f_temp = gradient * meanTenDaysT + intercept
-    return f_temp
-
-
-def seasonal_effect(sumT, maxsea=1.2, minsea=0.8, st2=1200, st1=600):
-    """
-    Calculate seasonal effect (SEA) on growth, driven by the sum of
-    temperatures
-
-    SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
-    SEA < 1 indicates growth limitation by storage of reserves
-
-    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
-    more info
-
-    minSEA and maxSEA are functional traits arranged symmetrically around 1:
-    (minSEA + maxSEA) / 2 = 1
-
-    Parameters
-    ----------
-    maxsea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
-    minsea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
-    sumT : Sum of temperatures (ST) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁); default is 600 [°C d]
-    st2 : Sum of temperatures at the end of the reproductive period
-        (ST₂); default is 1200 [°C d]
-
-    Returns
-    -------
-    - Seasonal effect [dimensionless]
-    """
-
-    if sumT < 200 or sumT > st2:
-        f_sea = minsea
-    elif (st1 - 200) <= sumT <= (st1 - 100):
-        f_sea = maxsea
-    elif 200 <= sumT < (st1 - 200):
-        # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
-        gradient = (maxsea - minsea) / ((st1 - 200) - 200)
-        intercept = minsea - gradient * 200
-        f_sea = max(gradient * sumT + intercept, minsea)
-    elif (st1 - 100) < sumT <= st2:
-        # SEA decreases linearly from maxSEA to minSEA at ST_2
-        gradient = (maxsea - minsea) / ((st1 - 100) - st2)
-        intercept = minsea - gradient * st2
-        f_sea = max(gradient * sumT + intercept, minsea)
-    return f_sea
-
-
-def par_function(pari):
-    """
-    Incident photosynthetically active radiation (PARi) function (fPARi)
-    needed to calculate the environmental limitation of growth (ENV).
-
-    The definition has been derived from Schapendonk et al. (1998).
-    This function accounts for the decrease in radiation use efficiency (RUE)
-    at light intensities higher than 5 MJ m⁻².
-
-    See Figure 2(a), Equation (13), and the section on "Growth functions" in
-    Jouven et al. (2006).
-
-    Parameters
-    ----------
-    pari : Photosynthetic radiation incident (PAR_i) [MJ m⁻²]
-
-    Returns
-    -------
-    - PARi function [dimensionless]
-    """
-
-    if pari < 5:
-        f_pari = 1
-    else:
-        # linear gradient
-        gradient = 1 / (5 - (25 + 30) / 2)
-        intercept = 1 - gradient * 5
-        f_pari = max(gradient * pari + intercept, 0)
-    return f_pari
-
-
-def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
-    """
-    Calculate the water reserves (WR).
-
-    WR vary between zero and the soil water-holding capacity (WHC).
-    Precipitation (PP) fill the WHC, increasing WR, while actual
-    evapotranspiration (AET) empties it.
-
-    See Equation (14) in Jouven et al. (2006).
-
-    Parameters
-    ----------
-    precipitation : Precipitation (PP) [mm]
-    water_reserve : Water reserve (WR) [mm]
-    actual_et : Actual evapotranspiration (AET) [mm]
-    soil_whc : Soil water-holding capacity (WHC) [mm]
-
-    Returns
-    -------
-    - Water reserves [mm]
-    """
-
-    water_reserve = min(
-        max(0, water_reserve + precipitation - actual_et), soil_whc
-    )
-    return water_reserve
-
-
-def water_stress_function(waterReserve, waterHoldingCapacity, pet):
-    """
-    Water stress function.
-
-    See Figure 2(c) and Equation (14) of Jouven et al. (2006).
-
-    Based on McCall and Bishop-Hurley (2003).
-
-    Parameters
-    ----------
-    waterReserve : Water reserves (WR) [mm]
-    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
-    pet : Potential evapotranspiration (PET) [mm]
-
-    Returns
-    -------
-    - water stress function [dimensionless]
-    """
-
-    waterStress = min(waterReserve / waterHoldingCapacity, 1)
-
-    if pet < 3.8:
-        # linear gradients
-        if waterStress < 0.2:
-            gradient = 0.8 / 0.2
-            f_waterstress = gradient * waterStress
-        elif waterStress < 0.4:
-            gradient = (0.95 - 0.8) / (0.4 - 0.2)
-            intercept = 0.8 - gradient * 0.2
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.6:
-            gradient = (1 - 0.95) / (0.6 - 0.4)
-            intercept = 1 - gradient * 0.6
-            f_waterstress = gradient * waterStress + intercept
-        else:
-            f_waterstress = 1
-    elif pet <= 6.5:
-        if waterStress < 0.2:
-            gradient = 0.4 / 0.2
-            f_waterstress = gradient * waterStress
-        elif waterStress < 0.4:
-            gradient = (0.7 - 0.4) / (0.4 - 0.2)
-            intercept = 0.4 - gradient * 0.2
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.6:
-            gradient = (0.9 - 0.7) / (0.6 - 0.4)
-            intercept = 0.9 - gradient * 0.6
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.8:
-            gradient = (1 - 0.9) / (0.8 - 0.6)
-            intercept = 1 - gradient * 0.8
-            f_waterstress = 0.5 * waterStress + 0.6
-        else:
-            f_waterstress = 1
-    else:
-        f_waterstress = waterStress
-    return f_waterstress
-
-
-def reproductive_function(n_index):
-    """
-    Reproductive function.
-
-    See Equation (15) in Jouven et al. (2006)
-
-    Parameters
-    ----------
-    n_index : Nitrogen nutritional index (NI) [dimensionless]
-
-    Returns
-    -------
-    - Reproductive function [dimensionless]
-    """
-
-    rep_fn = (0.25 + ((1 - 0.25) * (n_index - 0.35)) / (1 - 0.35))
-    return rep_fn
-
-
-def potential_growth(pari, lai, ruemax=3):
-    """
-    Calculate potential growth (PGRO)
-
-    See Equation (12) in Jouven et al. (2006)
-
-    Based on Schapendonk et al. (1998).
-
-    The model extinction coefficient is set to a constant value of 0.6
-    according to Schapendonk et al. (1998) and Bonesmo and Bélanger (2002).
-
-    The maximum radiation use efficiency is 3 g DM MJ⁻¹ based on
-    Schapendonk et al. (1998).
-
-    Parameters
-    ----------
-    pari : Incident PAR (PAR_i) [MJ m⁻²]
-    ruemax : Maximum radiation use efficiency (RUE_max); default is 3
-        [g DM MJ⁻¹]
-    lai : Leaf area index (LAI) [dimensionless]
-
-    Returns
-    -------
-    - potential growth (PGRO) [kg DM ha⁻¹]
-    """
-
-    p_gro = pari * ruemax * (1 - np.exp(-0.6 * lai)) * 10
-    return p_gro
-
-
-def total_growth(biomass_growth_pot, env, seasonality):
-    """
-    Calculate the total biomass growth (GRO)
-
-    See Equation (11) in Jouven et al. (2006)
-
-    Parameters
-    ----------
-    - biomass_growth_pot : Potential growth (PGRO) [kg DM ha⁻¹]
-    - env : environmental limitation of growth (ENV) [dimensionless]
-    - seasonality : seasonal effect (SEA) [dimensionless]
-
-    Returns
-    -------
-    - total biomass growth [kg DM ha⁻¹]
-    """
-
-    biomass_growth = biomass_growth_pot * env * seasonality
-    return biomass_growth
-
-
-def leaf_area_index(gv_biomass, pctlam=0.68, sla=0.033):
-    """
-    Calculate the leaf area index
-
-    Equation (12) in Jouven et al. (2006)
-
-    Parameters
-    ----------
-    pctlam : Percentage of laminae in GV (%LAM); default is 0.68
-        [dimensionless]
-    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
-    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
-
-    Returns
-    -------
-    - Leaf area index (LAI) [dimensionless]
-    """
-
-    return sla * (gv_biomass / 10) * pctlam
-
-
-def actual_evapotranspiration(pet, lai):
-    """
-    Calculate the actual evapotranspiration (AET)
-
-    AET is equivalent to potential evapotranspiration (PET) when the cover
-    intercepts approximately 0.95 of the incident photosynthetically active
-    radiation (PAR), i.e., when the leaf area index (LAI) > 3,
-    based on Johnson and Parsons (1985).
-    AET is proportional to LAI when the proportion of intercepted radiation
-    is lower than 0.95, i.e. LAI < 3.
-
-    See Equation (14) in Jouven et al. (2006)
-
-    pet : Potential evapotranspiration (PET) [mm]]
-    lai : Leaf area index (LAI) [dimensionless]
-
-    Returns
-    -------
-    - Actual evapotranspiration (AET) [mm]
-    """
-
-    return min(pet, pet * (lai / 3))
-
-
 # def updateSumTemperature(temperature, t0, sumT, tbase):
 #     """
 #     Add the daily temperature to the sum temperature if the daily one is
@@ -1071,49 +1114,6 @@ def defoliation(
 #         gr_min_omd,
 #         gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
 #     )
-
-
-def sum_of_temperatures(timeseries, doy, t0=4):
-    """
-    Return the sum of temperatures for the day of the year
-
-    Parameters
-    ----------
-    timeseries : Input time series data
-    doy : Day of the year [1-366]
-    t0 : Minimum temperature for growth; default is 4 [°C]
-
-    Returns
-    -------
-    - Sum of temperatures above t0 corresponding to the DOY [°C d]
-
-    Notes
-    -----
-    - Degree days are measures of how cold or warm a location is
-    - A *degree day* compares the mean (the average of the high and low)
-      outdoor temperatures recorded for a location to a
-      *standard temperature*
-    - Also known as heat units or thermal units
-    - All species of plants have a cutoff temperature below which no
-      development occurs (developmental threshold)
-    - Degree days are accumulated whenever the temperature exceeds the
-      predetermined developmental threshold
-    - Calculate degree days by subtracting the developmental threshold from
-      the average daily temperature
-    - If the average degree day value for a given day is less than zero, just
-      record zero, not a negative number
-
-    References
-    ----------
-    - https://hort.extension.wisc.edu/articles/degree-day-calculation/
-    - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
-    """
-
-    sum_temperature = 0
-    for i in range(doy):
-        if timeseries["tas"][i] > t0:
-            sum_temperature += timeseries["tas"][i] - t0
-    return sum_temperature
 
 
 # TO-DO: This set of functions are either not used or not useful
