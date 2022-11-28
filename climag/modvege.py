@@ -213,10 +213,9 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["seasonality"].append(seasonality)
 
         # temperature function (f(T))
-        temperature_fn = lm.temperature_function(
-            meanTenDaysT=temperature_mean_ten_days, t0=params["T0"],
-            t1=params["T1"], t2=params["T2"], tmax=params["Tmax"]
-        )
+        temperature_fn = lm.TemperatureFunction(
+            t_10m=temperature_mean_ten_days
+        )()
         outputs_dict["temperature_fn"].append(temperature_fn)
 
         # grass cut flag modification if time series file has grass cut for
@@ -352,12 +351,12 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["reproductive_fn"].append(a2r)
 
         # environmental limitation of growth (ENV)
-        env = lm.environmental_limitation(
-            temperature_fn=temperature_fn,
-            pari=pari,
-            ni=params["NI"],
-            waterstress_fn=waterstress_fn
-        )
+        env = lm.EnvironmentalLimitation(
+            t_fn=temperature_fn,
+            par_i=pari,
+            n_index=params["NI"],
+            w_fn=waterstress_fn
+        )()
         outputs_dict["env"].append(env)
 
         # potential growth (PGRO)
@@ -365,11 +364,9 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
 
         # total biomass growth (GRO)
-        gro = lm.total_growth(
-            biomass_growth_pot=biomass_growth_pot,
-            env=env,
-            seasonality=seasonality
-        )
+        gro = lm.TotalGrowth(
+            pgro=biomass_growth_pot, env=env, sea=seasonality
+        )()
 
         # update the state of the vegetative parts
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(

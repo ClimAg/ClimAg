@@ -439,7 +439,8 @@ class ReproductiveFunction:
         return (0.25 + ((1 - 0.25) * (self.n_index - 0.35)) / (1 - 0.35))
 
 
-def total_growth(biomass_growth_pot, env, seasonality):
+@dataclass
+class TotalGrowth:
     """
     Calculate the total biomass growth (GRO)
 
@@ -447,20 +448,25 @@ def total_growth(biomass_growth_pot, env, seasonality):
 
     Parameters
     ----------
-    - biomass_growth_pot : Potential growth (PGRO) [kg DM ha⁻¹]
+    - pgro : Potential growth (PGRO) [kg DM ha⁻¹]
     - env : environmental limitation of growth (ENV) [dimensionless]
-    - seasonality : seasonal effect (SEA) [dimensionless]
+    - sea : seasonal effect (SEA) [dimensionless]
 
     Returns
     -------
-    - total biomass growth [kg DM ha⁻¹]
+    - Total biomass growth (GRO) [kg DM ha⁻¹]
     """
 
-    biomass_growth = biomass_growth_pot * env * seasonality
-    return biomass_growth
+    pgro: float
+    env: float
+    sea: float
+
+    def __call__(self) -> float:
+        return self.pgro * self.env * self.sea
 
 
-def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
+@dataclass
+class TemperatureFunction:
     """
     Temperature function, *f*(*T*)
 
@@ -476,35 +482,43 @@ def temperature_function(meanTenDaysT, t0=4, t1=10, t2=20, tmax=40):
 
     Parameters
     ----------
-    meanTenDaysT : Mean of the ten days of temperature [°C]
-    t0 : Minimum temperature for growth; default is 4 [°C]
-    t1 : Minimum temperature for optimal growth; default is 10 [°C]
-    t2 : Maximum temperature for optimal growth; default is 20 [°C]
-    tmax : Maximum temperature for growth; default is 40 [°C]
+    t_10m : Mean of the ten days of temperature [°C]
+    t_0 : Minimum temperature for growth; default is 4 [°C]
+    t_1 : Minimum temperature for optimal growth; default is 10 [°C]
+    t_2 : Maximum temperature for optimal growth; default is 20 [°C]
+    t_max : Maximum temperature for growth; default is 40 [°C]
 
     Returns
     -------
-    - Temperature function [dimensionless]
+    - Temperature function (*f*(*T*)) [dimensionless]
     """
 
-    if meanTenDaysT < t0 or meanTenDaysT >= tmax:
-        f_temp = 0
-    elif t0 <= meanTenDaysT < t1:
-        # linear relationship
-        gradient = 1 / (t1 - t0)
-        intercept = 1 - gradient * t1
-        f_temp = gradient * meanTenDaysT + intercept
-    elif t1 <= meanTenDaysT <= t2:
-        f_temp = 1
-    elif t2 < meanTenDaysT < tmax:
-        # linear relationship
-        gradient = 1 / (t2 - tmax)
-        intercept = 1 - gradient * t2
-        f_temp = gradient * meanTenDaysT + intercept
-    return f_temp
+    t_10m: float
+    t_0: float = 4
+    t_1: float = 10
+    t_2: float = 20
+    t_max: float = 40
+
+    def __call__(self) -> float:
+        if self.t_10m < self.t_0 or self.t_10m >= self.t_max:
+            val = 0
+        elif self.t_0 <= self.t_10m < self.t_1:
+            # linear relationship
+            gradient = 1 / (self.t_1 - self.t_0)
+            intercept = 1 - gradient * self.t_1
+            val = gradient * self.t_10m + intercept
+        elif self.t_1 <= self.t_10m <= self.t_2:
+            val = 1
+        elif self.t_2 < self.t_10m < self.t_max:
+            # linear relationship
+            gradient = 1 / (self.t_2 - self.t_max)
+            intercept = 1 - gradient * self.t_2
+            val = gradient * self.t_10m + intercept
+        return val
 
 
-def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
+@dataclass
+class EnvironmentalLimitation:
     """
     Environmental limitation of growth (ENV).
 
@@ -512,17 +526,26 @@ def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
 
     Parameters
     ----------
-    temperature_fn : temperature function (*f*(*T*)) [dimensionless]
-    ni : Nutritional index of pixel (NI)
-    pari : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    waterstress_fn : Water stress function (*f*(*W*)) [dimensionless]
+    t_fn : temperature function (*f*(*T*)) [dimensionless]
+    n_index : Nutritional index of pixel (NI)
+    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    w_fn : Water stress function (*f*(*W*)) [dimensionless]
 
     Returns
     -------
     - Environmental limitation of growth (ENV) [dimensionless]
     """
 
-    return temperature_fn * ni * PARFunction(par_i=pari)() * waterstress_fn
+    t_fn: float
+    n_index: float
+    par_i: float
+    w_fn: float
+
+    def __call__(self) -> float:
+        return (
+            self.t_fn * self.n_index *
+            PARFunction(par_i=self.par_i)() * self.w_fn
+        )
 
 
 # ABSCISSION
