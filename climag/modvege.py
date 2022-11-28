@@ -192,7 +192,7 @@ def modvege(params, tseries, enddoy=365):
         # mean ten days temperature (Tm10)
         temperature_mean_ten_days = lm.TenDayMovingAverageTemperature(
             t_ts=tseries["tas"], doy=(i + 1)
-        ).ten_day_moving_average_temperature()
+        )()
 
         pari = tseries["par"][i]
         pmm = tseries["pr"][i]
@@ -206,12 +206,10 @@ def modvege(params, tseries, enddoy=365):
         # sum of temperatures (ST)
         temperature_sum = lm.SumOfTemperatures(
             t_ts=tseries["tas"], doy=(i + 1)
-        ).sum_of_temperatures()
+        )()
 
         # seasonal effect (SEA)
-        seasonality = (
-            lm.SeasonalEffect(t_sum=temperature_sum).seasonal_effect()
-        )
+        seasonality = lm.SeasonalEffect(t_sum=temperature_sum)()
         outputs_dict["seasonality"].append(seasonality)
 
         # temperature function (f(T))
@@ -241,23 +239,23 @@ def modvege(params, tseries, enddoy=365):
         params["NI"] = max(params["NI"], 0.35)
 
         # leaf area index (LAI)
-        lai = lm.LeafAreaIndex(bm_gv=gv_biomass).leaf_area_index()
+        lai = lm.LeafAreaIndex(bm_gv=gv_biomass)()
 
         # actual evapotranspiration (AET)
-        eta = lm.ActualEvapotranspiration(
-            pet=pet, lai=lai
-        ).actual_evapotranspiration()
+        eta = lm.ActualEvapotranspiration(pet=pet, lai=lai)()
 
         # water reserves (WR)
         params["WR"] = lm.WaterReserves(
             precipitation=pmm, wreserves=params["WR"],
             aet=eta, whc=params["WHC"]
-        ).water_reserves()
+        )()
 
         # water stress function (f(W))
-        waterstress_fn = lm.WaterStress(
+        waterstress = lm.WaterStress(
             wreserves=params["WR"], whc=params["WHC"]
-        ).water_stress()
+        )()
+
+        waterstress_fn = lm.WaterStressFunction(wstress=waterstress, pet=pet)()
 
         # compute grazing and harvesting
         harvested_biomass_part = 0
@@ -327,7 +325,7 @@ def modvege(params, tseries, enddoy=365):
                 )
                 # ingested_biomass_part = sum(ingested_biomass_part)
             # allocation to reproductive
-            a2r = lm.reproductive_function(n_index=params["NI"])
+            a2r = lm.ReproductiveFunction(n_index=params["NI"])()
             # TO-DO: when to change NI, and by how much?
             # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
             # 0.4       0.30769
@@ -363,9 +361,7 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["env"].append(env)
 
         # potential growth (PGRO)
-        biomass_growth_pot = lm.PotentialGrowth(
-            par_i=pari, lai=lai
-        ).potential_growth()
+        biomass_growth_pot = lm.PotentialGrowth(par_i=pari, lai=lai)()
         outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
 
         # total biomass growth (GRO)

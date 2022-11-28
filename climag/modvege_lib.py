@@ -54,9 +54,7 @@ class LeafAreaIndex:
     pct_lam: float = 0.68
     sla: float = 0.033
 
-    def leaf_area_index(self) -> float:
-        """Calculate the leaf area index (LAI)"""
-
+    def __call__(self) -> float:
         return self.sla * self.bm_gv / 10 * self.pct_lam
 
 
@@ -85,9 +83,7 @@ class ActualEvapotranspiration:
     pet: float
     lai: float
 
-    def actual_evapotranspiration(self) -> float:
-        """Calculate the actual evapotranspiration (AET)"""
-
+    def __call__(self) -> float:
         return min(self.pet, self.pet * self.lai / 3)
 
 
@@ -122,9 +118,7 @@ class PotentialGrowth:
     lai: float
     rue_max: float = 3
 
-    def potential_growth(self) -> float:
-        """Calculate potential growth (PGRO)"""
-
+    def __call__(self) -> float:
         return (
             self.par_i * self.rue_max * (1 - np.exp(-0.6 * self.lai)) * 10
         )
@@ -154,9 +148,7 @@ class PARFunction:
 
     par_i: float
 
-    def par_function(self) -> float:
-        """Calculate the PARi function"""
-
+    def __call__(self) -> float:
         if self.par_i < 5:
             val = 1
         else:
@@ -208,9 +200,7 @@ class SumOfTemperatures:
     doy: int
     t_0: float = 4
 
-    def sum_of_temperatures(self) -> float:
-        """Calculate the sum of temperatures"""
-
+    def __call__(self) -> float:
         val = 0
         for i in range(self.doy):
             if self.t_ts[i] > self.t_0:
@@ -239,9 +229,7 @@ class TenDayMovingAverageTemperature:
     t_ts: list
     doy: int
 
-    def ten_day_moving_average_temperature(self) -> float:
-        """Calculate the 10-d moving average temperature"""
-
+    def __call__(self) -> float:
         if (self.doy - 1) < (10 - 1):
             # ** USING THE TEMP, NOT 10-d MOVING AVG!
             val = self.t_ts[self.doy - 1]
@@ -288,9 +276,7 @@ class SeasonalEffect:
     st_1: float = 600
     st_2: float = 1200
 
-    def seasonal_effect(self) -> float:
-        """Calculate the seasonal effect (SEA)"""
-
+    def __call__(self) -> float:
         if self.t_sum < 200 or self.t_sum > self.st_2:
             val = self.min_sea
         elif (self.st_1 - 200) <= self.t_sum <= (self.st_1 - 100):
@@ -340,9 +326,7 @@ class WaterReserves:
     aet: float
     whc: float
 
-    def water_reserves(self) -> float:
-        """Calculate the water reserves (WR)"""
-
+    def __call__(self) -> float:
         return min(
             max(0, self.wreserves + self.precipitation - self.aet), self.whc
         )
@@ -368,9 +352,7 @@ class WaterStress:
     wreserves: float
     whc: float
 
-    def water_stress(self) -> float:
-        """Water stress (*W*)"""
-
+    def __call__(self) -> float:
         return min(self.wreserves / self.whc, 1)
 
 
@@ -390,15 +372,13 @@ class WaterStressFunction:
 
     Returns
     -------
-    - water stress function [dimensionless]
+    - Water stress function (*f*(*W*)) [dimensionless]
     """
 
     wstress: float
     pet: float
 
-    def water_stress_function(self) -> float:
-        """Water stress function (*f*(*W*))"""
-
+    def __call__(self) -> float:
         if self.pet < 3.8:
             # linear gradients
             if self.wstress < 0.2:
@@ -437,9 +417,10 @@ class WaterStressFunction:
         return val
 
 
-def reproductive_function(n_index):
+@dataclass
+class ReproductiveFunction:
     """
-    Reproductive function.
+    Reproductive function (REP).
 
     See Equation (15) in Jouven et al. (2006)
 
@@ -452,8 +433,10 @@ def reproductive_function(n_index):
     - Reproductive function [dimensionless]
     """
 
-    rep_fn = (0.25 + ((1 - 0.25) * (n_index - 0.35)) / (1 - 0.35))
-    return rep_fn
+    n_index: float
+
+    def __call__(self) -> float:
+        return (0.25 + ((1 - 0.25) * (self.n_index - 0.35)) / (1 - 0.35))
 
 
 def total_growth(biomass_growth_pot, env, seasonality):
@@ -539,10 +522,7 @@ def environmental_limitation(temperature_fn, ni, pari, waterstress_fn):
     - Environmental limitation of growth (ENV) [dimensionless]
     """
 
-    return (
-        temperature_fn * ni * PARFunction(par_i=pari).par_function() *
-        waterstress_fn
-    )
+    return temperature_fn * ni * PARFunction(par_i=pari)() * waterstress_fn
 
 
 # ABSCISSION
@@ -631,7 +611,7 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
     Senescent biomass for GV compartment.
     See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
 
-    No senescence occurs when *T* is between zero and T0.
+    No senescence occurs when *T* is between zero and T_0.
     When T drops below zero, senescence is driven by freezing effects and is
     proportional to |*T*|.
 
