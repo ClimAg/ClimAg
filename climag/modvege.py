@@ -370,27 +370,24 @@ def modvege(params, tseries, enddoy=365):
 
         # update the state of the vegetative parts
         gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
-            gro=gro, a2r=a2r, lls=params["LLS"], temperature=temperature,
-            kgv=params["K_GV"], t0=params["T0"], gv_biomass=gv_biomass,
+            gro=gro, a2r=a2r, temperature=temperature,
+            t0=params["T0"], gv_biomass=gv_biomass,
             gv_avg_age=gv_avg_age
         )
         dv_biomass, dv_avg_age = lm.dv_update(
             gv_gamma=params["sigmaGV"],
-            gv_senescent_biomass=gv_senescent_biomass, lls=params["LLS"],
-            kldv=params["Kl_DV"], temperature=temperature,
+            gv_senescent_biomass=gv_senescent_biomass, temperature=temperature,
             dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
         )
 
         # start the reproductive phase of the vegetation
         gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
-            temperature=temperature, a2r=a2r, gro=gro, st1=params["ST1"],
-            st2=params["ST2"], kgr=params["K_GR"], t0=params["T0"],
+            temperature=temperature, a2r=a2r, gro=gro, t0=params["T0"],
             gr_biomass=gr_biomass, gr_avg_age=gr_avg_age
         )  # ** UNUSED ARGUMENTS REMOVED!
         dr_biomass, dr_avg_age = lm.dr_update(
             gr_gamma=params["sigmaGR"],
-            gr_senescent_biomass=gr_senescent_biomass, st1=params["ST1"],
-            st2=params["ST2"], temperature=temperature, kldr=params["Kl_DR"],
+            gr_senescent_biomass=gr_senescent_biomass, temperature=temperature,
             dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
         )
 

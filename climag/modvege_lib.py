@@ -565,11 +565,11 @@ class AbscissionDV:
     - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
     """
 
-    lls: float = 500
-    kl_dv: float = 0.001
     temperature: float
     bm_dv: float
     age_dv: float
+    lls: float = 500
+    kl_dv: float = 0.001
 
     def __call__(self) -> float:
         if self.age_dv / self.lls < 1 / 3:
@@ -610,10 +610,10 @@ class AbscissionDR:
     - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
     """
 
-    kl_dr: float = 0.0005
     bm_dr: float
     temperature: float
     age_dr: float
+    kl_dr: float = 0.0005
     st_1: float = 600
     st_2: float = 1200
 
@@ -656,12 +656,12 @@ class SenescenceGV:
     - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
     """
 
-    k_gv: float = 0.002
-    bm_gv: float
     temperature: float
+    age_gv: float
+    bm_gv: float
+    k_gv: float = 0.002
     t_0: float = 4
     lls: float = 500
-    age_gv: float
 
     def __call__(self) -> float:
         if self.age_gv / self.lls < 1 / 3:
@@ -705,11 +705,11 @@ class SenescenceGR:
     - Senescent biomass [kg DM ha⁻¹]
     """
 
-    k_gr: float = 0.001
-    bm_gr: float
-    temperature: float
-    t_0: float = 4
     age_gr: float
+    temperature: float
+    bm_gr: float
+    k_gr: float = 0.001
+    t_0: float = 4
     st_1: float = 600
     st_2: float = 1200
 
@@ -824,8 +824,7 @@ def exeDefoliationByBiomass(biomass, biomassToIngest):
 
 # DEAD VEGETATIVE FUNCTION
 def dv_update(
-    gv_gamma, gv_senescent_biomass, lls, kldv, temperature, dv_biomass,
-    dv_avg_age
+    gv_gamma, gv_senescent_biomass, temperature, dv_biomass, dv_avg_age
 ):
     """
     Update dead vegetative compartment.
@@ -849,10 +848,13 @@ def dv_update(
     - Average DV age
     """
 
-    abscissionBiomass = mk_dv_abscission(
-        kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
-        dv_avg_age=dv_avg_age, lls=lls
-    )
+    abscissionBiomass = AbscissionDV(
+        temperature=temperature, age_dv=dv_avg_age, bm_dv=dv_biomass
+    )()
+    # abscissionBiomass = mk_dv_abscission(
+    #     kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
+    #     dv_avg_age=dv_avg_age, lls=lls
+    # )
     dv_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion, and abscission, not
     # growth
@@ -869,8 +871,7 @@ def dv_update(
 
 # DEAD REPRODUCTIVE FUNCTION
 def dr_update(
-    gr_gamma, gr_senescent_biomass, st1, st2, temperature, kldr, dr_biomass,
-    dr_avg_age
+    gr_gamma, gr_senescent_biomass, temperature, dr_biomass, dr_avg_age
 ):
     """
     Update dead reproductive compartment.
@@ -895,10 +896,13 @@ def dr_update(
     - Average DR age
     """
 
-    abscissionBiomass = mk_dr_abscission(
-        kldr=kldr, dr_biomass=dr_biomass, temperature=temperature,
-        dr_avg_age=dr_avg_age, st1=st1, st2=st2
-    )
+    abscissionBiomass = AbscissionDR(
+        bm_dr=dr_biomass, temperature=temperature, age_dr=dr_avg_age
+    )()
+    # abscissionBiomass = mk_dr_abscission(
+    #     kldr=kldr, dr_biomass=dr_biomass, temperature=temperature,
+    #     dr_avg_age=dr_avg_age, st1=st1, st2=st2
+    # )
     dr_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion and abscission, not
     # growth
@@ -914,7 +918,7 @@ def dr_update(
 
 
 # GREEN VEGETATIVE FUNCTION
-def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
+def gv_update(gro, a2r, temperature, t0, gv_biomass, gv_avg_age):
     """
     Update green vegetative compartment.
 
@@ -937,10 +941,13 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
     - Senescent biomass
     """
 
-    senescentBiomass = mk_gv_senescence(
-        kgv=kgv, gv_biomass=gv_biomass, temperature=temperature, t0=t0,
-        lls=lls, gv_avg_age=gv_avg_age
-    )
+    senescentBiomass = SenescenceGV(
+        bm_gv=gv_biomass, temperature=temperature, age_gv=gv_avg_age
+    )()
+    # senescentBiomass = mk_gv_senescence(
+    #     kgv=kgv, gv_biomass=gv_biomass, temperature=temperature, t0=t0,
+    #     lls=lls, gv_avg_age=gv_avg_age
+    # )
     gv_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
     # growth
@@ -959,9 +966,7 @@ def gv_update(gro, a2r, lls, temperature, kgv, t0, gv_biomass, gv_avg_age):
 
 
 # GREEN REPRODUCTIVE FUNCTION
-def gr_update(
-    temperature, a2r, gro, st1, st2, kgr, t0, gr_biomass, gr_avg_age
-):
+def gr_update(temperature, a2r, gro, t0, gr_biomass, gr_avg_age):
     """
     Update green reproductive compartment.
 
@@ -987,10 +992,13 @@ def gr_update(
     - Senescent biomass
     """
 
-    senescentBiomass = mk_gr_senescence(
-        kgr=kgr, gr_biomass=gr_biomass, temperature=temperature, t0=t0,
-        gr_avg_age=gr_avg_age, st1=st1, st2=st2
-    )  # ** UNUSED ARGUMENT REMOVED!
+    senescentBiomass = SenescenceGR(
+        bm_gr=gr_biomass, age_gr=gr_avg_age, temperature=temperature
+    )()
+    # senescentBiomass = mk_gr_senescence(
+    #     kgr=kgr, gr_biomass=gr_biomass, temperature=temperature, t0=t0,
+    #     gr_avg_age=gr_avg_age, st1=st1, st2=st2
+    # )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
     # growth
