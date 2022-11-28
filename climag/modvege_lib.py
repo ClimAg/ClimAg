@@ -241,6 +241,53 @@ class TenDayMovingAverageTemperature:
 
 
 @dataclass
+class TemperatureFunction:
+    """
+    Temperature function, *f*(*T*)
+
+    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
+    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
+
+    Assume no growth takes place after a maximum temperature
+
+    Parameters
+    ----------
+    t_10m : 10-d moving average temperature [°C]
+    t_0 : Minimum temperature for growth; default is 4 [°C]
+    t_1 : Minimum temperature for optimal growth; default is 10 [°C]
+    t_2 : Maximum temperature for optimal growth; default is 20 [°C]
+    t_max : Maximum temperature for growth; default is 40 [°C]
+
+    Returns
+    -------
+    - Temperature function (*f*(*T*)) [dimensionless]
+    """
+
+    t_10m: float
+    t_0: float = 4
+    t_1: float = 10
+    t_2: float = 20
+    t_max: float = 40
+
+    def __call__(self) -> float:
+        if self.t_10m < self.t_0 or self.t_10m >= self.t_max:
+            val = 0
+        elif self.t_0 <= self.t_10m < self.t_1:
+            # linear relationship
+            gradient = 1 / (self.t_1 - self.t_0)
+            intercept = 1 - gradient * self.t_1
+            val = gradient * self.t_10m + intercept
+        elif self.t_1 <= self.t_10m <= self.t_2:
+            val = 1
+        elif self.t_2 < self.t_10m < self.t_max:
+            # linear relationship
+            gradient = 1 / (self.t_2 - self.t_max)
+            intercept = 1 - gradient * self.t_2
+            val = gradient * self.t_10m + intercept
+        return val
+
+
+@dataclass
 class SeasonalEffect:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
@@ -440,84 +487,6 @@ class ReproductiveFunction:
 
 
 @dataclass
-class TotalGrowth:
-    """
-    Calculate the total biomass growth (GRO)
-
-    See Equation (11) in Jouven et al. (2006)
-
-    Parameters
-    ----------
-    - pgro : Potential growth (PGRO) [kg DM ha⁻¹]
-    - env : environmental limitation of growth (ENV) [dimensionless]
-    - sea : seasonal effect (SEA) [dimensionless]
-
-    Returns
-    -------
-    - Total biomass growth (GRO) [kg DM ha⁻¹]
-    """
-
-    pgro: float
-    env: float
-    sea: float
-
-    def __call__(self) -> float:
-        return self.pgro * self.env * self.sea
-
-
-@dataclass
-class TemperatureFunction:
-    """
-    Temperature function, *f*(*T*)
-
-    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
-    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
-
-    Assume no growth takes place after a maximum temperature
-
-    Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
-    B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
-    productivity in Europe', European Journal of Agronomy, vol. 9, no. 2,
-    pp. 87-100. DOI: 10.1016/S1161-0301(98)00027-6.
-
-    Parameters
-    ----------
-    t_10m : Mean of the ten days of temperature [°C]
-    t_0 : Minimum temperature for growth; default is 4 [°C]
-    t_1 : Minimum temperature for optimal growth; default is 10 [°C]
-    t_2 : Maximum temperature for optimal growth; default is 20 [°C]
-    t_max : Maximum temperature for growth; default is 40 [°C]
-
-    Returns
-    -------
-    - Temperature function (*f*(*T*)) [dimensionless]
-    """
-
-    t_10m: float
-    t_0: float = 4
-    t_1: float = 10
-    t_2: float = 20
-    t_max: float = 40
-
-    def __call__(self) -> float:
-        if self.t_10m < self.t_0 or self.t_10m >= self.t_max:
-            val = 0
-        elif self.t_0 <= self.t_10m < self.t_1:
-            # linear relationship
-            gradient = 1 / (self.t_1 - self.t_0)
-            intercept = 1 - gradient * self.t_1
-            val = gradient * self.t_10m + intercept
-        elif self.t_1 <= self.t_10m <= self.t_2:
-            val = 1
-        elif self.t_2 < self.t_10m < self.t_max:
-            # linear relationship
-            gradient = 1 / (self.t_2 - self.t_max)
-            intercept = 1 - gradient * self.t_2
-            val = gradient * self.t_10m + intercept
-        return val
-
-
-@dataclass
 class EnvironmentalLimitation:
     """
     Environmental limitation of growth (ENV).
@@ -548,10 +517,36 @@ class EnvironmentalLimitation:
         )
 
 
-# ABSCISSION
-def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
+@dataclass
+class TotalGrowth:
     """
-    Compute abscission biomass for the DV compartment.
+    Calculate the total biomass growth (GRO)
+
+    See Equation (11) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    - pgro : Potential growth (PGRO) [kg DM ha⁻¹]
+    - env : environmental limitation of growth (ENV) [dimensionless]
+    - sea : seasonal effect (SEA) [dimensionless]
+
+    Returns
+    -------
+    - Total biomass growth (GRO) [kg DM ha⁻¹]
+    """
+
+    pgro: float
+    env: float
+    sea: float
+
+    def __call__(self) -> float:
+        return self.pgro * self.env * self.sea
+
+
+@dataclass
+class AbscissionDV:
+    """
+    Compute abscission biomass for the dead vegetative (DV) compartment.
     See Equation (18) and Figure 4(c) in in Jouven et al. (2006).
 
     Note that abscission only occurs when T > 0.
@@ -559,51 +554,55 @@ def mk_dv_abscission(kldv, dv_biomass, temperature, dv_avg_age, lls):
     Parameters
     ----------
     lls : Leaf lifespan (LLS) [500 °C d]
-    kldv : Basic abscission rate for the dead vegetative compartment
+    kl_dv : Basic abscission rate for the dead vegetative compartment
         (Kl_DV) [0.001]
     temperature : Mean daily temperature (T) [°C]
-    dv_biomass : DV biomass (BM_DV) [kg DM ha⁻¹]
-    dv_avg_age : Average DV age (AGE_DV) [°C d]
+    bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
+    age_dv : Average DV age (AGE_DV) [°C d]
 
     Returns
     -------
     - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
     """
 
-    # method to compute the age of DV for computing abcission of DV
-    # f(AGE_DV) in Equation (18)
-    if dv_avg_age / lls < 1 / 3:
-        age = 1
-    elif dv_avg_age / lls < 2 / 3:
-        age = 2
-    else:
-        age = 3
-    # compute the abscission for dead vegetative part
-    # abscission only occurs when T > 0
-    if temperature > 0:
-        abscission_biomass = kldv * dv_biomass * temperature * age
-    else:
-        abscission_biomass = 0
-    return abscission_biomass
+    lls: float = 500
+    kl_dv: float = 0.001
+    temperature: float
+    bm_dv: float
+    age_dv: float
+
+    def __call__(self) -> float:
+        if self.age_dv / self.lls < 1 / 3:
+            age_fn = 1
+        elif self.age_dv / self.lls < 2 / 3:
+            age_fn = 2
+        else:
+            age_fn = 3
+        if self.temperature > 0:
+            val = self.kl_dv * self.bm_dv * self.temperature * age_fn
+        else:
+            val = 0
+        return val
 
 
-def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
+@dataclass
+class AbscissionDR:
     """
-    Compute abscission biomass for the DR compartment.
+    Compute abscission biomass for the dead reproductive (DR) compartment.
     See Equation (18) and Figure 4(d) in Jouven et al. (2006).
 
     Note that abscission only occurs when T > 0.
 
     Parameters
     ----------
-    kldr : Basic abscission rate for the dead reproductive compartment
+    kl_dr : Basic abscission rate for the dead reproductive compartment
         (Kl_DR) [0.0005]
-    dr_biomass : DR biomass (BM_DR) [kg DM ha⁻¹]
+    bm_dr : DR biomass (BM_DR) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
-    dr_avg_age : Average DR age (AGE_DR) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
+    age_dr : Average DR age (AGE_DR) [°C d]
+    st_1 : Sum of temperatures at the beginning of the reproductive period
         (ST₁) [600 °C d]
-    st2 : Sum of temperatures at the end of the reproductive period
+    st_2 : Sum of temperatures at the end of the reproductive period
         (ST₂) [1200 °C d]
 
     Returns
@@ -611,25 +610,29 @@ def mk_dr_abscission(kldr, dr_biomass, temperature, dr_avg_age, st1, st2):
     - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
     """
 
-    # method to compute the age of DR for computing abscission of DR
-    # f(AGE_DV) in Equation (18)
-    if dr_avg_age / (st2 - st1) < 1 / 3:
-        age = 1
-    elif dr_avg_age / (st2 - st1) < 2 / 3:
-        age = 2
-    else:
-        age = 3
-    # compute abscission for dead reproductive
-    # abscission only occurs when T > 0
-    if temperature > 0:
-        abscission_biomass = kldr * dr_biomass * temperature * age
-    else:
-        abscission_biomass = 0
-    return abscission_biomass
+    kl_dr: float = 0.0005
+    bm_dr: float
+    temperature: float
+    age_dr: float
+    st_1: float = 600
+    st_2: float = 1200
+
+    def __call__(self) -> float:
+        if self.age_dr / (self.st_2 - self.st_1) < 1 / 3:
+            age_fn = 1
+        elif self.age_dr / (self.st_2 - self.st_1) < 2 / 3:
+            age_fn = 2
+        else:
+            age_fn = 3
+        if self.temperature > 0:
+            val = self.kl_dr * self.bm_dr * self.temperature * age_fn
+        else:
+            val = 0
+        return val
 
 
-# SENESCENCE
-def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
+@dataclass
+class SenescenceGV:
     """
     Senescent biomass for GV compartment.
     See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
@@ -640,57 +643,61 @@ def mk_gv_senescence(kgv, gv_biomass, temperature, t0, lls, gv_avg_age):
 
     Parameters
     ----------
-    kgv : Basic senescence rate for the green vegetative compartment
+    k_gv : Basic senescence rate for the green vegetative compartment
         (K_GV) [0.002]
-    gv_biomass : GV biomass (BM_GV) [kg DM ha⁻¹]
+    bm_gv : GV biomass (BM_GV) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
-    t0 : Minimum temperature for growth (*T*₀) [°C]
+    t_0 : Minimum temperature for growth (*T*₀) [4 °C]
     lls : Leaf lifespan (LLS) [500 °C d]
-    gv_avg_age : Average GV age (AGE_GV) [°C d]
+    age_gv : Average GV age (AGE_GV) [°C d]
 
     Returns
     -------
     - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
     """
 
-    # method to compute the age of GV for computing senescence of GV
-    # f(AGE_GV) in Equation (16)
-    if gv_avg_age / lls < 1 / 3:
-        age = 1
-    elif gv_avg_age / lls < 1:
-        # linear gradient
-        gradient = (3 - 1) / (1 - 1 / 3)
-        intercept = 3 - gradient * 1
-        age = gradient * gv_avg_age / lls + intercept
-    else:
-        age = 3
-    # compute senescence of GV
-    if temperature > t0:
-        # Equation (16)
-        senescence_biomass = kgv * gv_biomass * temperature * age
-    elif temperature < 0:
-        # Equation (17)
-        senescence_biomass = kgv * gv_biomass * abs(temperature)
-    else:
-        senescence_biomass = 0
-    return senescence_biomass
+    k_gv: float = 0.002
+    bm_gv: float
+    temperature: float
+    t_0: float = 4
+    lls: float = 500
+    age_gv: float
+
+    def __call__(self) -> float:
+        if self.age_gv / self.lls < 1 / 3:
+            age_fn = 1
+        elif self.age_gv / self.lls < 1:
+            # linear gradient
+            gradient = (3 - 1) / (1 - 1 / 3)
+            intercept = 3 - gradient * 1
+            age_fn = gradient * self.age_gv / self.lls + intercept
+        else:
+            age_fn = 3
+        if self.temperature > self.t_0:
+            val = self.k_gv * self.bm_gv * self.temperature * age_fn
+        elif self.temperature < 0:
+            val = self.k_gv * self.bm_gv * abs(self.temperature)
+        else:
+            val = 0
+        return val
 
 
-def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
+@dataclass
+class SenescenceGR:
     """
     See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006).
 
     Parameters
     ----------
-    kgr : Basic senescence rate for the green reproductive compartment
+    k_gr : Basic senescence rate for the green reproductive compartment
         (K_GR) [0.001]
-    gr_biomass : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
+    bm_gr : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
-    t0 : Minimum temperature for growth (*T*₀) [4 °C]
-    gr_avg_age : Average GR age (AGE_GR) [°C d]
-    st1 : Sum of temperatures at the beginning of the reproductive period
+    t_0 : Minimum temperature for growth (*T*₀) [4 °C]
+    age_gr : Average GR age (AGE_GR) [°C d]
+    st_1 : Sum of temperatures at the beginning of the reproductive period
         (ST₁) [600 °C d]
-    st2 : Sum of temperatures at the end of the reproductive period
+    st_2 : Sum of temperatures at the end of the reproductive period
         (ST₂) [1200 °C d]
 
     Returns
@@ -698,25 +705,33 @@ def mk_gr_senescence(kgr, gr_biomass, temperature, t0, gr_avg_age, st1, st2):
     - Senescent biomass [kg DM ha⁻¹]
     """
 
-    if gr_avg_age / (st2 - st1) < 1 / 3:
-        age = 1
-    elif gr_avg_age / (st2 - st1) < 1:
-        # linear gradient
-        gradient = (3 - 1) / (1 - 1 / 3)
-        intercept = 3 - gradient * 1
-        age = gradient * gr_avg_age / (st2 - st1) + intercept
-    else:
-        age = 3
+    k_gr: float = 0.001
+    bm_gr: float
+    temperature: float
+    t_0: float = 4
+    age_gr: float
+    st_1: float = 600
+    st_2: float = 1200
 
-    if temperature > t0:
-        # Equation (16)
-        senescence_biomass = kgr * gr_biomass * temperature * age
-    elif temperature < 0:
-        # Equation (17)
-        senescence_biomass = kgr * gr_biomass * abs(temperature)
-    else:
-        senescence_biomass = 0
-    return senescence_biomass
+    def __call__(self) -> float:
+        if self.age_gr / (self.st_2 - self.st_1) < 1 / 3:
+            age_fn = 1
+        elif self.age_gr / (self.st_2 - self.st_1) < 1:
+            # linear gradient
+            gradient = (3 - 1) / (1 - 1 / 3)
+            intercept = 3 - gradient * 1
+            age_fn = (
+                gradient * self.age_gr / (self.st_2 - self.st_1) + intercept
+            )
+        else:
+            age_fn = 3
+        if self.temperature > self.t_0:
+            val = self.k_gr * self.bm_gr * self.temperature * age_fn
+        elif self.temperature < 0:
+            val = self.k_gr * self.bm_gr * abs(self.temperature)
+        else:
+            val = 0
+        return val
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
