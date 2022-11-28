@@ -168,6 +168,91 @@ class PARFunction:
 
 
 @dataclass
+class SumOfTemperatures:
+    """
+    Return the sum of temperatures for the day of the year
+
+    Parameters
+    ----------
+    t_ts : Temperature field of the input time series data
+    doy : Day of the year
+    t_0 : Minimum temperature for growth; default is 4 [°C]
+
+    Returns
+    -------
+    - Sum of temperatures above t0 corresponding to the DOY [°C d]
+
+    Notes
+    -----
+    - Degree days are measures of how cold or warm a location is
+    - A *degree day* compares the mean (the average of the high and low)
+      outdoor temperatures recorded for a location to a
+      *standard temperature*
+    - Also known as heat units or thermal units
+    - All species of plants have a cutoff temperature below which no
+      development occurs (developmental threshold)
+    - Degree days are accumulated whenever the temperature exceeds the
+      predetermined developmental threshold
+    - Calculate degree days by subtracting the developmental threshold from
+      the average daily temperature
+    - If the average degree day value for a given day is less than zero, just
+      record zero, not a negative number
+
+    References
+    ----------
+    - https://hort.extension.wisc.edu/articles/degree-day-calculation/
+    - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
+    """
+
+    t_ts: list
+    doy: int
+    t_0: float = 4
+
+    def sum_of_temperatures(self) -> float:
+        """Calculate the sum of temperatures"""
+
+        val = 0
+        for i in range(self.doy):
+            if self.t_ts[i] > self.t_0:
+                val += self.t_ts[i] - self.t_0
+        return val
+
+
+@dataclass
+class TenDayMovingAverageTemperature:
+    """
+    Calculate the 10-d moving average temperature.
+
+    See sec. "Growth functions", par. above Equation (13) in Jouven et al.
+    (2006).
+
+    Parameters
+    ----------
+    t_ts : Temperature field of the input time series data
+    doy : Day of the year
+
+    Returns
+    -------
+    - 10-d moving average temperature
+    """
+
+    t_ts: list
+    doy: int
+
+    def ten_day_moving_average_temperature(self) -> float:
+        """Calculate the 10-d moving average temperature"""
+
+        if (self.doy - 1) < (10 - 1):
+            # ** USING THE TEMP, NOT 10-d MOVING AVG!
+            val = self.t_ts[self.doy - 1]
+        else:
+            val = np.mean([
+                self.t_ts[(self.doy - 1) - j] for j in range(10 - 1, 0 - 1, -1)
+            ])
+        return val
+
+
+@dataclass
 class SeasonalEffect:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
@@ -227,77 +312,8 @@ class SeasonalEffect:
         return val
 
 
-def sum_of_temperatures(temperature_ts, doy, t0=4):
-    """
-    Return the sum of temperatures for the day of the year
-
-    Parameters
-    ----------
-    temperature_ts : Temperature field of the input time series data
-    doy : Day of the year [1-366]
-    t0 : Minimum temperature for growth; default is 4 [°C]
-
-    Returns
-    -------
-    - Sum of temperatures above t0 corresponding to the DOY [°C d]
-
-    Notes
-    -----
-    - Degree days are measures of how cold or warm a location is
-    - A *degree day* compares the mean (the average of the high and low)
-      outdoor temperatures recorded for a location to a
-      *standard temperature*
-    - Also known as heat units or thermal units
-    - All species of plants have a cutoff temperature below which no
-      development occurs (developmental threshold)
-    - Degree days are accumulated whenever the temperature exceeds the
-      predetermined developmental threshold
-    - Calculate degree days by subtracting the developmental threshold from
-      the average daily temperature
-    - If the average degree day value for a given day is less than zero, just
-      record zero, not a negative number
-
-    References
-    ----------
-    - https://hort.extension.wisc.edu/articles/degree-day-calculation/
-    - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
-    """
-
-    sum_temperature = 0
-    for i in range(doy):
-        if temperature_ts[i] > t0:
-            sum_temperature += temperature_ts[i] - t0
-    return sum_temperature
-
-
-def mean_ten_days_temperature(temperature_ts, idx):
-    """
-    Calculate the 10-d moving average temperature.
-
-    See sec. "Growth functions", par. above Equation (13) in Jouven et al.
-    (2006).
-
-    Parameters
-    ----------
-    temperature_ts : Temperature time series
-    idx : index (day of the year - 1)
-
-    Returns
-    -------
-    - 10-d moving average temperature
-    """
-
-    if idx < (10 - 1):
-        # ** USING THE TEMP, NOT 10-d MOVING AVG!
-        temperature_mean_ten_days = temperature_ts[idx]
-    else:
-        temperature_mean_ten_days = np.mean(
-            [temperature_ts[idx - j] for j in range(10 - 1, 0 - 1, -1)]
-        )
-    return temperature_mean_ten_days
-
-
-def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
+@dataclass
+class WaterReserves:
     """
     Calculate the water reserves (WR).
 
@@ -310,24 +326,58 @@ def water_reserves(precipitation, water_reserve, actual_et, soil_whc):
     Parameters
     ----------
     precipitation : Precipitation (PP) [mm]
-    water_reserve : Water reserve (WR) [mm]
-    actual_et : Actual evapotranspiration (AET) [mm]
-    soil_whc : Soil water-holding capacity (WHC) [mm]
+    wreserves : Water reserve (WR) [mm]
+    aet : Actual evapotranspiration (AET) [mm]
+    whc : Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
     - Water reserves (WR) [mm]
     """
 
-    water_reserve = min(
-        max(0, water_reserve + precipitation - actual_et), soil_whc
-    )
-    return water_reserve
+    precipitation: float
+    wreserves: float
+    aet: float
+    whc: float
+
+    def water_reserves(self) -> float:
+        """Calculate the water reserves (WR)"""
+
+        return min(
+            max(0, self.wreserves + self.precipitation - self.aet), self.whc
+        )
 
 
-def water_stress_function(waterReserve, waterHoldingCapacity, pet):
+@dataclass
+class WaterStress:
     """
-    Water stress function.
+    Calculate the water stress (*W*).
+
+    See Equation (14) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    wreserves : Water reserves (WR) [mm]
+    whc : Soil water-holding capacity (WHC) [mm]
+
+    Returns
+    -------
+    - Water stress (*W*)
+    """
+
+    wreserves: float
+    whc: float
+
+    def water_stress(self) -> float:
+        """Water stress (*W*)"""
+
+        return min(self.wreserves / self.whc, 1)
+
+
+@dataclass
+class WaterStressFunction:
+    """
+    Water stress function (*f*(*W*)).
 
     See Figure 2(c) and Equation (14) of Jouven et al. (2006).
 
@@ -335,8 +385,7 @@ def water_stress_function(waterReserve, waterHoldingCapacity, pet):
 
     Parameters
     ----------
-    waterReserve : Water reserves (WR) [mm]
-    waterHoldingCapacity : Soil water-holding capacity (WHC) [mm]
+    wstress : Water stress (*W*)
     pet : Potential evapotranspiration (PET) [mm]
 
     Returns
@@ -344,44 +393,48 @@ def water_stress_function(waterReserve, waterHoldingCapacity, pet):
     - water stress function [dimensionless]
     """
 
-    waterStress = min(waterReserve / waterHoldingCapacity, 1)
+    wstress: float
+    pet: float
 
-    if pet < 3.8:
-        # linear gradients
-        if waterStress < 0.2:
-            gradient = 0.8 / 0.2
-            f_waterstress = gradient * waterStress
-        elif waterStress < 0.4:
-            gradient = (0.95 - 0.8) / (0.4 - 0.2)
-            intercept = 0.8 - gradient * 0.2
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.6:
-            gradient = (1 - 0.95) / (0.6 - 0.4)
-            intercept = 1 - gradient * 0.6
-            f_waterstress = gradient * waterStress + intercept
+    def water_stress_function(self) -> float:
+        """Water stress function (*f*(*W*))"""
+
+        if self.pet < 3.8:
+            # linear gradients
+            if self.wstress < 0.2:
+                gradient = 0.8 / 0.2
+                val = gradient * self.wstress
+            elif self.wstress < 0.4:
+                gradient = (0.95 - 0.8) / (0.4 - 0.2)
+                intercept = 0.8 - gradient * 0.2
+                val = gradient * self.wstress + intercept
+            elif self.wstress < 0.6:
+                gradient = (1 - 0.95) / (0.6 - 0.4)
+                intercept = 1 - gradient * 0.6
+                val = gradient * self.wstress + intercept
+            else:
+                val = 1
+        elif self.pet <= 6.5:
+            if self.wstress < 0.2:
+                gradient = 0.4 / 0.2
+                val = gradient * self.wstress
+            elif self.wstress < 0.4:
+                gradient = (0.7 - 0.4) / (0.4 - 0.2)
+                intercept = 0.4 - gradient * 0.2
+                val = gradient * self.wstress + intercept
+            elif self.wstress < 0.6:
+                gradient = (0.9 - 0.7) / (0.6 - 0.4)
+                intercept = 0.9 - gradient * 0.6
+                val = gradient * self.wstress + intercept
+            elif self.wstress < 0.8:
+                gradient = (1 - 0.9) / (0.8 - 0.6)
+                intercept = 1 - gradient * 0.8
+                val = 0.5 * self.wstress + 0.6
+            else:
+                val = 1
         else:
-            f_waterstress = 1
-    elif pet <= 6.5:
-        if waterStress < 0.2:
-            gradient = 0.4 / 0.2
-            f_waterstress = gradient * waterStress
-        elif waterStress < 0.4:
-            gradient = (0.7 - 0.4) / (0.4 - 0.2)
-            intercept = 0.4 - gradient * 0.2
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.6:
-            gradient = (0.9 - 0.7) / (0.6 - 0.4)
-            intercept = 0.9 - gradient * 0.6
-            f_waterstress = gradient * waterStress + intercept
-        elif waterStress < 0.8:
-            gradient = (1 - 0.9) / (0.8 - 0.6)
-            intercept = 1 - gradient * 0.8
-            f_waterstress = 0.5 * waterStress + 0.6
-        else:
-            f_waterstress = 1
-    else:
-        f_waterstress = waterStress
-    return f_waterstress
+            val = self.wstress
+        return val
 
 
 def reproductive_function(n_index):

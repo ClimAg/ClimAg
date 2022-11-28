@@ -190,9 +190,9 @@ def modvege(params, tseries, enddoy=365):
         #######################################################
         temperature = tseries["tas"][i]
         # mean ten days temperature (Tm10)
-        temperature_mean_ten_days = lm.mean_ten_days_temperature(
-            temperature_ts=tseries["tas"], idx=i
-        )
+        temperature_mean_ten_days = lm.TenDayMovingAverageTemperature(
+            t_ts=tseries["tas"], doy=(i + 1)
+        ).ten_day_moving_average_temperature()
 
         pari = tseries["par"][i]
         pmm = tseries["pr"][i]
@@ -204,9 +204,9 @@ def modvege(params, tseries, enddoy=365):
             cut_height = params["cutHeight"]
 
         # sum of temperatures (ST)
-        temperature_sum = lm.sum_of_temperatures(
-            temperature_ts=tseries["tas"], doy=(i + 1), t0=params["T0"]
-        )
+        temperature_sum = lm.SumOfTemperatures(
+            t_ts=tseries["tas"], doy=(i + 1)
+        ).sum_of_temperatures()
 
         # seasonal effect (SEA)
         seasonality = (
@@ -249,17 +249,15 @@ def modvege(params, tseries, enddoy=365):
         ).actual_evapotranspiration()
 
         # water reserves (WR)
-        params["WR"] = lm.water_reserves(
-            precipitation=pmm, water_reserve=params["WR"],
-            actual_et=eta, soil_whc=params["WHC"]
-        )
+        params["WR"] = lm.WaterReserves(
+            precipitation=pmm, wreserves=params["WR"],
+            aet=eta, whc=params["WHC"]
+        ).water_reserves()
 
         # water stress function (f(W))
-        waterstress_fn = lm.water_stress_function(
-            waterReserve=params["WR"],
-            waterHoldingCapacity=params["WHC"],
-            pet=pet
-        )
+        waterstress_fn = lm.WaterStress(
+            wreserves=params["WR"], whc=params["WHC"]
+        ).water_stress()
 
         # compute grazing and harvesting
         harvested_biomass_part = 0
