@@ -468,6 +468,7 @@ class WaterStressFunction:
 class ReproductiveFunction:
     """
     Reproductive function (REP).
+    REP is zero when there is a cut due to grazing or harvesting.
 
     See Equation (15) in Jouven et al. (2006)
 
@@ -483,7 +484,7 @@ class ReproductiveFunction:
     n_index: float
 
     def __call__(self) -> float:
-        return (0.25 + ((1 - 0.25) * (self.n_index - 0.35)) / (1 - 0.35))
+        return 0.25 + ((1 - 0.25) * (self.n_index - 0.35)) / (1 - 0.35)
 
 
 @dataclass
@@ -732,6 +733,204 @@ class SenescenceGR:
         else:
             val = 0
         return val
+
+
+@dataclass
+class BiomassDV:
+    """
+    Update dead vegetative compartment.
+    See Equations (3) and (7) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    sigma_gv : Respiratory C loss during senescence of GV
+    sen_gv : Senescence of GV compartment
+    abs_dv : Abscission of the DV compartment
+    temperature : Mean daily temperature (*T*) [°C]
+    bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
+    age_dv : Average DV age (AGE_DV) [°C d]
+
+    Returns
+    -------
+    - Dead vegetative biomass
+    - Average DV age
+    """
+
+    bm_dv: float
+    abs_dv: float
+    sen_gv: float
+    age_dv: float
+    temperature: float
+    sigma_gv: float = 0.4
+
+    def __call__(self) -> float:
+        return (
+            (1 - self.sigma_gv) * self.sen_gv - self.abs_dv,
+            (self.bm_dv - self.abs_dv) /
+            (self.bm_dv - self.abs_dv + (1 - self.sigma_gv) * self.sen_gv) *
+            (self.age_dv + self.temperature) - self.age_dv
+        )
+
+    # # gv_gamma, gv_senescent_biomass, temperature, dv_biomass, dv_avg_age
+    # # abscissionBiomass = mk_dv_abscission(
+    # #     kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
+    # #     dv_avg_age=dv_avg_age, lls=lls
+    # # )
+    # dv_biomass -= abscissionBiomass
+    # # at this point the biomass include cut, ingestion, and abscission, not
+    # # growth
+    # growthBiomass = (1 - gv_gamma) * gv_senescent_biomass
+    # if dv_biomass + growthBiomass > 0:
+    #     dv_avg_age = (max(0, temperature) + dv_avg_age) * (
+    #         dv_biomass / (dv_biomass + growthBiomass)
+    #     )
+    # else:
+    #     dv_avg_age = 0
+    # dv_biomass += growthBiomass
+    # return (dv_biomass, dv_avg_age)
+
+
+@dataclass
+class BiomassDR:
+    """
+    Update dead reproductive compartment.
+    See Equations (4) and (8) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    sigma_gr : Respiratory C loss during senescence for GR
+    sen_gr : Senescence of GR compartment
+    abs_dr : Abscission of the DR compartment
+    temperature : Mean daily temperature (*T*) [°C]
+    bm_dr : DR biomass (BM_DR) [kg DM ha⁻¹]
+    age_dr : Average DR age (AGE_DR) [°C d]
+
+    Returns
+    -------
+    - Dead reproductive biomass
+    - Average DR age
+    """
+
+    bm_dr: float
+    abs_dr: float
+    sen_gr: float
+    age_dr: float
+    temperature: float
+    sigma_gr: float = 0.2
+
+    def __call__(self) -> float:
+        return (
+            (1 - self.sigma_gr) * self.sen_gr - self.abs_dr,
+            (self.bm_dr - self.abs_dr) /
+            (self.bm_dr - self.abs_dr + (1 - self.sigma_gr) * self.sen_gr) *
+            (self.age_dr + self.temperature) - self.age_dr
+        )
+
+
+@dataclass
+class GrowthGV:
+    """
+    See Equation (1) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    gro : Growth
+    rep : Reproductive function
+    """
+
+    gro: float
+    rep: float
+
+    def __call__(self) -> float:
+        return self.gro * (1 - self.rep)
+
+
+@dataclass
+class BiomassGV:
+    """
+    Update green vegetative compartment.
+    See Equations (1) and (5) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    gro_gv : Growth GV
+    sen_gv : Senescence GV
+    bm_gv : GV biomass
+    age_gv : GV age
+    temperature : Mean daily temperature (*T*) [°C]
+
+    Returns
+    -------
+    - Green vegetative biomass
+    - Average GV age
+    """
+
+    gro_gv: float
+    sen_gv: float
+    bm_gv: float
+    age_gv: float
+    temperature: float
+
+    def __call__(self) -> float:
+        return (
+            self.gro_gv - self.sen_gv,
+            (self.bm_gv - self.sen_gv) /
+            (self.bm_gv - self.sen_gv + self.gro_gv) *
+            (self.age_gv + self.temperature) - self.age_gv
+        )
+
+
+@dataclass
+class GrowthGR:
+    """
+    See Equation (2) in Jouven et al. (2006)
+
+    Parameters
+    ----------
+    gro : Growth
+    rep : Reproductive function
+    """
+
+    gro: float
+    rep: float
+
+    def __call__(self) -> float:
+        return self.gro * self.rep
+
+
+@dataclass
+class BiomassGR:
+    """
+    Update green reproductive compartment.
+    See Equations (2) and (6) in Jouven et al. (2006).
+
+    Parameters
+    ----------
+    gro_gr : Growth GV
+    sen_gr : Senescence GV
+    bm_gr : GV biomass
+    age_gr : GV age
+    temperature : Mean daily temperature (*T*) [°C]
+
+    Returns
+    -------
+    - Green reproductive biomass
+    - Average GR age
+    """
+
+    gro_gr: float
+    sen_gr: float
+    bm_gr: float
+    age_gr: float
+    temperature: float
+
+    def __call__(self) -> float:
+        return (
+            self.gro_gr - self.sen_gr,
+            (self.bm_gr - self.sen_gr) /
+            (self.bm_gr - self.sen_gr + self.gro_gr) *
+            (self.age_gr + self.temperature) - self.age_gr
+        )
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
