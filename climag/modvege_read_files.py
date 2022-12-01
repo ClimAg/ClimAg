@@ -70,7 +70,6 @@ def read_params(filename):
                     (Kl_DV) [0.001]
     - Kl_DR       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
-    - cellSurface : Pixel area [ha]
     - cutHeight   : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]

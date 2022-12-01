@@ -29,6 +29,8 @@ References
 from dataclasses import dataclass
 import numpy as np
 
+np.seterr("raise")
+
 
 @dataclass
 class LeafAreaIndex:
@@ -55,7 +57,7 @@ class LeafAreaIndex:
     sla: float = 0.033
 
     def __call__(self) -> float:
-        return self.sla * self.bm_gv / 10 * self.pct_lam
+        return self.sla * self.bm_gv / 10.0 * self.pct_lam
 
 
 @dataclass
@@ -84,7 +86,7 @@ class ActualEvapotranspiration:
     lai: float
 
     def __call__(self) -> float:
-        return min(self.pet, self.pet * self.lai / 3)
+        return min(self.pet, self.pet * self.lai / 3.0)
 
 
 @dataclass
@@ -116,11 +118,11 @@ class PotentialGrowth:
 
     par_i: float
     lai: float
-    rue_max: float = 3
+    rue_max: float = 3.0
 
     def __call__(self) -> float:
         return (
-            self.par_i * self.rue_max * (1 - np.exp(-0.6 * self.lai)) * 10
+            self.par_i * self.rue_max * (1.0 - np.exp(-0.6 * self.lai)) * 10.0
         )
 
 
@@ -149,13 +151,13 @@ class PARFunction:
     par_i: float
 
     def __call__(self) -> float:
-        if self.par_i < 5:
-            val = 1
+        if self.par_i < 5.0:
+            val = 1.0
         else:
             # linear gradient
-            gradient = 1 / (5 - (25 + 30) / 2)
-            intercept = 1 - gradient * 5
-            val = max(gradient * self.par_i + intercept, 0)
+            gradient = 1.0 / (5.0 - (25.0 + 30.0) / 2.0)
+            intercept = 1.0 - gradient * 5.0
+            val = max(gradient * self.par_i + intercept, 0.0)
         return val
 
 
@@ -198,10 +200,10 @@ class SumOfTemperatures:
 
     t_ts: list
     doy: int
-    t_0: float = 4
+    t_0: float = 4.0
 
     def __call__(self) -> float:
-        val = 0
+        val = 0.0
         for i in range(self.doy):
             if self.t_ts[i] > self.t_0:
                 val += self.t_ts[i] - self.t_0
@@ -252,7 +254,7 @@ class TemperatureFunction:
 
     Parameters
     ----------
-    t_10m : 10-d moving average temperature [°C]
+    t_m10 : 10-d moving average temperature [°C]
     t_0 : Minimum temperature for growth; default is 4 [°C]
     t_1 : Minimum temperature for optimal growth; default is 10 [°C]
     t_2 : Maximum temperature for optimal growth; default is 20 [°C]
@@ -263,27 +265,27 @@ class TemperatureFunction:
     - Temperature function (*f*(*T*)) [dimensionless]
     """
 
-    t_10m: float
-    t_0: float = 4
-    t_1: float = 10
-    t_2: float = 20
-    t_max: float = 40
+    t_m10: float
+    t_0: float = 4.0
+    t_1: float = 10.0
+    t_2: float = 20.0
+    t_max: float = 40.0
 
     def __call__(self) -> float:
-        if self.t_10m < self.t_0 or self.t_10m >= self.t_max:
-            val = 0
-        elif self.t_0 <= self.t_10m < self.t_1:
+        if self.t_m10 < self.t_0 or self.t_m10 >= self.t_max:
+            val = 0.0
+        elif self.t_0 <= self.t_m10 < self.t_1:
             # linear relationship
-            gradient = 1 / (self.t_1 - self.t_0)
-            intercept = 1 - gradient * self.t_1
-            val = gradient * self.t_10m + intercept
-        elif self.t_1 <= self.t_10m <= self.t_2:
-            val = 1
-        elif self.t_2 < self.t_10m < self.t_max:
+            gradient = 1.0 / (self.t_1 - self.t_0)
+            intercept = 1.0 - gradient * self.t_1
+            val = gradient * self.t_m10 + intercept
+        elif self.t_1 <= self.t_m10 <= self.t_2:
+            val = 1.0
+        elif self.t_2 < self.t_m10 < self.t_max:
             # linear relationship
-            gradient = 1 / (self.t_2 - self.t_max)
-            intercept = 1 - gradient * self.t_2
-            val = gradient * self.t_10m + intercept
+            gradient = 1.0 / (self.t_2 - self.t_max)
+            intercept = 1.0 - gradient * self.t_2
+            val = gradient * self.t_m10 + intercept
         return val
 
 
@@ -320,25 +322,26 @@ class SeasonalEffect:
     t_sum: float
     min_sea: float = 0.8
     max_sea: float = 1.2
-    st_1: float = 600
-    st_2: float = 1200
+    st_1: float = 600.0
+    st_2: float = 1200.0
 
     def __call__(self) -> float:
-        if self.t_sum < 200 or self.t_sum > self.st_2:
+        if self.t_sum < 200.0 or self.t_sum > self.st_2:
             val = self.min_sea
-        elif (self.st_1 - 200) <= self.t_sum <= (self.st_1 - 100):
+        elif (self.st_1 - 200.0) <= self.t_sum <= (self.st_1 - 100.0):
             val = self.max_sea
-        elif 200 <= self.t_sum < (self.st_1 - 200):
-            # assume SEA increases linearly from minSEA at 200 °C d to maxSEA
+        elif 200.0 <= self.t_sum < (self.st_1 - 200.0):
+            # assume SEA increases linearly from minSEA at 200°C d to maxSEA
             gradient = (
-                (self.max_sea - self.min_sea) / ((self.st_1 - 200) - 200)
+                (self.max_sea - self.min_sea) / ((self.st_1 - 200.0) - 200.0)
             )
-            intercept = self.min_sea - gradient * 200
+            intercept = self.min_sea - gradient * 200.0
             val = max(gradient * self.t_sum + intercept, self.min_sea)
-        elif (self.st_1 - 100) < self.t_sum <= self.st_2:
+        elif (self.st_1 - 100.0) < self.t_sum <= self.st_2:
             # SEA decreases linearly from maxSEA to minSEA at ST_2
             gradient = (
-                (self.max_sea - self.min_sea) / ((self.st_1 - 100) - self.st_2)
+                (self.max_sea - self.min_sea) /
+                ((self.st_1 - 100.0) - self.st_2)
             )
             intercept = self.min_sea - gradient * self.st_2
             val = max(gradient * self.t_sum + intercept, self.min_sea)
@@ -375,7 +378,7 @@ class WaterReserves:
 
     def __call__(self) -> float:
         return min(
-            max(0, self.wreserves + self.precipitation - self.aet), self.whc
+            max(0.0, self.wreserves + self.precipitation - self.aet), self.whc
         )
 
 
@@ -400,7 +403,7 @@ class WaterStress:
     whc: float
 
     def __call__(self) -> float:
-        return min(self.wreserves / self.whc, 1)
+        return min(self.wreserves / self.whc, 1.0)
 
 
 @dataclass
@@ -436,11 +439,11 @@ class WaterStressFunction:
                 intercept = 0.8 - gradient * 0.2
                 val = gradient * self.wstress + intercept
             elif self.wstress < 0.6:
-                gradient = (1 - 0.95) / (0.6 - 0.4)
-                intercept = 1 - gradient * 0.6
+                gradient = (1.0 - 0.95) / (0.6 - 0.4)
+                intercept = 1.0 - gradient * 0.6
                 val = gradient * self.wstress + intercept
             else:
-                val = 1
+                val = 1.0
         elif self.pet <= 6.5:
             if self.wstress < 0.2:
                 gradient = 0.4 / 0.2
@@ -454,11 +457,11 @@ class WaterStressFunction:
                 intercept = 0.9 - gradient * 0.6
                 val = gradient * self.wstress + intercept
             elif self.wstress < 0.8:
-                gradient = (1 - 0.9) / (0.8 - 0.6)
-                intercept = 1 - gradient * 0.8
+                gradient = (1.0 - 0.9) / (0.8 - 0.6)
+                intercept = 1.0 - gradient * 0.8
                 val = 0.5 * self.wstress + 0.6
             else:
-                val = 1
+                val = 1.0
         else:
             val = self.wstress
         return val
@@ -484,7 +487,7 @@ class ReproductiveFunction:
     n_index: float
 
     def __call__(self) -> float:
-        return 0.25 + ((1 - 0.25) * (self.n_index - 0.35)) / (1 - 0.35)
+        return 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
 
 
 @dataclass
@@ -569,20 +572,20 @@ class AbscissionDV:
     temperature: float
     bm_dv: float
     age_dv: float
-    lls: float = 500
+    lls: float = 500.0
     kl_dv: float = 0.001
 
     def __call__(self) -> float:
-        if self.age_dv / self.lls < 1 / 3:
-            age_fn = 1
-        elif self.age_dv / self.lls < 2 / 3:
-            age_fn = 2
+        if self.age_dv / self.lls < 1.0 / 3.0:
+            age_fn = 1.0
+        elif self.age_dv / self.lls < 2.0 / 3.0:
+            age_fn = 2.0
         else:
-            age_fn = 3
-        if self.temperature > 0:
+            age_fn = 3.0
+        if self.temperature > 0.0:
             val = self.kl_dv * self.bm_dv * self.temperature * age_fn
         else:
-            val = 0
+            val = 0.0
         return val
 
 
@@ -615,20 +618,20 @@ class AbscissionDR:
     temperature: float
     age_dr: float
     kl_dr: float = 0.0005
-    st_1: float = 600
-    st_2: float = 1200
+    st_1: float = 600.0
+    st_2: float = 1200.0
 
     def __call__(self) -> float:
-        if self.age_dr / (self.st_2 - self.st_1) < 1 / 3:
-            age_fn = 1
-        elif self.age_dr / (self.st_2 - self.st_1) < 2 / 3:
-            age_fn = 2
+        if self.age_dr / (self.st_2 - self.st_1) < 1.0 / 3.0:
+            age_fn = 1.0
+        elif self.age_dr / (self.st_2 - self.st_1) < 2.0 / 3.0:
+            age_fn = 2.0
         else:
-            age_fn = 3
-        if self.temperature > 0:
+            age_fn = 3.0
+        if self.temperature > 0.0:
             val = self.kl_dr * self.bm_dr * self.temperature * age_fn
         else:
-            val = 0
+            val = 0.0
         return val
 
 
@@ -661,25 +664,25 @@ class SenescenceGV:
     age_gv: float
     bm_gv: float
     k_gv: float = 0.002
-    t_0: float = 4
-    lls: float = 500
+    t_0: float = 4.0
+    lls: float = 500.0
 
     def __call__(self) -> float:
-        if self.age_gv / self.lls < 1 / 3:
-            age_fn = 1
-        elif self.age_gv / self.lls < 1:
+        if self.age_gv / self.lls < 1.0 / 3.0:
+            age_fn = 1.0
+        elif self.age_gv / self.lls < 1.0:
             # linear gradient
-            gradient = (3 - 1) / (1 - 1 / 3)
-            intercept = 3 - gradient * 1
+            gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
+            intercept = 3.0 - gradient * 1.0
             age_fn = gradient * self.age_gv / self.lls + intercept
         else:
-            age_fn = 3
+            age_fn = 3.0
         if self.temperature > self.t_0:
             val = self.k_gv * self.bm_gv * self.temperature * age_fn
-        elif self.temperature < 0:
+        elif self.temperature < 0.0:
             val = self.k_gv * self.bm_gv * abs(self.temperature)
         else:
-            val = 0
+            val = 0.0
         return val
 
 
@@ -710,28 +713,28 @@ class SenescenceGR:
     temperature: float
     bm_gr: float
     k_gr: float = 0.001
-    t_0: float = 4
-    st_1: float = 600
-    st_2: float = 1200
+    t_0: float = 4.0
+    st_1: float = 600.0
+    st_2: float = 1200.0
 
     def __call__(self) -> float:
-        if self.age_gr / (self.st_2 - self.st_1) < 1 / 3:
-            age_fn = 1
-        elif self.age_gr / (self.st_2 - self.st_1) < 1:
+        if self.age_gr / (self.st_2 - self.st_1) < 1.0 / 3.0:
+            age_fn = 1.0
+        elif self.age_gr / (self.st_2 - self.st_1) < 1.0:
             # linear gradient
-            gradient = (3 - 1) / (1 - 1 / 3)
-            intercept = 3 - gradient * 1
+            gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
+            intercept = 3.0 - gradient * 1.0
             age_fn = (
                 gradient * self.age_gr / (self.st_2 - self.st_1) + intercept
             )
         else:
-            age_fn = 3
+            age_fn = 3.0
         if self.temperature > self.t_0:
             val = self.k_gr * self.bm_gr * self.temperature * age_fn
-        elif self.temperature < 0:
+        elif self.temperature < 0.0:
             val = self.k_gr * self.bm_gr * abs(self.temperature)
         else:
-            val = 0
+            val = 0.0
         return val
 
 
@@ -765,9 +768,9 @@ class BiomassDV:
 
     def __call__(self) -> float:
         return (
-            (1 - self.sigma_gv) * self.sen_gv - self.abs_dv,
+            (1.0 - self.sigma_gv) * self.sen_gv - self.abs_dv,
             (self.bm_dv - self.abs_dv) /
-            (self.bm_dv - self.abs_dv + (1 - self.sigma_gv) * self.sen_gv) *
+            (self.bm_dv - self.abs_dv + (1.0 - self.sigma_gv) * self.sen_gv) *
             (self.age_dv + self.temperature) - self.age_dv
         )
 
@@ -820,9 +823,9 @@ class BiomassDR:
 
     def __call__(self) -> float:
         return (
-            (1 - self.sigma_gr) * self.sen_gr - self.abs_dr,
+            (1.0 - self.sigma_gr) * self.sen_gr - self.abs_dr,
             (self.bm_dr - self.abs_dr) /
-            (self.bm_dr - self.abs_dr + (1 - self.sigma_gr) * self.sen_gr) *
+            (self.bm_dr - self.abs_dr + (1.0 - self.sigma_gr) * self.sen_gr) *
             (self.age_dr + self.temperature) - self.age_dr
         )
 
@@ -842,7 +845,7 @@ class GrowthGV:
     rep: float
 
     def __call__(self) -> float:
-        return self.gro * (1 - self.rep)
+        return self.gro * (1.0 - self.rep)
 
 
 @dataclass
@@ -930,6 +933,44 @@ class BiomassGR:
             (self.bm_gr - self.sen_gr) /
             (self.bm_gr - self.sen_gr + self.gro_gr) *
             (self.age_gr + self.temperature) - self.age_gr
+        )
+
+
+@dataclass
+class OrganicMatterDigestibilityGV:
+    """
+    See Equation (9) in Jouven et al. (2006)
+    """
+
+    age_gv: float
+    max_omd_gv: float = 0.9
+    min_omd_gv: float = 0.75
+    lls: float = 500.0
+
+    def __call__(self) -> float:
+        return (
+            self.max_omd_gv -
+            (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls
+        )
+
+
+@dataclass
+class OrganicMatterDigestibilityGR:
+    """
+    See Equation (9) in Jouven et al. (2006)
+    """
+
+    age_gr: float
+    max_omd_gr: float = 0.9
+    min_omd_gr: float = 0.75
+    st_1: float = 600.0
+    st_2: float = 1200.0
+
+    def __call__(self) -> float:
+        return (
+            self.max_omd_gr -
+            (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
+            (self.st_2 - self.st_1)
         )
 
 
