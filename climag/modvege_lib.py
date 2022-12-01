@@ -744,6 +744,9 @@ class BiomassDV:
     Update dead vegetative compartment.
     See Equations (3) and (7) in Jouven et al. (2006).
 
+    The age of the residual biomass is increased daily by the mean daily
+    temperature, if this temperature is positive
+
     Parameters
     ----------
     sigma_gv : Respiratory C loss during senescence of GV
@@ -767,30 +770,19 @@ class BiomassDV:
     sigma_gv: float = 0.4
 
     def __call__(self) -> float:
-        return (
-            (1.0 - self.sigma_gv) * self.sen_gv - self.abs_dv,
-            (self.bm_dv - self.abs_dv) /
-            (self.bm_dv - self.abs_dv + (1.0 - self.sigma_gv) * self.sen_gv) *
-            (self.age_dv + self.temperature) - self.age_dv
-        )
-
-    # # gv_gamma, gv_senescent_biomass, temperature, dv_biomass, dv_avg_age
-    # # abscissionBiomass = mk_dv_abscission(
-    # #     kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
-    # #     dv_avg_age=dv_avg_age, lls=lls
-    # # )
-    # dv_biomass -= abscissionBiomass
-    # # at this point the biomass include cut, ingestion, and abscission, not
-    # # growth
-    # growthBiomass = (1 - gv_gamma) * gv_senescent_biomass
-    # if dv_biomass + growthBiomass > 0:
-    #     dv_avg_age = (max(0, temperature) + dv_avg_age) * (
-    #         dv_biomass / (dv_biomass + growthBiomass)
-    #     )
-    # else:
-    #     dv_avg_age = 0
-    # dv_biomass += growthBiomass
-    # return (dv_biomass, dv_avg_age)
+        bm_dv = self.bm_dv + (1.0 - self.sigma_gv) * self.sen_gv - self.abs_dv
+        if self.temperature > 0.0 and self.bm_dv > 0.0:
+            age_dv = self.age_dv + (
+                (self.bm_dv - self.abs_dv) /
+                (
+                    self.bm_dv - self.abs_dv +
+                    (1.0 - self.sigma_gv) * self.sen_gv
+                ) *
+                (self.age_dv + self.temperature) - self.age_dv
+            )
+        else:
+            age_dv = self.age_dv
+        return bm_dv, age_dv
 
 
 @dataclass
@@ -798,6 +790,9 @@ class BiomassDR:
     """
     Update dead reproductive compartment.
     See Equations (4) and (8) in Jouven et al. (2006).
+
+    The age of the residual biomass is increased daily by the mean daily
+    temperature, if this temperature is positive
 
     Parameters
     ----------
@@ -822,12 +817,19 @@ class BiomassDR:
     sigma_gr: float = 0.2
 
     def __call__(self) -> float:
-        return (
-            (1.0 - self.sigma_gr) * self.sen_gr - self.abs_dr,
-            (self.bm_dr - self.abs_dr) /
-            (self.bm_dr - self.abs_dr + (1.0 - self.sigma_gr) * self.sen_gr) *
-            (self.age_dr + self.temperature) - self.age_dr
-        )
+        bm_dr = self.bm_dr + (1.0 - self.sigma_gr) * self.sen_gr - self.abs_dr
+        if self.temperature > 0.0 and self.bm_dr > 0.0:
+            age_dr = self.age_dr + (
+                (self.bm_dr - self.abs_dr) /
+                (
+                    self.bm_dr - self.abs_dr +
+                    (1.0 - self.sigma_gr) * self.sen_gr
+                ) *
+                (self.age_dr + self.temperature) - self.age_dr
+            )
+        else:
+            age_dr = self.age_dr
+        return bm_dr, age_dr
 
 
 @dataclass
@@ -845,7 +847,7 @@ class GrowthGV:
     rep: float
 
     def __call__(self) -> float:
-        return self.gro * (1.0 - self.rep)
+        return max(0.0, self.gro * (1.0 - self.rep))
 
 
 @dataclass
@@ -853,6 +855,9 @@ class BiomassGV:
     """
     Update green vegetative compartment.
     See Equations (1) and (5) in Jouven et al. (2006).
+
+    The age of the residual biomass is increased daily by the mean daily
+    temperature, if this temperature is positive
 
     Parameters
     ----------
@@ -875,12 +880,16 @@ class BiomassGV:
     temperature: float
 
     def __call__(self) -> float:
-        return (
-            self.gro_gv - self.sen_gv,
-            (self.bm_gv - self.sen_gv) /
-            (self.bm_gv - self.sen_gv + self.gro_gv) *
-            (self.age_gv + self.temperature) - self.age_gv
-        )
+        bm_gv = self.bm_gv + self.gro_gv - self.sen_gv
+        if self.temperature > 0.0 and self.bm_gv > 0.0:
+            age_gv = self.age_gv + (
+                (self.bm_gv - self.sen_gv) /
+                (self.bm_gv - self.sen_gv + self.gro_gv) *
+                (self.age_gv + self.temperature) - self.age_gv
+            )
+        else:
+            age_gv = self.age_gv
+        return bm_gv, age_gv
 
 
 @dataclass
@@ -898,7 +907,7 @@ class GrowthGR:
     rep: float
 
     def __call__(self) -> float:
-        return self.gro * self.rep
+        return max(0.0, self.gro * self.rep)
 
 
 @dataclass
@@ -906,6 +915,9 @@ class BiomassGR:
     """
     Update green reproductive compartment.
     See Equations (2) and (6) in Jouven et al. (2006).
+
+    The age of the residual biomass is increased daily by the mean daily
+    temperature, if this temperature is positive
 
     Parameters
     ----------
@@ -928,12 +940,16 @@ class BiomassGR:
     temperature: float
 
     def __call__(self) -> float:
-        return (
-            self.gro_gr - self.sen_gr,
-            (self.bm_gr - self.sen_gr) /
-            (self.bm_gr - self.sen_gr + self.gro_gr) *
-            (self.age_gr + self.temperature) - self.age_gr
-        )
+        bm_gr = self.bm_gr + self.gro_gr - self.sen_gr
+        if self.temperature > 0.0 and self.bm_gr > 0.0:
+            age_gr = self.age_gr + (
+                (self.bm_gr - self.sen_gr) /
+                (self.bm_gr - self.sen_gr + self.gro_gr) *
+                (self.age_gr + self.temperature) - self.age_gr
+            )
+        else:
+            age_gr = self.age_gr
+        return bm_gr, age_gr
 
 
 @dataclass
@@ -943,8 +959,8 @@ class OrganicMatterDigestibilityGV:
     """
 
     age_gv: float
-    max_omd_gv: float = 0.9
     min_omd_gv: float = 0.75
+    max_omd_gv: float = 0.9
     lls: float = 500.0
 
     def __call__(self) -> float:
@@ -961,8 +977,8 @@ class OrganicMatterDigestibilityGR:
     """
 
     age_gr: float
-    max_omd_gr: float = 0.9
     min_omd_gr: float = 0.75
+    max_omd_gr: float = 0.9
     st_1: float = 600.0
     st_2: float = 1200.0
 
