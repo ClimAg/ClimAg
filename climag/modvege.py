@@ -134,32 +134,20 @@ def modvege(params, tseries, enddoy=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    # Initialise state parameters
-    # isCut = False
-    # This is an actionable flag modified by gcut_height presence
-    # is_harvested = False
-    # This is an actionable flag modified by grazing* presences
-    # is_grazed = False
-    # permanently stop reproduction after the first cut (isCut is True)
-    # p116, Jouven et al. (2006)
-    # a2rFlag = False
-    # biomass for compartments
-    gv_biomass = params["W_GV"]
-    gr_biomass = params["W_GR"]
-    dv_biomass = params["W_DV"]
-    dr_biomass = params["W_DR"]
-    # an==gro: biomass growth
-    # an = 0
-    # allocate to reproductive
-    a2r = 0
-    # senescent biomass for compartments
-    gv_senescent_biomass = 0
-    gr_senescent_biomass = 0
-    # average age of grass
-    gv_avg_age = params["init_AGE_GV"]
-    dv_avg_age = params["init_AGE_DV"]
-    gr_avg_age = params["init_AGE_GR"]
-    dr_avg_age = params["init_AGE_DR"]
+    # # senescent biomass for compartments
+    # gv_senescent_biomass = 0
+    # gr_senescent_biomass = 0
+
+    cut_height = params["cutHeight"]
+
+    is_harvested = bool(cut_height != 0)
+    is_grazed = bool(
+        params["livestock_units"] != 0 and params["grazing_area"] != 0
+    )
+
+    # nitrogen nutritional index (NI)
+    # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
+    params["NI"] = max(params["NI"], 0.35)
 
     # outputs
     outputs_dict = {
@@ -180,175 +168,84 @@ def modvege(params, tseries, enddoy=365):
         "temperature_fn": [],
         "env": [],
         "biomass_growth_pot": [],
-        "reproductive_fn": []
+        "reproductive_fn": [],
+        "leaf_area_index": [],
+        "actual_evapotranspiration": []
     }
 
     # daily loop
     for i in range(enddoy):
-        #######################################################
-        # load additional input arrays into variables
-        #######################################################
+        # initialise standing biomass and biomass age
+        if i == 0:
+            gv_biomass = params["W_GV"]
+            gr_biomass = params["W_GR"]
+            dv_biomass = params["W_DV"]
+            dr_biomass = params["W_DR"]
+            gv_avg_age = params["init_AGE_GV"]
+            gr_avg_age = params["init_AGE_GR"]
+            dv_avg_age = params["init_AGE_DV"]
+            dr_avg_age = params["init_AGE_DR"]
+        else:
+            gv_biomass = outputs_dict["biomass_gv"][i - 1]
+            gr_biomass = outputs_dict["biomass_gr"][i - 1]
+            dv_biomass = outputs_dict["biomass_dv"][i - 1]
+            dr_biomass = outputs_dict["biomass_dr"][i - 1]
+            gv_avg_age = outputs_dict["age_gv"][i - 1]
+            gr_avg_age = outputs_dict["age_gr"][i - 1]
+            dv_avg_age = outputs_dict["age_dv"][i - 1]
+            dr_avg_age = outputs_dict["age_dr"][i - 1]
+
+        # temperature (T)
         temperature = tseries["tas"][i]
-        # mean ten days temperature (Tm10)
-        temperature_mean_ten_days = lm.TenDayMovingAverageTemperature(
+
+        # 10-d moving average temperature (T_m10)
+        temperature_m10 = lm.TenDayMovingAverageTemperature(
             t_ts=tseries["tas"], doy=(i + 1)
         )()
-
-        pari = tseries["par"][i]
-        pmm = tseries["pr"][i]
-        pet = tseries["evspsblpot"][i]
-        cut_height = tseries["gcut_height"][i]
-        # use default cut height if time series value is zero
-        # see sec. "Harvested biomass" in Jouven et al. (2006)
-        if cut_height == 0:
-            cut_height = params["cutHeight"]
 
         # sum of temperatures (ST)
         temperature_sum = lm.SumOfTemperatures(
             t_ts=tseries["tas"], doy=(i + 1)
         )()
 
+        # temperature function (f(T))
+        temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()
+        outputs_dict["temperature_fn"].append(temperature_fn)
+
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(t_sum=temperature_sum)()
         outputs_dict["seasonality"].append(seasonality)
 
-        # temperature function (f(T))
-        temperature_fn = lm.TemperatureFunction(
-            t_10m=temperature_mean_ten_days
-        )()
-        outputs_dict["temperature_fn"].append(temperature_fn)
-
-        # grass cut flag modification if time series file has grass cut for
-        # that day
-        # is_harvested = bool(cut_height != 0.0)
-        # # grazing flag modification if time series file has BOTH animal
-        # # related values
-        # is_grazed = bool(
-        #     params["livestock_units"] != 0 and params["grazing_area"] != 0
-        # )
-        # reset the flag isCut
-        # isCut = bool(is_grazed is True or is_harvested is True)
-        # if is_grazed is False and is_harvested is False:
-        #     isCut = False
-        # else:
-        #     isCut = True
-
-        # nitrogen nutritional index (NI)
-        # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
-        params["NI"] = max(params["NI"], 0.35)
-
         # leaf area index (LAI)
         lai = lm.LeafAreaIndex(bm_gv=gv_biomass)()
+        outputs_dict["leaf_area_index"].append(lai)
+
+        # potential evapotranspiration (PET)
+        pet = tseries["evspsblpot"][i]
 
         # actual evapotranspiration (AET)
         eta = lm.ActualEvapotranspiration(pet=pet, lai=lai)()
+        outputs_dict["actual_evapotranspiration"].append(eta)
+
+        # precipitation (PP)
+        precipitation = tseries["pr"][i]
 
         # water reserves (WR)
         params["WR"] = lm.WaterReserves(
-            precipitation=pmm, wreserves=params["WR"],
+            precipitation=precipitation, wreserves=params["WR"],
             aet=eta, whc=params["WHC"]
         )()
 
-        # water stress function (f(W))
+        # water stress (W)
         waterstress = lm.WaterStress(
             wreserves=params["WR"], whc=params["WHC"]
         )()
 
+        # water stress function (f(W))
         waterstress_fn = lm.WaterStressFunction(wstress=waterstress, pet=pet)()
 
-        # compute grazing and harvesting
-        harvested_biomass_part = 0
-        ingested_biomass_part = 0
-
-        # are we in vegetative growth period?
-        if params["ST2"] > temperature_sum > params["ST1"]:
-            is_harvested = bool(cut_height != 0)
-            is_grazed = bool(
-                params["livestock_units"] != 0 and params["grazing_area"] != 0
-            )
-
-            # look for flags to indicate mechanical cut
-            if is_harvested:
-                harvested_biomass_part = [0, 0, 0, 0]
-                harvested_biomass_part[0], gv_biomass = lm.harvest_biomass(
-                    cutHeight=cut_height, bulkDensity=params["rho_GV"],
-                    biomass=gv_biomass
-                )
-                harvested_biomass_part[1], dv_biomass = lm.harvest_biomass(
-                    cutHeight=cut_height, bulkDensity=params["rho_DV"],
-                    biomass=dv_biomass
-                )
-                harvested_biomass_part[2], gr_biomass = lm.harvest_biomass(
-                    cutHeight=cut_height, bulkDensity=params["rho_GR"],
-                    biomass=gr_biomass
-                )
-                harvested_biomass_part[3], dr_biomass = lm.harvest_biomass(
-                    cutHeight=cut_height, bulkDensity=params["rho_DR"],
-                    biomass=dr_biomass
-                )
-                harvested_biomass_part = sum(harvested_biomass_part)
-                # (
-                #     harvested_biomass_part,
-                #     gv_biomass, dv_biomass, gr_biomass, dr_biomass
-                # ) = (
-                #     lm.cut(
-                #         cutHeight=cut_height, rhogv=params["rho_GV"],
-                #         rhodv=params["rho_DV"], rhogr=params["rho_GR"],
-                #         rhodr=params["rho_DR"], gvb=gv_biomass,
-                #         dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass
-                #     )
-                # )
-
-            # look for flags to indicate livestock ingestion
-            if is_grazed:
-                # ingested_biomass_part = lm.defoliation(
-                #     gv_biomass=gv_biomass, dv_biomass=dv_biomass,
-                #     gr_biomass=gr_biomass, dr_biomass=dr_biomass,
-                #     cutHeight=cut_height, rhogv=params["rho_GV"],
-                #     rhodv=params["rho_DV"], rhogr=params["rho_GR"],
-                #     rhodr=params["rho_DR"]
-                # )  # ** MODIFIED -- NEED TO CHECK!
-                # ingested biomass based on stocking rate
-                # for bd in ["rho_GV", "rho_GR", "rho_DV", "rho_DR"]:
-                #     ingested_biomass_part += lm.ingested_biomass(
-                #         livestock_units=params["livestock_units"],
-                #         grazing_area=params["grazing_area"],
-                #         bulk_density=params[bd]
-                #     )
-                # ingested_biomass_part = [0, 0, 0, 0]
-                ingested_biomass_part = lm.ingested_biomass(
-                    livestock_units=params["livestock_units"],
-                    grazing_area=params["grazing_area"],
-                    bulk_density=params["rho_GV"],
-                    min_cut_height=params["cutHeight"]
-                )
-                # ingested_biomass_part = sum(ingested_biomass_part)
-            # allocation to reproductive
-            a2r = lm.ReproductiveFunction(n_index=params["NI"])()
-            # TO-DO: when to change NI, and by how much?
-            # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
-            # 0.4       0.30769
-            # 0.5       0.42307
-            # 0.6       0.53846
-            # 0.7       0.65384
-            # 0.8       0.76923
-            # 0.9       0.88461
-            # 1.0       1
-            # 1.1       1.11538
-            # 1.2       1.23076
-        else:
-            # if (temperature_sum < st1 or st2 < temperature_sum)
-            a2r = 0
-            is_harvested = False
-            is_grazed = False
-
-        # isCut = bool(is_grazed is True or is_harvested is True)
-
-        if bool(is_grazed is True or is_harvested is True):
-            # permanently stop reproduction
-            a2r = 0
-
-        outputs_dict["reproductive_fn"].append(a2r)
+        # incident photosynthetically active radiation (PAR_i)
+        pari = tseries["par"][i]
 
         # environmental limitation of growth (ENV)
         env = lm.EnvironmentalLimitation(
@@ -368,36 +265,195 @@ def modvege(params, tseries, enddoy=365):
             pgro=biomass_growth_pot, env=env, sea=seasonality
         )()
 
-        # update the state of the vegetative parts
-        gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
-            gro=gro, a2r=a2r, temperature=temperature,
-            t0=params["T0"], gv_biomass=gv_biomass,
-            gv_avg_age=gv_avg_age
-        )
-        dv_biomass, dv_avg_age = lm.dv_update(
-            gv_gamma=params["sigmaGV"],
-            gv_senescent_biomass=gv_senescent_biomass, temperature=temperature,
-            dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
-        )
+        # reproductive function (REP)
+        # grazing always takes place during the grazing season if the
+        # stocking rate is > 0
+        # if params["ST2"] > temperature_sum > params["ST1"] and is_grazed:
+        #     rep_f = 0
+        # else:
+        #     rep_f = lm.ReproductiveFunction(n_index=params["NI"])()
+        rep_f = lm.ReproductiveFunction(
+            n_index=params["NI"], t_sum=temperature_sum
+        )()
+        outputs_dict["reproductive_fn"].append(rep_f)
 
-        # start the reproductive phase of the vegetation
-        gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
-            temperature=temperature, a2r=a2r, gro=gro, t0=params["T0"],
-            gr_biomass=gr_biomass, gr_avg_age=gr_avg_age
-        )  # ** UNUSED ARGUMENTS REMOVED!
-        dr_biomass, dr_avg_age = lm.dr_update(
-            gr_gamma=params["sigmaGR"],
-            gr_senescent_biomass=gr_senescent_biomass, temperature=temperature,
-            dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
-        )
+        # senescence (SEN) and abscission (ABS)
+        gv_senescent_biomass = lm.SenescenceGV(
+            temperature=temperature, age_gv=gv_avg_age, bm_gv=gv_biomass
+        )()
+        gr_senescent_biomass = lm.SenescenceGR(
+            temperature=temperature, age_gr=gr_avg_age, bm_gr=gr_biomass
+        )()
+        dv_abscission_biomass = lm.AbscissionDV(
+            temperature=temperature, bm_dv=dv_biomass, age_dv=dv_avg_age
+        )()
+        dr_abscission_biomass = lm.AbscissionDR(
+            temperature=temperature, bm_dr=dr_biomass, age_dr=dr_avg_age
+        )()
 
-        # compute available biomass for cut (output comparison requirement)
-        biomass_cut_avail = lm.getAvailableBiomassForCut(
-            gv_biomass=gv_biomass, dv_biomass=dv_biomass,
-            gr_biomass=gr_biomass, dr_biomass=dr_biomass, cutHeight=cut_height,
-            rhogv=params["rho_GV"], rhodv=params["rho_DV"],
-            rhogr=params["rho_GR"], rhodr=params["rho_DR"]
-        )
+        # standing biomass (BM) and biomass age (AGE)
+        gv_biomass, gv_avg_age = lm.BiomassGV(
+            gro_gv=lm.GrowthGV(gro=gro, rep=rep_f)(),
+            sen_gv=gv_senescent_biomass,
+            bm_gv=gv_biomass,
+            age_gv=gv_avg_age,
+            temperature=temperature
+        )()
+
+        gr_biomass, gr_avg_age = lm.BiomassGR(
+            gro_gr=lm.GrowthGR(gro=gro, rep=rep_f)(),
+            sen_gr=gr_senescent_biomass,
+            bm_gr=gr_biomass,
+            age_gr=gr_avg_age,
+            temperature=temperature
+        )()
+
+        dv_biomass, dv_avg_age = lm.BiomassDV(
+            bm_dv=dv_biomass,
+            abs_dv=dv_abscission_biomass,
+            sen_gv=gv_senescent_biomass,
+            age_dv=dv_avg_age,
+            temperature=temperature
+        )()
+
+        dr_biomass, dr_avg_age = lm.BiomassDR(
+            bm_dr=dr_biomass,
+            abs_dr=dr_abscission_biomass,
+            sen_gr=gr_senescent_biomass,
+            age_dr=dr_avg_age,
+            temperature=temperature
+        )()
+
+        # compute grazing and harvesting
+        harvested_biomass_part = 0
+        ingested_biomass_part = 0
+
+        # is_harvested = bool(cut_height != 0)
+        # is_grazed = bool(
+        #     params["livestock_units"] != 0 and params["grazing_area"] != 0
+        # )
+
+        #     # look for flags to indicate mechanical cut
+        #     if is_harvested:
+        #         harvested_biomass_part = [0, 0, 0, 0]
+        #         harvested_biomass_part[0], gv_biomass = lm.harvest_biomass(
+        #             cutHeight=cut_height, bulkDensity=params["rho_GV"],
+        #             biomass=gv_biomass
+        #         )
+        #         harvested_biomass_part[1], dv_biomass = lm.harvest_biomass(
+        #             cutHeight=cut_height, bulkDensity=params["rho_DV"],
+        #             biomass=dv_biomass
+        #         )
+        #         harvested_biomass_part[2], gr_biomass = lm.harvest_biomass(
+        #             cutHeight=cut_height, bulkDensity=params["rho_GR"],
+        #             biomass=gr_biomass
+        #         )
+        #         harvested_biomass_part[3], dr_biomass = lm.harvest_biomass(
+        #             cutHeight=cut_height, bulkDensity=params["rho_DR"],
+        #             biomass=dr_biomass
+        #         )
+        #         harvested_biomass_part = sum(harvested_biomass_part)
+        #         # (
+        #         #     harvested_biomass_part,
+        #         #     gv_biomass, dv_biomass, gr_biomass, dr_biomass
+        #         # ) = (
+        #         #     lm.cut(
+        #         #         cutHeight=cut_height, rhogv=params["rho_GV"],
+        #         #         rhodv=params["rho_DV"], rhogr=params["rho_GR"],
+        #         #         rhodr=params["rho_DR"], gvb=gv_biomass,
+        #         #         dvb=dv_biomass, grb=gr_biomass, drb=dr_biomass
+        #         #     )
+        #         # )
+
+        #     # look for flags to indicate livestock ingestion
+        #     if is_grazed:
+        #         # ingested_biomass_part = lm.defoliation(
+        #         #     gv_biomass=gv_biomass, dv_biomass=dv_biomass,
+        #         #     gr_biomass=gr_biomass, dr_biomass=dr_biomass,
+        #         #     cutHeight=cut_height, rhogv=params["rho_GV"],
+        #         #     rhodv=params["rho_DV"], rhogr=params["rho_GR"],
+        #         #     rhodr=params["rho_DR"]
+        #         # )  # ** MODIFIED -- NEED TO CHECK!
+        #         # ingested biomass based on stocking rate
+        #         # for bd in ["rho_GV", "rho_GR", "rho_DV", "rho_DR"]:
+        #         #     ingested_biomass_part += lm.ingested_biomass(
+        #         #         livestock_units=params["livestock_units"],
+        #         #         grazing_area=params["grazing_area"],
+        #         #         bulk_density=params[bd]
+        #         #     )
+        #         # ingested_biomass_part = [0, 0, 0, 0]
+        #         ingested_biomass_part = lm.ingested_biomass(
+        #             livestock_units=params["livestock_units"],
+        #             grazing_area=params["grazing_area"],
+        #             bulk_density=params["rho_GV"],
+        #             min_cut_height=params["cutHeight"]
+        #         )
+        #         # ingested_biomass_part = sum(ingested_biomass_part)
+        #     # allocation to reproductive
+        #     a2r = lm.ReproductiveFunction(n_index=params["NI"])()
+        #     # TO-DO: when to change NI, and by how much?
+        #     # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+        #     # 0.4       0.30769
+        #     # 0.5       0.42307
+        #     # 0.6       0.53846
+        #     # 0.7       0.65384
+        #     # 0.8       0.76923
+        #     # 0.9       0.88461
+        #     # 1.0       1
+        #     # 1.1       1.11538
+        #     # 1.2       1.23076
+        # else:
+        #     # if (temperature_sum < st1 or st2 < temperature_sum)
+        #     a2r = 0
+        #     is_harvested = False
+        #     is_grazed = False
+
+        # # isCut = bool(is_grazed is True or is_harvested is True)
+
+        # if bool(is_grazed is True or is_harvested is True):
+        #     # permanently stop reproduction
+        #     a2r = 0
+
+        # gro_gr = lm.GrowthGR(gro=gro, rep=rep_f)
+        # gv_biomass, gv_avg_age = lm.BiomassGV(
+        #     gro_gv=lm.GrowthGV(gro=gro, rep=rep_f),
+        #     sen_gv=lm.SenescenceGV(temperature, age_gv, bm_gv), bm_gv,
+        #     age_gv, temperature
+        # )
+
+        # # update the state of the vegetative parts
+        # gv_biomass, gv_avg_age, gv_senescent_biomass = lm.gv_update(
+        #     gro=gro, a2r=rep_f, temperature=temperature,
+        #     t0=params["T0"], gv_biomass=gv_biomass,
+        #     gv_avg_age=gv_avg_age
+        # )
+        # dv_biomass, dv_avg_age = lm.dv_update(
+        #     gv_gamma=params["sigmaGV"],
+        #     gv_senescent_biomass=gv_senescent_biomass,
+        #     temperature=temperature,
+        #     dv_biomass=dv_biomass, dv_avg_age=dv_avg_age
+        # )
+
+        # # start the reproductive phase of the vegetation
+        # gr_biomass, gr_avg_age, gr_senescent_biomass = lm.gr_update(
+        #     temperature=temperature, a2r=a2r, gro=gro, t0=params["T0"],
+        #     gr_biomass=gr_biomass, gr_avg_age=gr_avg_age
+        # )  # ** UNUSED ARGUMENTS REMOVED!
+        # dr_biomass, dr_avg_age = lm.dr_update(
+        #     gr_gamma=params["sigmaGR"],
+        #     gr_senescent_biomass=gr_senescent_biomass,
+        #     temperature=temperature,
+        #     dr_biomass=dr_biomass, dr_avg_age=dr_avg_age
+        # )
+
+        # # compute available biomass for cut (output comparison requirement)
+        # biomass_cut_avail = lm.getAvailableBiomassForCut(
+        #     gv_biomass=gv_biomass, dv_biomass=dv_biomass,
+        #     gr_biomass=gr_biomass, dr_biomass=dr_biomass,
+        #     cutHeight=cut_height,
+        #     rhogv=params["rho_GV"], rhodv=params["rho_DV"],
+        #     rhogr=params["rho_GR"], rhodr=params["rho_DR"]
+        # )
 
         # # accumulate harvestedBiomass
         # if is_harvested:
@@ -406,6 +462,8 @@ def modvege(params, tseries, enddoy=365):
         # # Accumulate ingestedBiomass
         # if is_grazed:
         #     ingestedBiomass += ingested_biomass_part
+
+        biomass_cut_avail = 0
 
         # Recover output streams
         outputs_dict["biomass_gv"].append(gv_biomass)
@@ -431,5 +489,7 @@ def modvege(params, tseries, enddoy=365):
         outputs_dict["age_dv"], outputs_dict["age_gr"], outputs_dict["age_dr"],
         outputs_dict["seasonality"], outputs_dict["temperature_fn"],
         outputs_dict["env"], outputs_dict["biomass_growth_pot"],
-        outputs_dict["reproductive_fn"]
+        outputs_dict["reproductive_fn"],
+        outputs_dict["leaf_area_index"],
+        outputs_dict["actual_evapotranspiration"]
     )
