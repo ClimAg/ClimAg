@@ -129,7 +129,7 @@ class PotentialGrowth:
 @dataclass
 class PARFunction:
     """
-    Incident photosynthetically active radiation (PARi) function (fPARi)
+    Incident photosynthetically active radiation (PAR_i) function (f(PAR_i))
     needed to calculate the environmental limitation of growth (ENV).
 
     The definition has been derived from Schapendonk et al. (1998).
@@ -145,7 +145,7 @@ class PARFunction:
 
     Returns
     -------
-    - PARi function [dimensionless]
+    - PAR_i function [dimensionless]
     """
 
     par_i: float
@@ -472,6 +472,7 @@ class ReproductiveFunction:
     """
     Reproductive function (REP).
     REP is zero when there is a cut due to grazing or harvesting.
+    REP is also zero before and after the period of reproductive growth.
 
     See Equation (15) in Jouven et al. (2006)
 
@@ -485,9 +486,16 @@ class ReproductiveFunction:
     """
 
     n_index: float
+    t_sum: float
+    st_1: float = 600.0
+    st_2: float = 1200.0
 
     def __call__(self) -> float:
-        return 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
+        if self.st_1 <= self.t_sum <= self.st_2:
+            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
+        else:
+            val = 0
+        return val
 
 
 @dataclass
@@ -847,7 +855,7 @@ class GrowthGV:
     rep: float
 
     def __call__(self) -> float:
-        return max(0.0, self.gro * (1.0 - self.rep))
+        return self.gro * (1.0 - self.rep)
 
 
 @dataclass
@@ -907,7 +915,7 @@ class GrowthGR:
     rep: float
 
     def __call__(self) -> float:
-        return max(0.0, self.gro * self.rep)
+        return self.gro * self.rep
 
 
 @dataclass
@@ -1107,10 +1115,6 @@ def dv_update(
     abscissionBiomass = AbscissionDV(
         temperature=temperature, age_dv=dv_avg_age, bm_dv=dv_biomass
     )()
-    # abscissionBiomass = mk_dv_abscission(
-    #     kldv=kldv, dv_biomass=dv_biomass, temperature=temperature,
-    #     dv_avg_age=dv_avg_age, lls=lls
-    # )
     dv_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion, and abscission, not
     # growth
@@ -1155,10 +1159,6 @@ def dr_update(
     abscissionBiomass = AbscissionDR(
         bm_dr=dr_biomass, temperature=temperature, age_dr=dr_avg_age
     )()
-    # abscissionBiomass = mk_dr_abscission(
-    #     kldr=kldr, dr_biomass=dr_biomass, temperature=temperature,
-    #     dr_avg_age=dr_avg_age, st1=st1, st2=st2
-    # )
     dr_biomass -= abscissionBiomass
     # at this point the biomass include cut, ingestion and abscission, not
     # growth
@@ -1200,10 +1200,6 @@ def gv_update(gro, a2r, temperature, t0, gv_biomass, gv_avg_age):
     senescentBiomass = SenescenceGV(
         bm_gv=gv_biomass, temperature=temperature, age_gv=gv_avg_age
     )()
-    # senescentBiomass = mk_gv_senescence(
-    #     kgv=kgv, gv_biomass=gv_biomass, temperature=temperature, t0=t0,
-    #     lls=lls, gv_avg_age=gv_avg_age
-    # )
     gv_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
     # growth
@@ -1251,10 +1247,6 @@ def gr_update(temperature, a2r, gro, t0, gr_biomass, gr_avg_age):
     senescentBiomass = SenescenceGR(
         bm_gr=gr_biomass, age_gr=gr_avg_age, temperature=temperature
     )()
-    # senescentBiomass = mk_gr_senescence(
-    #     kgr=kgr, gr_biomass=gr_biomass, temperature=temperature, t0=t0,
-    #     gr_avg_age=gr_avg_age, st1=st1, st2=st2
-    # )  # ** UNUSED ARGUMENT REMOVED!
     gr_biomass -= senescentBiomass
     # at this point the biomass include cut, ingestion and senescence, not
     # growth

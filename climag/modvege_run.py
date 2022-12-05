@@ -42,7 +42,9 @@ output_vars = {
     "ftm": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
     "pgr": ["Potential growth", "kg DM ha⁻¹"],
-    "atr": ["Reproductive function", "dimensionless"]
+    "atr": ["Reproductive function", "dimensionless"],
+    "lai": ["Leaf area index", "dimensionless"],
+    "aet": ["Actual evapotranspiration", "mm"]
 }
 
 
@@ -78,7 +80,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
         plot_title.append(val)
 
     data_df.plot(
-        subplots=True, layout=(6, 3), figsize=(15, 14),
+        subplots=True, layout=(7, 3), figsize=(15, 14),
         xlabel="Day of the year", title=plot_title, legend=False
     )
 
