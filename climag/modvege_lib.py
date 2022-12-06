@@ -170,11 +170,12 @@ class SumOfTemperatures:
     ----------
     t_ts : Temperature field of the input time series data
     day : Day of the year
-    t_0 : Minimum temperature for growth; default is 4 [°C]
+    t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
 
     Returns
     -------
-    - Sum of temperatures above t0 corresponding to each day of the year [°C d]
+    - Sum of temperatures above *T*₀ corresponding to each day of the year
+        [°C d]
 
     Notes
     -----
@@ -255,7 +256,7 @@ class TemperatureFunction:
     Parameters
     ----------
     t_m10 : 10-d moving average temperature [°C]
-    t_0 : Minimum temperature for growth; default is 4 [°C]
+    t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
     t_1 : Minimum temperature for optimal growth; default is 10 [°C]
     t_2 : Maximum temperature for optimal growth; default is 20 [°C]
     t_max : Maximum temperature for growth; default is 40 [°C]
@@ -297,6 +298,13 @@ class SeasonalEffect:
 
     SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
     SEA < 1 indicates growth limitation by storage of reserves
+
+    SEA = minSEA when ST < 200°C d.
+    "T-sum 200 date" had its origins in the Netherlands and reflects the
+    amount of heat absorbed and hence the amount of energy available to
+    promote grass growth, and is used by farmers as an indication of
+    conditions suitable for nitrogen application to grass swards
+    (Collins and Cummins, 1998).
 
     See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
     more info
@@ -652,7 +660,7 @@ class SenescenceGV:
     Senescent biomass for GV compartment.
     See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
 
-    No senescence occurs when *T* is between zero and T_0.
+    No senescence occurs when *T* is between zero and *T*₀.
     When T drops below zero, senescence is driven by freezing effects and is
     proportional to |*T*|.
 
@@ -1124,7 +1132,7 @@ class HarvestedBiomass:
         else:
             harvested_biomass = 0
             residual_biomass = self.standing_biomass
-        return (harvested_biomass, residual_biomass)
+        return harvested_biomass, residual_biomass
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):

@@ -214,9 +214,7 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=temperature_sum,
-            st_1=params["ST1"], st_2=params["ST2"],
-            # min_sea=params["minSEA"], max_sea=params["maxSEA"]
+            t_sum=temperature_sum, st_1=params["ST1"], st_2=params["ST2"]
         )()
         outputs_dict["seasonality"].append(seasonality)
 
@@ -276,6 +274,7 @@ def modvege(params, tseries, endday=365):
         #     rep_f = 0
         # else:
         #     rep_f = lm.ReproductiveFunction(n_index=params["NI"])()
+
         rep_f = lm.ReproductiveFunction(
             n_index=params["NI"], t_sum=temperature_sum,
             st_1=params["ST1"], st_2=params["ST2"]
@@ -290,9 +289,6 @@ def modvege(params, tseries, endday=365):
             temperature=temperature, age_gr=gr_avg_age, bm_gr=gr_biomass,
             st_1=params["ST1"], st_2=params["ST2"]
         )()
-        # gr_senescent_biomass = lm.SenescenceGV(
-        #     temperature=temperature, age_gv=gr_avg_age, bm_gv=gr_biomass
-        # )()
         dv_abscission_biomass = lm.AbscissionDV(
             temperature=temperature, bm_dv=dv_biomass, age_dv=dv_avg_age
         )()
@@ -300,9 +296,6 @@ def modvege(params, tseries, endday=365):
             temperature=temperature, bm_dr=dr_biomass, age_dr=dr_avg_age,
             st_1=params["ST1"], st_2=params["ST2"]
         )()
-        # dr_abscission_biomass = lm.AbscissionDV(
-        #     temperature=temperature, bm_dv=dr_biomass, age_dv=dr_avg_age
-        # )()
 
         # standing biomass (BM) and biomass age (AGE)
         gv_biomass, gv_avg_age = lm.BiomassGV(
