@@ -124,7 +124,7 @@ def read_timeseries(filename):
 
     Definition of inputs
     --------------------
-    - doy        : Day of the year
+    - day        : Day of the year
     - tas        : Temperature (*T*) [°C]
     - par        : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
@@ -141,36 +141,11 @@ def read_timeseries(filename):
     Returns
     -------
     - A dataframe of the input time series data
-    - The end day of the year
+    - Number of days in the year
     """
 
-    # timeseries = np.genfromtxt(
-    #     filename, delimiter=",", skip_header=0, names=True
-    # )
     timeseries = pd.read_csv(filename)
-    timeseries.sort_values(by=["doy"], inplace=True)
+    timeseries.sort_values(by=["day"], inplace=True)
     timeseries.reset_index(inplace=True)
-    enddoy = timeseries["doy"].max()
-    return timeseries, enddoy
-
-
-# def read_out(filename):
-#     """Read the "out_cut.csv" file
-
-#     This is used only for development, to remove for operational mode
-
-#     Definition of columns
-#     ---------------------
-#     - Day
-#     - Mean biomass                      [kg DM ha⁻¹]
-#     - Mean green vegetative biomass     [kg DM ha⁻¹]
-#     - Mean green reproductive biomass   [kg DM ha⁻¹]
-#     - Mean dead vegetative biomass      [kg DM ha⁻¹]
-#     - Mean dead reproductive biomass    [kg DM ha⁻¹]
-#     - Harvested biomass                 [kg DM ha⁻¹]
-#     - Ingested biomass                  [kg DM ha⁻¹]
-#     - Mean GRO biomass                  [kg DM ha⁻¹]
-#     - Mean available biomass for cut    [kg DM ha⁻¹]
-#     """
-#     arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
-#     return arr
+    endday = timeseries["day"].max()
+    return timeseries, endday

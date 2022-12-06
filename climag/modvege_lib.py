@@ -164,17 +164,17 @@ class PARFunction:
 @dataclass
 class SumOfTemperatures:
     """
-    Return the sum of temperatures for the day of the year
+    Return the sum of temperatures for each day of the year
 
     Parameters
     ----------
     t_ts : Temperature field of the input time series data
-    doy : Day of the year
+    day : Day of the year
     t_0 : Minimum temperature for growth; default is 4 [°C]
 
     Returns
     -------
-    - Sum of temperatures above t0 corresponding to the DOY [°C d]
+    - Sum of temperatures above t0 corresponding to each day of the year [°C d]
 
     Notes
     -----
@@ -199,12 +199,12 @@ class SumOfTemperatures:
     """
 
     t_ts: list
-    doy: int
+    day: int
     t_0: float = 4.0
 
     def __call__(self) -> float:
         val = 0.0
-        for i in range(self.doy):
+        for i in range(self.day):
             if self.t_ts[i] > self.t_0:
                 val += self.t_ts[i] - self.t_0
         return val
@@ -221,7 +221,7 @@ class TenDayMovingAverageTemperature:
     Parameters
     ----------
     t_ts : Temperature field of the input time series data
-    doy : Day of the year
+    day : Day of the year
 
     Returns
     -------
@@ -229,15 +229,15 @@ class TenDayMovingAverageTemperature:
     """
 
     t_ts: list
-    doy: int
+    day: int
 
     def __call__(self) -> float:
-        if (self.doy - 1) < (10 - 1):
+        if (self.day - 1) < (10 - 1):
             # ** USING THE TEMP, NOT 10-d MOVING AVG!
-            val = self.t_ts[self.doy - 1]
+            val = self.t_ts[self.day - 1]
         else:
             val = np.mean([
-                self.t_ts[(self.doy - 1) - j] for j in range(10 - 1, 0 - 1, -1)
+                self.t_ts[(self.day - 1) - j] for j in range(10 - 1, 0 - 1, -1)
             ])
         return val
 
@@ -479,6 +479,9 @@ class ReproductiveFunction:
     Parameters
     ----------
     n_index : Nitrogen nutritional index (NI) [dimensionless]
+    t_sum : Sum of temperatures
+    st_1 : Sum of temperatures at the beginning of the reproductive period
+    st_2 : Sum of temperatures at the end of the reproductive period
 
     Returns
     -------
@@ -780,13 +783,13 @@ class BiomassDV:
     def __call__(self) -> float:
         bm_dv = self.bm_dv + (1.0 - self.sigma_gv) * self.sen_gv - self.abs_dv
         if self.temperature > 0.0 and self.bm_dv > 0.0:
-            age_dv = self.age_dv + (
+            age_dv = (
                 (self.bm_dv - self.abs_dv) /
                 (
                     self.bm_dv - self.abs_dv +
                     (1.0 - self.sigma_gv) * self.sen_gv
                 ) *
-                (self.age_dv + self.temperature) - self.age_dv
+                (self.age_dv + self.temperature)
             )
         else:
             age_dv = self.age_dv
@@ -827,13 +830,13 @@ class BiomassDR:
     def __call__(self) -> float:
         bm_dr = self.bm_dr + (1.0 - self.sigma_gr) * self.sen_gr - self.abs_dr
         if self.temperature > 0.0 and self.bm_dr > 0.0:
-            age_dr = self.age_dr + (
+            age_dr = (
                 (self.bm_dr - self.abs_dr) /
                 (
                     self.bm_dr - self.abs_dr +
                     (1.0 - self.sigma_gr) * self.sen_gr
                 ) *
-                (self.age_dr + self.temperature) - self.age_dr
+                (self.age_dr + self.temperature)
             )
         else:
             age_dr = self.age_dr
@@ -890,10 +893,10 @@ class BiomassGV:
     def __call__(self) -> float:
         bm_gv = self.bm_gv + self.gro_gv - self.sen_gv
         if self.temperature > 0.0 and self.bm_gv > 0.0:
-            age_gv = self.age_gv + (
+            age_gv = (
                 (self.bm_gv - self.sen_gv) /
                 (self.bm_gv - self.sen_gv + self.gro_gv) *
-                (self.age_gv + self.temperature) - self.age_gv
+                (self.age_gv + self.temperature)
             )
         else:
             age_gv = self.age_gv
@@ -950,10 +953,10 @@ class BiomassGR:
     def __call__(self) -> float:
         bm_gr = self.bm_gr + self.gro_gr - self.sen_gr
         if self.temperature > 0.0 and self.bm_gr > 0.0:
-            age_gr = self.age_gr + (
+            age_gr = (
                 (self.bm_gr - self.sen_gr) /
                 (self.bm_gr - self.sen_gr + self.gro_gr) *
-                (self.age_gr + self.temperature) - self.age_gr
+                (self.age_gr + self.temperature)
             )
         else:
             age_gr = self.age_gr
@@ -996,6 +999,132 @@ class OrganicMatterDigestibilityGR:
             (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
             (self.st_2 - self.st_1)
         )
+
+
+@dataclass
+class StockingRate:
+    """
+    Calculate the stocking rate
+
+    Parameters
+    ----------
+    livestock_units : total number of livestock units [LU]
+    grazing_area : total grazing area (i.e. grassland available for grazing)
+        [ha]
+
+    Returns
+    -------
+    stocking rate [LU ha⁻¹]
+    """
+
+    livestock_units: float
+    grazing_area: float
+
+    def __call__(self) -> float:
+        try:
+            val = self.livestock_units / self.grazing_area
+        except ZeroDivisionError:
+            val = 0
+        return val
+
+
+@dataclass
+class IngestedBiomass:
+    # def ingested_biomass(
+    #     livestock_units, grazing_area, bulk_density, min_cut_height=0.05,
+    #     ingestion_per_livestock_unit=13
+    # ):
+    """
+    Return the amount of biomass ingested by the livestock units based on the
+    stocking rate.
+
+    Parameters
+    ----------
+    livestock_units : total number of livestock units [LU]
+    grazing_area : total grazing area (i.e. grassland available for grazing)
+        [ha]
+    ingestion_per_livestock_unit : average ingestion of grass by a livestock
+        unit (e.g. dairy cow); default is 13 based on Teagasc data
+        [kg DM LU⁻¹]
+    min_cut_height : minimum residual grass height to be maintained; default
+        is 0.05 [m]
+    bulk_density : bulk density of the biomass compartment [g DM m⁻³]
+
+    Returns
+    -------
+    - total grass ingestion by livestock per hectare [kg DM ha⁻¹]
+
+    Notes
+    -----
+    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
+        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
+        - average ingestion of supplements (meal, concentrate, silage) is
+          4.25 kg DM LU⁻¹
+    - Teagasc Dairy Manual:
+      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
+        - 8-13 kg DM grass per cow in the spring
+        - increase of 0.75-1.0 kg DM until peak intake is reached
+        - peak intake of 16-18 kg DM
+        - average intake is 13 kg DM ((8 + 18) / 2)
+    - one dairy cow is equivalent to one livestock unit; see
+      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
+    """
+
+    livestock_units: float
+    grazing_area: float
+    bulk_density: float
+    ingestion_per_lu: float = 13.0
+    cut_height: float = 0.05
+
+    def __call__(self) -> float:
+        total_ingestion = (
+            StockingRate(
+                livestock_units=self.livestock_units,
+                grazing_area=self.grazing_area
+            )() * self.ingestion_per_lu
+        )
+        # if the total ingestion exceeds the minimum cut height of
+        # 5 cm, reduce it
+        if total_ingestion > self.cut_height * self.bulk_density * 10:
+            total_ingestion = (
+                total_ingestion - self.cut_height * self.bulk_density * 10
+            )
+        return total_ingestion
+
+
+@dataclass
+class HarvestedBiomass:
+    """
+    Realise a cut so that the average height is under cutHeight.
+    This height is calculated by using the bulkDensity given in parameter.
+    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+    Assumption: during harvest, 10% of the harvestable biomass in each
+    structural component is lost.
+
+    Parameters
+    ----------
+    cutHeight : Average height after the cut [m]
+    bulkDensity : Bulk density [g DM m⁻³]
+    biomass : Biomass available [kg DM ha⁻¹]
+
+    Returns
+    -------
+    - Harvested biomass [kg DM ha⁻¹]
+    - Residual biomass [kg DM ha⁻¹]
+    """
+
+    bulk_density: float
+    standing_biomass: float
+    cut_height: float = 0.05
+
+    def __call__(self) -> float:
+        residual_biomass = self.cut_height * self.bulk_density * 10
+        if residual_biomass < self.standing_biomass:
+            harvested_biomass = (self.standing_biomass - residual_biomass) * .9
+        else:
+            harvested_biomass = 0
+            residual_biomass = self.standing_biomass
+        return (harvested_biomass, residual_biomass)
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):
@@ -1470,53 +1599,6 @@ def defoliation(
                 )
             )
     return sumBiomassIngested
-
-
-# def getOMDgv(gv_min_omd, gv_max_omd, gv_avg_age, lls):
-#     """
-#     Compute the green vegetative actual organic matter digestibility
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     gv_min_omd : The minimum green vegetative organic matter digestibility
-#     gv_max_omd : The maximum green vegetative organic matter digestibility
-#     gv_avg_age : The average age of the green vegetative
-#     lls : the leaf lifespan [°C d]
-
-#     Returns
-#     -------
-#     - the green vegetative organic matter digestibility
-#     """
-
-#     return max(
-#         gv_min_omd,
-#         gv_max_omd - gv_avg_age * (gv_max_omd - gv_min_omd) / lls
-#     )
-
-
-# def getOMDgr(gr_min_omd, gr_max_omd, gr_avg_age, st1, st2):
-#     """
-#     Compute the green reproductive actual organic matter digestibility
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     gr_min_omd : The minimum green reproductive organic matter digestibility
-#     gr_max_omd : The maximum green reproductive organic matter digestibility
-#     gr_avg_age : The average age of the green reproductive
-#     st1 : Sum of temperature to begin vegetative activity
-#     st2 : Sum of temperature to end vegetative activity
-
-#     Returns
-#     -------
-#     - Green vegetative organic matter digestibility
-#     """
-
-#     return max(
-#         gr_min_omd,
-#         gr_max_omd - gr_avg_age * (gr_max_omd - gr_min_omd) / (st2 - st1)
-#     )
 
 
 # TO-DO: This set of functions are either not used or not useful
