@@ -81,7 +81,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     data_df.plot(
         subplots=True, layout=(7, 3), figsize=(15, 14),
-        xlabel="Day of the year", title=plot_title, legend=False
+        xlabel="Day", title=plot_title, legend=False
     )
 
     plt.tight_layout()

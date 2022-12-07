@@ -225,9 +225,15 @@ def modvege(params, tseries, endday=365):
         )()
 
         # sum of temperatures (ST)
-        temperature_sum = lm.SumOfTemperatures(
-            t_ts=tseries["T"], day=(i + 1)
-        )()
+        if tseries["time"][i].dayofyear == 1:
+            temperature_sum = lm.SumOfTemperatures(
+                t_ts=tseries["T"], day=(i + 1), t_sum=0.0
+            )()
+        else:
+            temperature_sum = lm.SumOfTemperatures(
+                t_ts=tseries["T"], day=(i + 1),
+                t_sum=outputs_dict["temperature_sum"][i - 1]
+            )()
 
         # temperature function (f(T))
         temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()

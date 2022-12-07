@@ -164,13 +164,15 @@ class PARFunction:
 @dataclass
 class SumOfTemperatures:
     """
-    Return the sum of temperatures for each day of the year
+    Return the sum of temperatures for each day of the year above the minimum
+    temperature for growth
 
     Parameters
     ----------
     t_ts : Temperature field of the input time series data
     day : Day of the year
     t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
+    t_sum : Sum of temperatures value for the previous data row
 
     Returns
     -------
@@ -202,12 +204,12 @@ class SumOfTemperatures:
     t_ts: list
     day: int
     t_0: float = 4.0
+    t_sum: float
 
     def __call__(self) -> float:
-        val = 0.0
         for i in range(self.day):
             if self.t_ts[i] > self.t_0:
-                val += self.t_ts[i] - self.t_0
+                val = self.t_sum + self.t_ts[i] - self.t_0
         return val
 
 

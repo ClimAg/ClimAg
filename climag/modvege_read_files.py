@@ -141,11 +141,11 @@ def read_timeseries(filename):
     Returns
     -------
     - A dataframe of the input time series data
-    - Number of days in the year
+    - Length of the data (number of days)
     """
 
-    timeseries = pd.read_csv(filename)
-    timeseries.sort_values(by=["day"], inplace=True)
+    timeseries = pd.read_csv(filename, parse_dates=["time"])
+    timeseries.sort_values(by=["time"], inplace=True)
     timeseries.reset_index(inplace=True)
-    endday = timeseries["day"].max()
+    endday = len(timeseries)
     return timeseries, endday
