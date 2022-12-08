@@ -25,14 +25,16 @@ class OrganicMatterDigestibilityGV:
 
     Parameters
     ----------
-    age_gv : Age of the GV compartment
+    age_gv : Age of the GV compartment [°C d]
     min_omd_gv : Minimum OMD of the GV compartment; default is 0.75
+        [dimensionless]
     max_omd_gv : Maximum OMD of the GV compartment; default is 0.9
-    lls : Leaf lifespan; default is 500
+        [dimensionless]
+    lls : Leaf lifespan; default is 500 [°C d]
 
     Returns
     -------
-    - Organic matter digestibility of the GV compartment
+    - Organic matter digestibility of the GV compartment [dimensionless]
     """
 
     age_gv: float
@@ -62,17 +64,19 @@ class OrganicMatterDigestibilityGR:
 
     Parameters
     ----------
-    age_gr : Age of the GR compartment
+    age_gr : Age of the GR compartment [°C d]
     min_omd_gr : Minimum OMD of the GR compartment; default is 0.65
+        [dimensionless]
     max_omd_gr : Maximum OMD of the GR compartment; default is 0.9
+        [dimensionless]
     st_1 : Sum of temperatures at the beginning of the reproductive period;
-        default is 600
+        default is 600 [°C d]
     st_2 : Sum of temperatures at the end of the reproductive period; default
-        is 1200
+        is 1200 [°C d]
 
     Returns
     -------
-    - Organic matter digestibility of the GR compartment
+    - Organic matter digestibility of the GR compartment [dimensionless]
     """
 
     age_gr: float
@@ -130,45 +134,19 @@ class MaximumAvailableBiomass:
 
 
 @dataclass
-class IngestionProportion:
-    """
-    Proportion of each biomass compartment ingested by a livestock unit.
-
-    Assume that this is proportional to the organic matter digestibility, i.e.
-
-    - Digestibility varies among plant parts, with leaves usually being more
-      digestible than stems
-    - The differing digestibility of plant parts may explain why they are
-      grazed selectively
-
-    Parameters
-    ----------
-    omd_gv : OMD of GV
-    omd_gr : OMD of GR
-    omd_dv : OMD of DV; default is 0.45
-    omd_dr : OMD of DR; default is 0.40
-    """
-
-    omd_gv: float
-    omd_gr: float
-    omd_dv: float = 0.45
-    omd_gr: float = 0.40
-
-
-@dataclass
 class StockingRate:
     """
     Calculate the stocking rate
 
     Parameters
     ----------
-    livestock_units : total number of livestock units [LU]
-    grazing_area : total grazing area (i.e. grassland available for grazing)
+    livestock_units : Total number of livestock units [LU]
+    grazing_area : Total grazing area (i.e. grassland available for grazing)
         [ha]
 
     Returns
     -------
-    - stocking rate [LU ha⁻¹]
+    - Stocking rate [LU ha⁻¹]
     """
 
     livestock_units: float
@@ -183,7 +161,86 @@ class StockingRate:
 
 
 @dataclass
-class IngestedBiomass:
+class MaximumIngestedBiomass:
+    """
+    The maximum amount of biomass that can be ingested by all livestock units
+
+    Ingestion takes precedence over harvesting
+
+    Parameters
+    ----------
+    stocking_rate : Stocking rate [LU ha⁻¹]
+    max_ingestion_per_lu : Maximum amount of grass that can be ingested by a
+        livestock unit; using the average ingestion of grass by a livestock
+        unit (e.g. dairy cow); default is 13 based on Teagasc data
+        [kg DM LU⁻¹]
+
+    Returns
+    -------
+    - Maximum amount of biomass that can be ingested in total by all livestock
+      units
+    """
+
+    stocking_rate: float
+    max_ingestion_per_lu: float = 13.0
+
+    def __call__(self) -> float:
+        return self.stocking_rate * self.max_ingestion_per_lu
+
+
+@dataclass
+class IngestionProportion:
+    """
+    Proportion of each biomass compartment ingested by a livestock unit.
+
+    This is weighted according to the organic matter digestibility.
+
+    - Digestibility varies among plant parts, with leaves usually being more
+      digestible than stems
+    - The differing digestibility of plant parts may explain why they are
+      grazed selectively
+
+    Parameters
+    ----------
+    omd_gv : OMD of GV [dimensionless]
+    omd_gr : OMD of GR [dimensionless]
+    omd_dv : OMD of DV; default is 0.45 [dimensionless]
+    omd_dr : OMD of DR; default is 0.40 [dimensionless]
+    """
+
+    omd_gv: float
+    omd_gr: float
+    omd_dv: float = 0.45
+    omd_gr: float = 0.40
+
+
+@dataclass
+class MaximumCompartmentalIngestion:
+    """
+    Biomass ingestion per structural compartment based on organic matter
+    digestibility.
+
+    Parameters
+    ----------
+    max_ingested_biomass : Maximum amount of biomass that can be ingested by
+        all livestock units
+    omd : Organic matter digestibility of the compartment [dimensionless]
+
+    Returns
+    -------
+    - Maximum amount of compartmental biomass that can be ingested by the
+      livestock units
+    """
+
+    max_ingested_biomass: float
+    omd: float
+
+    def __call__(self) -> float:
+        return self.max_ingested_biomass * self.omd
+
+
+@dataclass
+class IngestedBiomassOld:
     """
     Return the amount of biomass ingested by the livestock units based on the
     stocking rate.
@@ -196,10 +253,6 @@ class IngestedBiomass:
     grazing_area : total grazing area (i.e. grassland available for grazing)
         [ha]
     ingestion_per_livestock_unit : average ingestion of grass by a livestock
-        unit (e.g. dairy cow); default is 13 based on Teagasc data
-        [kg DM LU⁻¹]
-    max_ingestion_per_lu : Maximum amount of grass that can be ingested by a
-        livestock unit; using the average ingestion of grass by a livestock
         unit (e.g. dairy cow); default is 13 based on Teagasc data
         [kg DM LU⁻¹]
     min_cut_height : minimum residual grass height to be maintained; default

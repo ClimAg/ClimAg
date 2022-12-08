@@ -42,8 +42,8 @@ class LeafAreaIndex:
     Parameters
     ----------
     pct_lam : Percentage of laminae in the green vegetative (GV) biomass
-        compartment (%LAM); default is 0.68 [dimensionless]
-    sla : Specific leaf area (SLA); default is 0.033 [m² g⁻¹]
+        compartment; default is 0.68 (%LAM) [dimensionless]
+    sla : Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
     bm_gv : Standing biomass of the green vegetative (GV) compartment (BM_GV)
         [kg DM ha⁻¹]
 
@@ -106,7 +106,7 @@ class PotentialGrowth:
 
     Parameters
     ----------
-    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     rue_max : Maximum radiation use efficiency (RUE_max); default is 3
         [g DM MJ⁻¹]
     lai : Leaf area index (LAI) [dimensionless]
@@ -129,8 +129,9 @@ class PotentialGrowth:
 @dataclass
 class PARFunction:
     """
-    Incident photosynthetically active radiation (PAR_i) function (f(PAR_i))
-    needed to calculate the environmental limitation of growth (ENV).
+    Incident photosynthetically active radiation (PAR_*i*) function
+    (*f*(PAR_*i*)) needed to calculate the environmental limitation of growth
+    (ENV).
 
     The definition has been derived from Schapendonk et al. (1998).
     This function accounts for the decrease in radiation use efficiency (RUE)
@@ -141,11 +142,11 @@ class PARFunction:
 
     Parameters
     ----------
-    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
 
     Returns
     -------
-    - PAR_i function [dimensionless]
+    - PAR_i function (*f*(PAR_*i*)) [dimensionless]
     """
 
     par_i: float
@@ -165,19 +166,20 @@ class PARFunction:
 class SumOfTemperatures:
     """
     Return the sum of temperatures for each day of the year above the minimum
-    temperature for growth
+    temperature for growth (ST)
 
     Parameters
     ----------
-    t_ts : Temperature field of the input time series data
-    day : Day of the year
+    t_ts : Temperature (*T*) field of the input time series data (temperature
+        should be in °C)
+    day : Day number
     t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
-    t_sum : Sum of temperatures value for the previous data row
+    t_sum : Sum of temperatures value for the previous data row (ST) [°C d]
 
     Returns
     -------
     - Sum of temperatures above *T*₀ corresponding to each day of the year
-        [°C d]
+        (ST) [°C d]
 
     Notes
     -----
@@ -223,12 +225,13 @@ class TenDayMovingAverageTemperature:
 
     Parameters
     ----------
-    t_ts : Temperature field of the input time series data
-    day : Day of the year
+    t_ts : Temperature (*T*) field of the input time series data (temperature
+        should be in °C)
+    day : Day number
 
     Returns
     -------
-    - 10-d moving average temperature
+    - 10-d moving average temperature [°C]
     """
 
     t_ts: list
@@ -406,7 +409,7 @@ class WaterStress:
 
     Returns
     -------
-    - Water stress (*W*)
+    - Water stress (*W*) [dimensionless]
     """
 
     wreserves: float
@@ -427,7 +430,7 @@ class WaterStressFunction:
 
     Parameters
     ----------
-    wstress : Water stress (*W*)
+    wstress : Water stress (*W*) [dimensionless]
     pet : Potential evapotranspiration (PET) [mm]
 
     Returns
@@ -489,9 +492,10 @@ class ReproductiveFunction:
     Parameters
     ----------
     n_index : Nitrogen nutritional index (NI) [dimensionless]
-    t_sum : Sum of temperatures
+    t_sum : Sum of temperatures [°C d]
     st_1 : Sum of temperatures at the beginning of the reproductive period
-    st_2 : Sum of temperatures at the end of the reproductive period
+        [°C d]
+    st_2 : Sum of temperatures at the end of the reproductive period [°C d]
 
     Returns
     -------
@@ -521,7 +525,7 @@ class EnvironmentalLimitation:
     Parameters
     ----------
     t_fn : temperature function (*f*(*T*)) [dimensionless]
-    n_index : Nutritional index of pixel (NI)
+    n_index : Nutritional index of pixel (NI) [dimensionless]
     par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
     w_fn : Water stress function (*f*(*W*)) [dimensionless]
 
@@ -579,8 +583,8 @@ class AbscissionDV:
     Parameters
     ----------
     lls : Leaf lifespan (LLS) [500 °C d]
-    kl_dv : Basic abscission rate for the dead vegetative compartment
-        (Kl_DV) [0.001]
+    kl_dv : Basic abscission rate for the dead vegetative compartment; default
+        is 0.001 (Kl_DV) [dimensionless]
     temperature : Mean daily temperature (T) [°C]
     bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
     age_dv : Average DV age (AGE_DV) [°C d]
@@ -620,15 +624,15 @@ class AbscissionDR:
 
     Parameters
     ----------
-    kl_dr : Basic abscission rate for the dead reproductive compartment
-        (Kl_DR) [0.0005]
+    kl_dr : Basic abscission rate for the dead reproductive compartment;
+        default is 0.0005 (Kl_DR) [dimensionless]
     bm_dr : DR biomass (BM_DR) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
     age_dr : Average DR age (AGE_DR) [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁) [600 °C d]
-    st_2 : Sum of temperatures at the end of the reproductive period
-        (ST₂) [1200 °C d]
+    st_1 : Sum of temperatures at the beginning of the reproductive period;
+        default is 600 (ST₁) [°C d]
+    st_2 : Sum of temperatures at the end of the reproductive period; default
+        is 1200 (ST₂) [°C d]
 
     Returns
     -------
@@ -668,12 +672,12 @@ class SenescenceGV:
 
     Parameters
     ----------
-    k_gv : Basic senescence rate for the green vegetative compartment
-        (K_GV) [0.002]
+    k_gv : Basic senescence rate for the green vegetative compartment; default
+        is 0.002 (K_GV) [dimensionless]
     bm_gv : GV biomass (BM_GV) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
-    t_0 : Minimum temperature for growth (*T*₀) [4 °C]
-    lls : Leaf lifespan (LLS) [500 °C d]
+    t_0 : Minimum temperature for growth; default is 4 (*T*₀) [°C]
+    lls : Leaf lifespan; default is 500 (LLS) [°C d]
     age_gv : Average GV age (AGE_GV) [°C d]
 
     Returns
@@ -714,20 +718,20 @@ class SenescenceGR:
 
     Parameters
     ----------
-    k_gr : Basic senescence rate for the green reproductive compartment
-        (K_GR) [0.001]
+    k_gr : Basic senescence rate for the green reproductive compartment;
+        default is 0.001 (K_GR) [dimensionless]
     bm_gr : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
     temperature : Mean daily temperature (*T*) [°C]
-    t_0 : Minimum temperature for growth (*T*₀) [4 °C]
+    t_0 : Minimum temperature for growth; default is 4 (*T*₀) [°C]
     age_gr : Average GR age (AGE_GR) [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁) [600 °C d]
-    st_2 : Sum of temperatures at the end of the reproductive period
-        (ST₂) [1200 °C d]
+    st_1 : Sum of temperatures at the beginning of the reproductive period;
+        default is 600 (ST₁) [°C d]
+    st_2 : Sum of temperatures at the end of the reproductive period; default
+        is 1200 (ST₂) [°C d]
 
     Returns
     -------
-    - Senescent biomass [kg DM ha⁻¹]
+    - Senescent biomass (SEN_GR) [kg DM ha⁻¹]
     """
 
     age_gr: float
@@ -770,9 +774,9 @@ class BiomassDV:
 
     Parameters
     ----------
-    sigma_gv : Respiratory C loss during senescence of GV
-    sen_gv : Senescence of GV compartment
-    abs_dv : Abscission of the DV compartment
+    sigma_gv : Respiratory C loss during senescence of GV [dimensionless]
+    sen_gv : Senescence of GV compartment (SEN_GV)
+    abs_dv : Abscission of the DV compartment (ABS_DV)
     temperature : Mean daily temperature (*T*) [°C]
     bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
     age_dv : Average DV age (AGE_DV) [°C d]
@@ -780,7 +784,7 @@ class BiomassDV:
     Returns
     -------
     - Dead vegetative biomass
-    - Average DV age
+    - Average DV age [°C d]
     """
 
     bm_dv: float

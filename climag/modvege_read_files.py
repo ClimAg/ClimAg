@@ -124,7 +124,7 @@ def read_timeseries(filename):
 
     Definition of inputs
     --------------------
-    - day        : Day of the year
+    - day        : Day number
     - tas        : Temperature (*T*) [°C]
     - par        : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
