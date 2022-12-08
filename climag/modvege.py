@@ -226,6 +226,7 @@ def modvege(params, tseries, endday=365):
 
         # sum of temperatures (ST)
         if tseries["time"][i].dayofyear == 1:
+            # reset sum to zero on the first day of the year
             temperature_sum = lm.SumOfTemperatures(
                 t_ts=tseries["T"], day=(i + 1), t_sum=0.0
             )()

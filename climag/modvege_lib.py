@@ -203,8 +203,8 @@ class SumOfTemperatures:
 
     t_ts: list
     day: int
-    t_0: float = 4.0
     t_sum: float
+    t_0: float = 4.0
 
     def __call__(self) -> float:
         for i in range(self.day):
@@ -976,7 +976,26 @@ class BiomassGR:
 @dataclass
 class OrganicMatterDigestibilityGV:
     """
+    Organic matter digestibility of the green vegetative (GV) compartment.
     See Equation (9) in Jouven et al. (2006)
+
+    - Digestibility varies among plant parts, with leaves usually being more
+      digestible than stems
+    - The differing digestibility of plant parts may explain why they are
+      grazed selectively
+    - Digestibility of green compartments decreases linearly with compartment
+      age
+
+    Parameters
+    ----------
+    age_gv : Age of the GV compartment
+    min_omd_gv : Minimum OMD of the GV compartment; default is 0.75
+    max_omd_gv : Maximum OMD of the GV compartment; default is 0.9
+    lls : Leaf lifespan; default is 500
+
+    Returns
+    -------
+    - Organic matter digestibility of the GV compartment
     """
 
     age_gv: float
@@ -994,11 +1013,33 @@ class OrganicMatterDigestibilityGV:
 @dataclass
 class OrganicMatterDigestibilityGR:
     """
+    Organic matter digestibility of the green reproductive (GR) compartment.
     See Equation (9) in Jouven et al. (2006)
+
+    - Digestibility varies among plant parts, with leaves usually being more
+      digestible than stems
+    - The differing digestibility of plant parts may explain why they are
+      grazed selectively
+    - Digestibility of green compartments decreases linearly with compartment
+      age
+
+    Parameters
+    ----------
+    age_gr : Age of the GR compartment
+    min_omd_gr : Minimum OMD of the GR compartment; default is 0.65
+    max_omd_gr : Maximum OMD of the GR compartment; default is 0.9
+    st_1 : Sum of temperatures at the beginning of the reproductive period;
+        default is 600
+    st_2 : Sum of temperatures at the end of the reproductive period; default
+        is 1200
+
+    Returns
+    -------
+    - Organic matter digestibility of the GR compartment
     """
 
     age_gr: float
-    min_omd_gr: float = 0.75
+    min_omd_gr: float = 0.65
     max_omd_gr: float = 0.9
     st_1: float = 600.0
     st_2: float = 1200.0
@@ -1009,6 +1050,72 @@ class OrganicMatterDigestibilityGR:
             (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
             (self.st_2 - self.st_1)
         )
+
+
+@dataclass
+class MaximumAvailableBiomass:
+    """
+    The maximum amount of biomass available for grazing and/or harvesting for
+    each structural compartment.
+
+    Maintain the height of the residual biomass after harvest to the minimum
+    cut height. This height is calculated using the bulk density.
+
+    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+
+    Assumption: when grazed/harvested, 10% of the available biomass in each
+    structural component is lost.
+
+    Parameters
+    ----------
+    cut_height : Average height after the cut [m]
+    bulk_density : Bulk density [g DM m⁻³]
+    biomass : Biomass available [kg DM ha⁻¹]
+
+    Returns
+    -------
+    - Maximum available biomass [kg DM ha⁻¹]
+    - Residual biomass [kg DM ha⁻¹]
+    """
+
+    bulk_density: float
+    standing_biomass: float
+    cut_height: float = 0.05
+
+    def __call__(self) -> float:
+        residual_biomass = self.cut_height * self.bulk_density * 10
+        if residual_biomass < self.standing_biomass:
+            available_biomass = (self.standing_biomass - residual_biomass) * .9
+        else:
+            available_biomass = 0
+            residual_biomass = self.standing_biomass
+        return available_biomass, residual_biomass
+
+
+@dataclass
+class IngestionProportion:
+    """
+    Proportion of each biomass compartment ingested by a livestock unit.
+
+    Assume that this is proportional to the organic matter digestibility, i.e.
+
+    - Digestibility varies among plant parts, with leaves usually being more
+      digestible than stems
+    - The differing digestibility of plant parts may explain why they are
+      grazed selectively
+
+    Parameters
+    ----------
+    omd_gv : OMD of GV
+    omd_gr : OMD of GR
+    omd_dv : OMD of DV; default is 0.45
+    omd_dr : OMD of DR; default is 0.40
+    """
+
+    omd_gv: float
+    omd_gr: float
+    omd_dv: float = 0.45
+    omd_gr: float = 0.40
 
 
 @dataclass
@@ -1024,7 +1131,7 @@ class StockingRate:
 
     Returns
     -------
-    stocking rate [LU ha⁻¹]
+    - stocking rate [LU ha⁻¹]
     """
 
     livestock_units: float
@@ -1040,13 +1147,11 @@ class StockingRate:
 
 @dataclass
 class IngestedBiomass:
-    # def ingested_biomass(
-    #     livestock_units, grazing_area, bulk_density, min_cut_height=0.05,
-    #     ingestion_per_livestock_unit=13
-    # ):
     """
     Return the amount of biomass ingested by the livestock units based on the
     stocking rate.
+
+    Assume that the animals only feed by grazing on the pasture.
 
     Parameters
     ----------
@@ -1054,6 +1159,10 @@ class IngestedBiomass:
     grazing_area : total grazing area (i.e. grassland available for grazing)
         [ha]
     ingestion_per_livestock_unit : average ingestion of grass by a livestock
+        unit (e.g. dairy cow); default is 13 based on Teagasc data
+        [kg DM LU⁻¹]
+    max_ingestion_per_lu : Maximum amount of grass that can be ingested by a
+        livestock unit; using the average ingestion of grass by a livestock
         unit (e.g. dairy cow); default is 13 based on Teagasc data
         [kg DM LU⁻¹]
     min_cut_height : minimum residual grass height to be maintained; default
@@ -1105,16 +1214,21 @@ class IngestedBiomass:
 @dataclass
 class HarvestedBiomass:
     """
-    Realise a cut so that the average height is under cutHeight.
-    This height is calculated by using the bulkDensity given in parameter.
+    Harvest biomass through cuts.
+
+    Maintain the height of the residual biomass after harvest to the minimum
+    cut height.
+    This height is calculated by using the bulk density.
+
     See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+
     Assumption: during harvest, 10% of the harvestable biomass in each
     structural component is lost.
 
     Parameters
     ----------
-    cutHeight : Average height after the cut [m]
-    bulkDensity : Bulk density [g DM m⁻³]
+    cut_height : Average height after the cut [m]
+    bulk_density : Bulk density [g DM m⁻³]
     biomass : Biomass available [kg DM ha⁻¹]
 
     Returns
@@ -1440,32 +1554,6 @@ def gr_update(temperature, a2r, gro, t0, gr_biomass, gr_avg_age):
 #         bulkDensity=rhodr, cutHeight=cutHeight, biomass=drb)
 #     sumBiomassHarvested = gv_h + dv_h + gr_h + dr_h
 #     return (sumBiomassHarvested, gv_b, dv_b, gr_b, dr_b)
-
-
-# def updateSumTemperature(temperature, t0, sumT, tbase):
-#     """
-#     Add the daily temperature to the sum temperature if the daily one is
-#     positive
-#     ** THIS FUNCTION IS UNUSED!
-
-#     Parameters
-#     ----------
-#     temperature : ?
-#     t0 : minimum temperature for growth
-#     sumT : actual sum of temperature
-#     tbase : base temperature (subtracted each day for the calculation of
-#         the ST)
-#     currentDay : the current DOY (** UNUSED ARGUMENT!)
-
-#     Returns
-#     -------
-#     - Sum of temperatures
-#     """
-
-#     # TO-DO: return DOY in doc, but return sumT in code O_O?????
-#     if temperature >= t0:
-#         sumT += np.max(temperature - tbase, 0)
-#     return sumT
 
 
 def getAvailableBiomassForCut(
