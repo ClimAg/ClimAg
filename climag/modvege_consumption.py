@@ -219,11 +219,15 @@ class Ingestion:
     Parameters
     ----------
     max_ingested_biomass : Maximum amount of biomass that can be ingested by
-        all livestock units
+        all livestock units [kg DM ha⁻¹]
     omd_gv : OMD of GV [dimensionless]
     omd_gr : OMD of GR [dimensionless]
     omd_dv : OMD of DV; default is 0.45 [dimensionless]
     omd_dr : OMD of DR; default is 0.40 [dimensionless]
+    bm_gv_av : Available GV biomass [kg DM ha⁻¹]
+    bm_gr_av : Available GR biomass [kg DM ha⁻¹]
+    bm_dv_av : Available DV biomass [kg DM ha⁻¹]
+    bm_dr_av : Available DR biomass [kg DM ha⁻¹]
 
     Returns
     -------
@@ -292,7 +296,7 @@ class HarvestedBiomass:
     cut_height : minimum residual grass height to be maintained; default
         is 0.05 [m]
     bulk_density : Bulk density of the biomass compartment [g DM m⁻³]
-    standing_biomass : Biomass available [kg DM ha⁻¹]
+    standing_biomass : Standing biomass [kg DM ha⁻¹]
 
     Returns
     -------
@@ -306,98 +310,10 @@ class HarvestedBiomass:
     def __call__(self) -> float:
         residual_biomass = self.cut_height * self.bulk_density * 10
         if residual_biomass < self.standing_biomass:
-            harvested_biomass = (self.standing_biomass - residual_biomass) * .9
+            harvested_biomass = (
+                (self.standing_biomass - residual_biomass) * .9
+            )
         else:
             harvested_biomass = 0
             residual_biomass = self.standing_biomass
         return harvested_biomass
-
-
-# ########################################################
-@dataclass
-class MaximumCompartmentalIngestion:
-    """
-    Maximum biomass ingestion by structural compartment. This is weighted
-    according to the organic matter digestibility.
-
-    - Digestibility varies among plant parts, with leaves usually being more
-      digestible than stems
-    - The differing digestibility of plant parts may explain why they are
-      grazed selectively
-
-    Parameters
-    ----------
-    max_ingested_biomass : Maximum amount of biomass that can be ingested by
-        all livestock units
-    omd_gv : OMD of GV [dimensionless]
-    omd_gr : OMD of GR [dimensionless]
-    omd_dv : OMD of DV; default is 0.45 [dimensionless]
-    omd_dr : OMD of DR; default is 0.40 [dimensionless]
-
-    Returns
-    -------
-    - Maximum amount of compartmental biomass that can be ingested by the
-      livestock units
-    """
-
-    max_ingested_biomass: float
-    omd_gv: float
-    omd_gr: float
-    omd_dv: float = 0.45
-    omd_dr: float = 0.40
-
-    def __call__(self) -> float:
-        total = self.omd_gv + self.omd_gr + self.omd_dv + self.omd_dr
-        return (
-            self.max_ingested_biomass / (self.omd_gv / total),
-            self.max_ingested_biomass / (self.omd_gr / total),
-            self.max_ingested_biomass / (self.omd_dv / total),
-            self.max_ingested_biomass / (self.omd_dr / total)
-        )
-
-
-@dataclass
-class IngestedBiomassOld:
-    """
-    Return the amount of biomass ingested by the livestock units based on the
-    stocking rate.
-
-    Assume that the animals only feed by grazing on the pasture.
-
-    Parameters
-    ----------
-    livestock_units : total number of livestock units [LU]
-    grazing_area : total grazing area (i.e. grassland available for grazing)
-        [ha]
-    ingestion_per_livestock_unit : average ingestion of grass by a livestock
-        unit (e.g. dairy cow); default is 13 based on Teagasc data
-        [kg DM LU⁻¹]
-    min_cut_height : minimum residual grass height to be maintained; default
-        is 0.05 [m]
-    bulk_density : bulk density of the biomass compartment [g DM m⁻³]
-
-    Returns
-    -------
-    - total grass ingestion by livestock per hectare [kg DM ha⁻¹]
-    """
-
-    livestock_units: float
-    grazing_area: float
-    bulk_density: float
-    ingestion_per_lu: float = 13.0
-    cut_height: float = 0.05
-
-    def __call__(self) -> float:
-        total_ingestion = (
-            StockingRate(
-                livestock_units=self.livestock_units,
-                grazing_area=self.grazing_area
-            )() * self.ingestion_per_lu
-        )
-        # if the total ingestion exceeds the minimum cut height of
-        # 5 cm, reduce it
-        if total_ingestion > self.cut_height * self.bulk_density * 10:
-            total_ingestion = (
-                total_ingestion - self.cut_height * self.bulk_density * 10
-            )
-        return total_ingestion
