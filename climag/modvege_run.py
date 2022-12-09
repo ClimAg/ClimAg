@@ -42,7 +42,9 @@ output_vars = {
     "ftm": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
     "pgr": ["Potential growth", "kg DM ha⁻¹"],
-    "atr": ["Reproductive function", "dimensionless"]
+    "atr": ["Reproductive function", "dimensionless"],
+    "lai": ["Leaf area index", "dimensionless"],
+    "aet": ["Actual evapotranspiration", "mm"]
 }
 
 
@@ -55,22 +57,22 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    tseries, enddoy = read_timeseries(filename=input_timeseries_file)
+    tseries, endday = read_timeseries(filename=input_timeseries_file)
 
     # initialise the run
-    data_df = modvege(params=params, tseries=tseries, enddoy=enddoy)
+    data_df = modvege(params=params, tseries=tseries, endday=endday)
 
     # convert output to dataframe and save as CSV
     data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
     data_df = pd.DataFrame(
-        zip(*data_df), columns=(["doy"] + list(output_vars.keys()))
+        zip(*data_df), columns=(["day"] + list(output_vars.keys()))
     )
 
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
     # plot all columns
-    data_df.set_index("doy", inplace=True)
+    data_df.set_index("day", inplace=True)
 
     plot_title = []
     for val in output_vars.values():
@@ -78,8 +80,8 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
         plot_title.append(val)
 
     data_df.plot(
-        subplots=True, layout=(6, 3), figsize=(15, 14),
-        xlabel="Day of the year", title=plot_title, legend=False
+        subplots=True, layout=(7, 3), figsize=(15, 14),
+        xlabel="Day", title=plot_title, legend=False
     )
 
     plt.tight_layout()
@@ -120,7 +122,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         )
 
         # extract the end day of the year
-        # enddoy = tseries_y["time"].dt.dayofyear.values.max()
+        # endday = tseries_y["time"].dt.dayofyear.values.max()
 
         # assign the outputs as new variables
         for key, val in output_vars.items():
@@ -172,7 +174,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(
                     params=params,
                     tseries=data_df[f"{rlon}_{rlat}_{year}"],
-                    enddoy=tseries_y["time"].dt.dayofyear.values.max()
+                    endday=tseries_y["time"].dt.dayofyear.values.max()
                 )
 
                 # convert output to dataframe
@@ -182,7 +184,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
 
                 data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
                     zip(*data_df[f"{rlon}_{rlat}_{year}"]),
-                    columns=(["doy"] + list(output_vars.keys()))
+                    columns=(["day"] + list(output_vars.keys()))
                 )
 
                 # assign the output variables to the main xarray dataset
@@ -235,7 +237,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
 
     Outputs
     -------
-    - Day of the year                                       doy
+    - Day of the year                                       day
     - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
     - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
     - Mean dead vegetative biomass          [kg DM ha⁻¹]    dv_b

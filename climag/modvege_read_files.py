@@ -70,7 +70,6 @@ def read_params(filename):
                     (Kl_DV) [0.001]
     - Kl_DR       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
-    - cellSurface : Pixel area [ha]
     - cutHeight   : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
@@ -100,7 +99,6 @@ def read_params(filename):
     - meanOMDdr   : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
 
-    - alpha_PAR   : Light extinction coefficient
     - beta_T      : Decrease in LUE after T2
     - b_IN        : Impact of IN on LUE at IN=0
     - a_IN        : Value of ALLOC at IN=0
@@ -126,7 +124,7 @@ def read_timeseries(filename):
 
     Definition of inputs
     --------------------
-    - doy        : Day of the year
+    - day        : Day number
     - tas        : Temperature (*T*) [°C]
     - par        : Incident photosynthetically active radiation
                    (PAR_i) [MJ m⁻²]
@@ -143,36 +141,11 @@ def read_timeseries(filename):
     Returns
     -------
     - A dataframe of the input time series data
-    - The end day of the year
+    - Length of the data (number of days)
     """
 
-    # timeseries = np.genfromtxt(
-    #     filename, delimiter=",", skip_header=0, names=True
-    # )
-    timeseries = pd.read_csv(filename)
-    timeseries.sort_values(by=["doy"], inplace=True)
+    timeseries = pd.read_csv(filename, parse_dates=["time"])
+    timeseries.sort_values(by=["time"], inplace=True)
     timeseries.reset_index(inplace=True)
-    enddoy = timeseries["doy"].max()
-    return timeseries, enddoy
-
-
-# def read_out(filename):
-#     """Read the "out_cut.csv" file
-
-#     This is used only for development, to remove for operational mode
-
-#     Definition of columns
-#     ---------------------
-#     - Day
-#     - Mean biomass                      [kg DM ha⁻¹]
-#     - Mean green vegetative biomass     [kg DM ha⁻¹]
-#     - Mean green reproductive biomass   [kg DM ha⁻¹]
-#     - Mean dead vegetative biomass      [kg DM ha⁻¹]
-#     - Mean dead reproductive biomass    [kg DM ha⁻¹]
-#     - Harvested biomass                 [kg DM ha⁻¹]
-#     - Ingested biomass                  [kg DM ha⁻¹]
-#     - Mean GRO biomass                  [kg DM ha⁻¹]
-#     - Mean available biomass for cut    [kg DM ha⁻¹]
-#     """
-#     arr = np.genfromtxt(filename, delimiter=",", skip_header=0, names=True)
-#     return arr
+    endday = len(timeseries)
+    return timeseries, endday
