@@ -99,7 +99,8 @@ class MaximumAvailableBiomass:
     each structural compartment.
 
     Maintain the height of the residual biomass after harvest to the minimum
-    cut height. This height is calculated using the bulk density.
+    cut height. The bulk density is used to convert this height to the
+    equivalent biomass amount.
 
     See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
 
@@ -146,21 +147,6 @@ class StockingRate:
     Returns
     -------
     - Stocking rate [LU ha⁻¹]
-
-    Notes
-    -----
-    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
-        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
-        - average ingestion of supplements (meal, concentrate, silage) is
-          4.25 kg DM LU⁻¹
-    - Teagasc Dairy Manual:
-      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
-        - 8-13 kg DM grass per cow in the spring
-        - increase of 0.75-1.0 kg DM until peak intake is reached
-        - peak intake of 16-18 kg DM
-        - average intake is 13 kg DM ((8 + 18) / 2)
-    - one dairy cow is equivalent to one livestock unit; see
-      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
     livestock_units: float
@@ -178,6 +164,7 @@ class StockingRate:
 class MaximumIngestedBiomass:
     """
     The maximum amount of biomass that can be ingested by all livestock units
+    based on the stocking rate
 
     Ingestion takes precedence over harvesting
 
@@ -192,7 +179,22 @@ class MaximumIngestedBiomass:
     Returns
     -------
     - Maximum amount of biomass that can be ingested in total by all livestock
-      units
+      units [kg DM ha⁻¹]
+
+    Notes
+    -----
+    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
+        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
+        - average ingestion of supplements (meal, concentrate, silage) is
+          4.25 kg DM LU⁻¹
+    - Teagasc Dairy Manual:
+      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
+        - 8-13 kg DM grass per cow in the spring
+        - increase of 0.75-1.0 kg DM until peak intake is reached
+        - peak intake of 16-18 kg DM
+        - average intake is 13 kg DM ((8 + 18) / 2)
+    - one dairy cow is equivalent to one livestock unit; see
+      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
     stocking_rate: float
@@ -205,11 +207,9 @@ class MaximumIngestedBiomass:
 @dataclass
 class Ingestion:
     """
-    Calculate the amount of biomass ingested in total per structural
-    compartment.
-
-    Maximum biomass ingestion by structural compartment. This is weighted
-    according to the organic matter digestibility.
+    Calculate the amount of biomass ingested in total for each structural
+    compartment. This is weighted according to the organic matter
+    digestibility.
 
     - Digestibility varies among plant parts, with leaves usually being more
       digestible than stems
@@ -227,7 +227,7 @@ class Ingestion:
 
     Returns
     -------
-    - Biomass ingested by structural unit, returned as a dict
+    - Biomass ingested by biomass compartment, returned as a dict
     """
 
     bm_gv_av: float
@@ -289,14 +289,14 @@ class HarvestedBiomass:
 
     Parameters
     ----------
-    cut_height : Average height after the cut [m]
-    bulk_density : Bulk density [g DM m⁻³]
-    biomass : Biomass available [kg DM ha⁻¹]
+    cut_height : minimum residual grass height to be maintained; default
+        is 0.05 [m]
+    bulk_density : Bulk density of the biomass compartment [g DM m⁻³]
+    standing_biomass : Biomass available [kg DM ha⁻¹]
 
     Returns
     -------
     - Harvested biomass [kg DM ha⁻¹]
-    - Residual biomass [kg DM ha⁻¹]
     """
 
     bulk_density: float
@@ -379,21 +379,6 @@ class IngestedBiomassOld:
     Returns
     -------
     - total grass ingestion by livestock per hectare [kg DM ha⁻¹]
-
-    Notes
-    -----
-    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
-        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
-        - average ingestion of supplements (meal, concentrate, silage) is
-          4.25 kg DM LU⁻¹
-    - Teagasc Dairy Manual:
-      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
-        - 8-13 kg DM grass per cow in the spring
-        - increase of 0.75-1.0 kg DM until peak intake is reached
-        - peak intake of 16-18 kg DM
-        - average intake is 13 kg DM ((8 + 18) / 2)
-    - one dairy cow is equivalent to one livestock unit; see
-      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
     livestock_units: float
@@ -416,54 +401,3 @@ class IngestedBiomassOld:
                 total_ingestion - self.cut_height * self.bulk_density * 10
             )
         return total_ingestion
-
-
-def ingested_biomass(
-    livestock_units, grazing_area, bulk_density, min_cut_height=0.05,
-    ingestion_per_livestock_unit=13
-):
-    """
-    Return the amount of biomass ingested by the livestock units based on the
-    stocking rate.
-
-    Parameters
-    ----------
-    livestock_units : total number of livestock units [LU]
-    grazing_area : total grazing area (i.e. grassland available for grazing)
-        [ha]
-    ingestion_per_livestock_unit : average ingestion of grass by a livestock
-        unit (e.g. dairy cow); default is 13 based on Teagasc data
-        [kg DM LU⁻¹]
-    min_cut_height : minimum residual grass height to be maintained; default
-        is 0.05 [m]
-    bulk_density : bulk density of the biomass compartment [g DM m⁻³]
-
-    Returns
-    -------
-    - total grass ingestion by livestock per hectare [kg DM ha⁻¹]
-
-    Notes
-    -----
-    - Grass10: https://www.teagasc.ie/crops/grassland/grass10/
-        - average ingestion of grass for dairy cows is 13.41 kg DM LU⁻¹
-        - average ingestion of supplements (meal, concentrate, silage) is
-          4.25 kg DM LU⁻¹
-    - Teagasc Dairy Manual:
-      https://www.teagasc.ie/publications/2016/teagasc-dairy-manual.php
-        - 8-13 kg DM grass per cow in the spring
-        - increase of 0.75-1.0 kg DM until peak intake is reached
-        - peak intake of 16-18 kg DM
-        - average intake is 13 kg DM ((8 + 18) / 2)
-    - one dairy cow is equivalent to one livestock unit; see
-      https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
-    """
-
-    total_ingestion = (
-        stocking_rate(
-            livestock_units=livestock_units, grazing_area=grazing_area
-        ) * ingestion_per_livestock_unit
-    )
-    # if the total ingestion exceeds the minimum cut height of 5 cm, reduce it
-    if total_ingestion > min_cut_height * bulk_density * 10:
-        total_ingestion = total_ingestion - min_cut_height * bulk_density * 10
-    return total_ingestion
