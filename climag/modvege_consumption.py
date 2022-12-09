@@ -130,7 +130,7 @@ class MaximumAvailableBiomass:
         else:
             available_biomass = 0
             residual_biomass = self.standing_biomass
-        return available_biomass, residual_biomass
+        return available_biomass
 
 
 @dataclass
@@ -239,6 +239,47 @@ class Ingestion:
 
 
 @dataclass
+class HarvestedBiomass:
+    """
+    Harvest biomass through cuts.
+
+    Maintain the height of the residual biomass after harvest to the minimum
+    cut height.
+    This height is calculated by using the bulk density.
+
+    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+
+    Assumption: during harvest, 10% of the harvestable biomass in each
+    structural component is lost.
+
+    Parameters
+    ----------
+    cut_height : Average height after the cut [m]
+    bulk_density : Bulk density [g DM m⁻³]
+    biomass : Biomass available [kg DM ha⁻¹]
+
+    Returns
+    -------
+    - Harvested biomass [kg DM ha⁻¹]
+    - Residual biomass [kg DM ha⁻¹]
+    """
+
+    bulk_density: float
+    standing_biomass: float
+    cut_height: float = 0.05
+
+    def __call__(self) -> float:
+        residual_biomass = self.cut_height * self.bulk_density * 10
+        if residual_biomass < self.standing_biomass:
+            harvested_biomass = (self.standing_biomass - residual_biomass) * .9
+        else:
+            harvested_biomass = 0
+            residual_biomass = self.standing_biomass
+        return harvested_biomass
+
+
+# ########################################################
+@dataclass
 class MaximumCompartmentalIngestion:
     """
     Maximum biomass ingestion by structural compartment. This is weighted
@@ -340,46 +381,6 @@ class IngestedBiomassOld:
                 total_ingestion - self.cut_height * self.bulk_density * 10
             )
         return total_ingestion
-
-
-@dataclass
-class HarvestedBiomass:
-    """
-    Harvest biomass through cuts.
-
-    Maintain the height of the residual biomass after harvest to the minimum
-    cut height.
-    This height is calculated by using the bulk density.
-
-    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
-
-    Assumption: during harvest, 10% of the harvestable biomass in each
-    structural component is lost.
-
-    Parameters
-    ----------
-    cut_height : Average height after the cut [m]
-    bulk_density : Bulk density [g DM m⁻³]
-    biomass : Biomass available [kg DM ha⁻¹]
-
-    Returns
-    -------
-    - Harvested biomass [kg DM ha⁻¹]
-    - Residual biomass [kg DM ha⁻¹]
-    """
-
-    bulk_density: float
-    standing_biomass: float
-    cut_height: float = 0.05
-
-    def __call__(self) -> float:
-        residual_biomass = self.cut_height * self.bulk_density * 10
-        if residual_biomass < self.standing_biomass:
-            harvested_biomass = (self.standing_biomass - residual_biomass) * .9
-        else:
-            harvested_biomass = 0
-            residual_biomass = self.standing_biomass
-        return harvested_biomass, residual_biomass
 
 
 def avDefoliationBiomass(biomass, cutHeight, bulkDensity):

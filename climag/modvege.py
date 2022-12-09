@@ -203,6 +203,7 @@ def modvege(params, tseries, endday=365):
                 gv=params["init_AGE_GV"], gr=params["init_AGE_GR"],
                 dv=params["init_AGE_DV"], dr=params["init_AGE_DR"]
             )
+            # ingested_biomass_part = 0.0
         else:
             biomass = StandingBiomass(
                 gv=outputs_dict["biomass_gv"][i - 1],
@@ -216,6 +217,7 @@ def modvege(params, tseries, endday=365):
                 dv=outputs_dict["age_dv"][i - 1],
                 dr=outputs_dict["age_dr"][i - 1]
             )
+            # ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
 
         # temperature (T)
         temperature = tseries["T"][i]
@@ -363,8 +365,8 @@ def modvege(params, tseries, endday=365):
         harvested_biomass_part = 0
         ingested_biomass_part = 0
 
-        if is_grazed:
-            # organic matter digestibility
+        if is_grazed and params["ST2"] > temperature_sum > params["ST1"]:
+            # organic matter digestibility (OMD)
             omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
             omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
 
@@ -393,8 +395,8 @@ def modvege(params, tseries, endday=365):
 
             # actual ingestion
             ingestion = cm.Ingestion(
-                bm_gv_av=bm_gv_max[0], bm_gr_av=bm_gr_max[0],
-                bm_dv_av=bm_dv_max[0], bm_dr_av=bm_dr_max[0],
+                bm_gv_av=bm_gv_max, bm_gr_av=bm_gr_max,
+                bm_dv_av=bm_dv_max, bm_dr_av=bm_dr_max,
                 max_ingested_biomass=bm_ing_max,
                 omd_gv=omd_gv, omd_gr=omd_gr
             )()
