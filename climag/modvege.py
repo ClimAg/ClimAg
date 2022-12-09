@@ -105,6 +105,7 @@ short leaf lifespan, and early reproductive growth and flowering).
 
 from dataclasses import dataclass
 import climag.modvege_lib as lm
+import climag.modvege_consumption as cm
 
 
 def modvege(params, tseries, endday=365):
@@ -361,6 +362,54 @@ def modvege(params, tseries, endday=365):
         # compute grazing and harvesting
         harvested_biomass_part = 0
         ingested_biomass_part = 0
+
+        if is_grazed:
+            # organic matter digestibility
+            omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
+            omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
+
+            # available biomass per compartment
+            bm_gv_max = cm.MaximumAvailableBiomass(
+                bulk_density=params["rho_GV"], standing_biomass=biomass.gv
+            )()
+            bm_gr_max = cm.MaximumAvailableBiomass(
+                bulk_density=params["rho_GR"], standing_biomass=biomass.gr
+            )()
+            bm_dv_max = cm.MaximumAvailableBiomass(
+                bulk_density=params["rho_DV"], standing_biomass=biomass.dv
+            )()
+            bm_dr_max = cm.MaximumAvailableBiomass(
+                bulk_density=params["rho_DR"], standing_biomass=biomass.dr
+            )()
+
+            # stocking rate and max ingestion
+            stocking_rate = cm.StockingRate(
+                livestock_units=params["livestock_units"],
+                grazing_area=params["grazing_area"]
+            )()
+            bm_ing_max = cm.MaximumIngestedBiomass(
+                stocking_rate=stocking_rate
+            )()
+
+            # actual ingestion
+            ingestion = cm.Ingestion(
+                bm_gv_av=bm_gv_max[0], bm_gr_av=bm_gr_max[0],
+                bm_dv_av=bm_dv_max[0], bm_dr_av=bm_dr_max[0],
+                max_ingested_biomass=bm_ing_max,
+                omd_gv=omd_gv, omd_gr=omd_gr
+            )()
+
+            # total ingestion
+            ingested_biomass_part += (
+                ingestion["gv"] + ingestion["gr"] +
+                ingestion["dv"] + ingestion["dr"]
+            )
+
+            # update biomass compartments
+            biomass.gv -= ingestion["gv"]
+            biomass.gr -= ingestion["gr"]
+            biomass.dv -= ingestion["dv"]
+            biomass.dr -= ingestion["dr"]
 
         # is_harvested = bool(cut_height != 0)
         # is_grazed = bool(

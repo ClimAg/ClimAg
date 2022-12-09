@@ -5,7 +5,7 @@ Functions for harvested and ingested biomass.
 
 from dataclasses import dataclass
 import numpy as np
-import modvege_lib as lm
+import climag.modvege_lib as lm
 
 np.seterr("raise")
 
@@ -189,11 +189,60 @@ class MaximumIngestedBiomass:
 
 
 @dataclass
-class IngestionProportion:
+class Ingestion:
     """
-    Proportion of each biomass compartment ingested by a livestock unit.
+    Calculate the amount of biomass ingested in total per structural
+    compartment.
+    """
 
-    This is weighted according to the organic matter digestibility.
+    bm_gv_av: float
+    bm_gr_av: float
+    bm_dv_av: float
+    bm_dr_av: float
+    max_ingested_biomass: float
+    omd_gv: float
+    omd_gr: float
+    omd_dv: float = 0.45
+    omd_dr: float = 0.40
+
+    def __call__(self) -> float:
+        weights = {}
+        ingested = {}
+        available = {}
+
+        weights_total = self.omd_gv + self.omd_gr + self.omd_dv + self.omd_dr
+        weights["gv"] = self.omd_gv / weights_total
+        weights["gr"] = self.omd_gr / weights_total
+        weights["dv"] = self.omd_dv / weights_total
+        weights["dr"] = self.omd_dr / weights_total
+        # sort by weight
+        weights = dict(sorted(weights.items(), key=lambda item: item[1]))
+
+        ingested["gv"] = self.max_ingested_biomass * weights["gv"]
+        ingested["gr"] = self.max_ingested_biomass * weights["gr"]
+        ingested["dv"] = self.max_ingested_biomass * weights["dv"]
+        ingested["dr"] = self.max_ingested_biomass * weights["dr"]
+
+        available["gv"] = self.bm_gv_av
+        available["gr"] = self.bm_gr_av
+        available["dv"] = self.bm_dv_av
+        available["dr"] = self.bm_dr_av
+
+        needed = 0.0
+
+        for key in weights:
+            ingested[key] += needed
+            if available[key] < ingested[key]:
+                needed = ingested[key] - available[key]
+                ingested[key] = available[key]
+        return ingested
+
+
+@dataclass
+class MaximumCompartmentalIngestion:
+    """
+    Maximum biomass ingestion by structural compartment. This is weighted
+    according to the organic matter digestibility.
 
     - Digestibility varies among plant parts, with leaves usually being more
       digestible than stems
@@ -202,29 +251,12 @@ class IngestionProportion:
 
     Parameters
     ----------
+    max_ingested_biomass : Maximum amount of biomass that can be ingested by
+        all livestock units
     omd_gv : OMD of GV [dimensionless]
     omd_gr : OMD of GR [dimensionless]
     omd_dv : OMD of DV; default is 0.45 [dimensionless]
     omd_dr : OMD of DR; default is 0.40 [dimensionless]
-    """
-
-    omd_gv: float
-    omd_gr: float
-    omd_dv: float = 0.45
-    omd_gr: float = 0.40
-
-
-@dataclass
-class MaximumCompartmentalIngestion:
-    """
-    Biomass ingestion per structural compartment based on organic matter
-    digestibility.
-
-    Parameters
-    ----------
-    max_ingested_biomass : Maximum amount of biomass that can be ingested by
-        all livestock units
-    omd : Organic matter digestibility of the compartment [dimensionless]
 
     Returns
     -------
@@ -233,10 +265,19 @@ class MaximumCompartmentalIngestion:
     """
 
     max_ingested_biomass: float
-    omd: float
+    omd_gv: float
+    omd_gr: float
+    omd_dv: float = 0.45
+    omd_dr: float = 0.40
 
     def __call__(self) -> float:
-        return self.max_ingested_biomass * self.omd
+        total = self.omd_gv + self.omd_gr + self.omd_dv + self.omd_dr
+        return (
+            self.max_ingested_biomass / (self.omd_gv / total),
+            self.max_ingested_biomass / (self.omd_gr / total),
+            self.max_ingested_biomass / (self.omd_dv / total),
+            self.max_ingested_biomass / (self.omd_dr / total)
+        )
 
 
 @dataclass
