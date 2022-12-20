@@ -243,7 +243,8 @@ class TenDayMovingAverageTemperature:
             val = self.t_ts[self.day - 1]
         else:
             val = np.mean([
-                self.t_ts[(self.day - 1) - j] for j in range(10 - 1, 0 - 1, -1)
+                self.t_ts[(self.day - 1) - j]
+                for j in range(10 - 1, 0 - 1, -1)
             ])
         return val
 
@@ -375,7 +376,7 @@ class WaterReserves:
     Parameters
     ----------
     precipitation : Precipitation (PP) [mm]
-    wreserves : Water reserve (WR) [mm]
+    w_reserves : Water reserve (WR) [mm]
     aet : Actual evapotranspiration (AET) [mm]
     whc : Soil water-holding capacity (WHC) [mm]
 
@@ -385,13 +386,14 @@ class WaterReserves:
     """
 
     precipitation: float
-    wreserves: float
+    w_reserves: float
     aet: float
     whc: float
 
     def __call__(self) -> float:
         return min(
-            max(0.0, self.wreserves + self.precipitation - self.aet), self.whc
+            max(0.0, self.w_reserves + self.precipitation - self.aet),
+            self.whc
         )
 
 
@@ -404,7 +406,7 @@ class WaterStress:
 
     Parameters
     ----------
-    wreserves : Water reserves (WR) [mm]
+    w_reserves : Water reserves (WR) [mm]
     whc : Soil water-holding capacity (WHC) [mm]
 
     Returns
@@ -412,11 +414,11 @@ class WaterStress:
     - Water stress (*W*) [dimensionless]
     """
 
-    wreserves: float
+    w_reserves: float
     whc: float
 
     def __call__(self) -> float:
-        return min(self.wreserves / self.whc, 1.0)
+        return min(self.w_reserves / self.whc, 1.0)
 
 
 @dataclass
@@ -430,7 +432,7 @@ class WaterStressFunction:
 
     Parameters
     ----------
-    wstress : Water stress (*W*) [dimensionless]
+    w_stress : Water stress (*W*) [dimensionless]
     pet : Potential evapotranspiration (PET) [mm]
 
     Returns
@@ -438,45 +440,45 @@ class WaterStressFunction:
     - Water stress function (*f*(*W*)) [dimensionless]
     """
 
-    wstress: float
+    w_stress: float
     pet: float
 
     def __call__(self) -> float:
         if self.pet < 3.8:
             # linear gradients
-            if self.wstress < 0.2:
+            if self.w_stress < 0.2:
                 gradient = 0.8 / 0.2
-                val = gradient * self.wstress
-            elif self.wstress < 0.4:
+                val = gradient * self.w_stress
+            elif self.w_stress < 0.4:
                 gradient = (0.95 - 0.8) / (0.4 - 0.2)
                 intercept = 0.8 - gradient * 0.2
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.6:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.6:
                 gradient = (1.0 - 0.95) / (0.6 - 0.4)
                 intercept = 1.0 - gradient * 0.6
-                val = gradient * self.wstress + intercept
+                val = gradient * self.w_stress + intercept
             else:
                 val = 1.0
         elif self.pet <= 6.5:
-            if self.wstress < 0.2:
+            if self.w_stress < 0.2:
                 gradient = 0.4 / 0.2
-                val = gradient * self.wstress
-            elif self.wstress < 0.4:
+                val = gradient * self.w_stress
+            elif self.w_stress < 0.4:
                 gradient = (0.7 - 0.4) / (0.4 - 0.2)
                 intercept = 0.4 - gradient * 0.2
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.6:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.6:
                 gradient = (0.9 - 0.7) / (0.6 - 0.4)
                 intercept = 0.9 - gradient * 0.6
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.8:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.8:
                 gradient = (1.0 - 0.9) / (0.8 - 0.6)
                 intercept = 1.0 - gradient * 0.8
-                val = 0.5 * self.wstress + 0.6
+                val = 0.5 * self.w_stress + 0.6
             else:
                 val = 1.0
         else:
-            val = self.wstress
+            val = self.w_stress
         return val
 
 
@@ -860,6 +862,7 @@ class BiomassDR:
 @dataclass
 class GrowthGV:
     """
+    Calculate the growth proportion of the GV compartment.
     See Equation (1) in Jouven et al. (2006)
 
     Parameters

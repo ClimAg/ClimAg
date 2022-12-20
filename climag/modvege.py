@@ -111,8 +111,6 @@ import climag.modvege_consumption as cm
 def modvege(params, tseries, endday=365):
     """**ModVege** model as a function
 
-    ! This model cannot regenerate reproductive growth after a cut !
-
     Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
     of biomass, structure and digestibility of herbage in managed permanent
     pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
@@ -135,10 +133,6 @@ def modvege(params, tseries, endday=365):
     - GRO biomass [kg DM ha⁻¹]
     - Available biomass for [kg DM ha⁻¹]
     """
-
-    # # senescent biomass for compartments
-    # gv_senescent_biomass = 0
-    # gr_senescent_biomass = 0
 
     cut_height = params["cutHeight"]
 
@@ -265,17 +259,19 @@ def modvege(params, tseries, endday=365):
 
         # water reserves (WR)
         params["WR"] = lm.WaterReserves(
-            precipitation=precipitation, wreserves=params["WR"],
+            precipitation=precipitation, w_reserves=params["WR"],
             aet=eta, whc=params["WHC"]
         )()
 
         # water stress (W)
         waterstress = lm.WaterStress(
-            wreserves=params["WR"], whc=params["WHC"]
+            w_reserves=params["WR"], whc=params["WHC"]
         )()
 
         # water stress function (f(W))
-        waterstress_fn = lm.WaterStressFunction(wstress=waterstress, pet=pet)()
+        waterstress_fn = lm.WaterStressFunction(
+            w_stress=waterstress, pet=pet
+        )()
 
         # incident photosynthetically active radiation (PAR_i)
         pari = tseries["PAR"][i]
@@ -413,11 +409,6 @@ def modvege(params, tseries, endday=365):
             biomass.dv -= ingestion["dv"]
             biomass.dr -= ingestion["dr"]
 
-        # is_harvested = bool(cut_height != 0)
-        # is_grazed = bool(
-        #     params["livestock_units"] != 0 and params["grazing_area"] != 0
-        # )
-
         #     # look for flags to indicate mechanical cut
         #     if is_harvested:
         #         harvested_biomass_part = [0, 0, 0, 0]
@@ -499,38 +490,6 @@ def modvege(params, tseries, endday=365):
         #     # permanently stop reproduction
         #     a2r = 0
 
-        # gro_gr = lm.GrowthGR(gro=gro, rep=rep_f)
-        # biomass.gv, age.gv = lm.BiomassGV(
-        #     gro_gv=lm.GrowthGV(gro=gro, rep=rep_f),
-        #     sen_gv=lm.SenescenceGV(temperature, age_gv, bm_gv), bm_gv,
-        #     age_gv, temperature
-        # )
-
-        # # update the state of the vegetative parts
-        # biomass.gv, age.gv, gv_senescent_biomass = lm.gv_update(
-        #     gro=gro, a2r=rep_f, temperature=temperature,
-        #     t0=params["T0"], biomass.gv=biomass.gv,
-        #     age.gv=age.gv
-        # )
-        # biomass.dv, age.dv = lm.dv_update(
-        #     gv_gamma=params["sigmaGV"],
-        #     gv_senescent_biomass=gv_senescent_biomass,
-        #     temperature=temperature,
-        #     biomass.dv=biomass.dv, age.dv=age.dv
-        # )
-
-        # # start the reproductive phase of the vegetation
-        # biomass.gr, age.gr, gr_senescent_biomass = lm.gr_update(
-        #     temperature=temperature, a2r=a2r, gro=gro, t0=params["T0"],
-        #     biomass.gr=biomass.gr, age.gr=age.gr
-        # )  # ** UNUSED ARGUMENTS REMOVED!
-        # biomass.dr, age.dr = lm.dr_update(
-        #     gr_gamma=params["sigmaGR"],
-        #     gr_senescent_biomass=gr_senescent_biomass,
-        #     temperature=temperature,
-        #     biomass.dr=biomass.dr, age.dr=age.dr
-        # )
-
         # # compute available biomass for cut (output comparison requirement)
         # biomass_cut_avail = lm.getAvailableBiomassForCut(
         #     biomass.gv=biomass.gv, biomass.dv=biomass.dv,
@@ -566,14 +525,23 @@ def modvege(params, tseries, endday=365):
         outputs_dict["age_dr"].append(age.dr)
 
     return (
-        outputs_dict["biomass_gv"], outputs_dict["biomass_dv"],
-        outputs_dict["biomass_gr"], outputs_dict["biomass_dr"],
-        outputs_dict["biomass_harvested"], outputs_dict["biomass_ingested"],
-        outputs_dict["biomass_growth"], outputs_dict["biomass_cut_avail"],
-        outputs_dict["temperature_sum"], outputs_dict["age_gv"],
-        outputs_dict["age_dv"], outputs_dict["age_gr"], outputs_dict["age_dr"],
-        outputs_dict["seasonality"], outputs_dict["temperature_fn"],
-        outputs_dict["env"], outputs_dict["biomass_growth_pot"],
+        outputs_dict["biomass_gv"],
+        outputs_dict["biomass_dv"],
+        outputs_dict["biomass_gr"],
+        outputs_dict["biomass_dr"],
+        outputs_dict["biomass_harvested"],
+        outputs_dict["biomass_ingested"],
+        outputs_dict["biomass_growth"],
+        outputs_dict["biomass_cut_avail"],
+        outputs_dict["temperature_sum"],
+        outputs_dict["age_gv"],
+        outputs_dict["age_dv"],
+        outputs_dict["age_gr"],
+        outputs_dict["age_dr"],
+        outputs_dict["seasonality"],
+        outputs_dict["temperature_fn"],
+        outputs_dict["env"],
+        outputs_dict["biomass_growth_pot"],
         outputs_dict["reproductive_fn"],
         outputs_dict["leaf_area_index"],
         outputs_dict["actual_evapotranspiration"]
