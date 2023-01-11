@@ -163,12 +163,6 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                 data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
                 data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
                 data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
-                # data_df[f"{rlon}_{rlat}_{year}"][
-                #     "grazing_animal_count"
-                # ] = 0.0
-                # data_df[f"{rlon}_{rlat}_{year}"][
-                #     "grazing_avg_animal_weight"
-                # ] = 0.0
 
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(

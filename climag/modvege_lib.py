@@ -376,7 +376,7 @@ class WaterReserves:
     Parameters
     ----------
     precipitation : Precipitation (PP) [mm]
-    w_reserves : Water reserve (WR) [mm]
+    w_reserves : Water reserves (WR) [mm]
     aet : Actual evapotranspiration (AET) [mm]
     whc : Soil water-holding capacity (WHC) [mm]
 

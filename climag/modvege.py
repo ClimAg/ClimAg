@@ -297,15 +297,16 @@ def modvege(params, tseries, endday=365):
         # reproductive function (REP)
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
-        # if params["ST2"] > temperature_sum > params["ST1"] and is_grazed:
-        #     rep_f = 0
-        # else:
-        #     rep_f = lm.ReproductiveFunction(n_index=params["NI"])()
-
-        rep_f = lm.ReproductiveFunction(
-            n_index=params["NI"], t_sum=temperature_sum,
-            st_1=params["ST1"], st_2=params["ST2"]
-        )()
+        if (
+            params["ST2"] > temperature_sum > params["ST1"] and
+            bool(is_grazed or is_harvested)
+        ):
+            rep_f = 0.0
+        else:
+            rep_f = lm.ReproductiveFunction(
+                n_index=params["NI"], t_sum=temperature_sum,
+                st_1=params["ST1"], st_2=params["ST2"]
+            )()
         outputs_dict["reproductive_fn"].append(rep_f)
 
         # senescence (SEN) and abscission (ABS)

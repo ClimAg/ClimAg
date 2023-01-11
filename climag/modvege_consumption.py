@@ -42,9 +42,10 @@ class OrganicMatterDigestibilityGV:
     lls: float = 500.0
 
     def __call__(self) -> float:
-        return (
+        return max(
             self.max_omd_gv -
-            (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls
+            (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls,
+            self.min_omd_gv
         )
 
 
@@ -85,10 +86,11 @@ class OrganicMatterDigestibilityGR:
     st_2: float = 1200.0
 
     def __call__(self) -> float:
-        return (
+        return max(
             self.max_omd_gr -
             (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
-            (self.st_2 - self.st_1)
+            (self.st_2 - self.st_1),
+            self.min_omd_gr
         )
 
 
@@ -124,12 +126,11 @@ class MaximumAvailableBiomass:
     cut_height: float = 0.05
 
     def __call__(self) -> float:
-        residual_biomass = self.cut_height * self.bulk_density * 10
+        residual_biomass = max(self.cut_height * self.bulk_density * 10, 0.0)
         if residual_biomass < self.standing_biomass:
             available_biomass = (self.standing_biomass - residual_biomass) * .9
         else:
-            available_biomass = 0
-            residual_biomass = self.standing_biomass
+            available_biomass = 0.0
         return available_biomass
 
 
@@ -154,9 +155,9 @@ class StockingRate:
 
     def __call__(self) -> float:
         try:
-            val = self.livestock_units / self.grazing_area
+            val = max(self.livestock_units / self.grazing_area, 0.0)
         except ZeroDivisionError:
-            val = 0
+            val = 0.0
         return val
 
 
@@ -308,12 +309,11 @@ class HarvestedBiomass:
     cut_height: float = 0.05
 
     def __call__(self) -> float:
-        residual_biomass = self.cut_height * self.bulk_density * 10
+        residual_biomass = max(self.cut_height * self.bulk_density * 10, 0.0)
         if residual_biomass < self.standing_biomass:
             harvested_biomass = (
                 (self.standing_biomass - residual_biomass) * .9
             )
         else:
-            harvested_biomass = 0
-            residual_biomass = self.standing_biomass
+            harvested_biomass = 0.0
         return harvested_biomass
