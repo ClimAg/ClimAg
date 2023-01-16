@@ -166,7 +166,8 @@ def modvege(params, tseries, endday=365):
         "biomass_growth_pot": [],
         "reproductive_fn": [],
         "leaf_area_index": [],
-        "actual_evapotranspiration": []
+        "actual_evapotranspiration": [],
+        "water_reserves": []
     }
 
     @dataclass
@@ -197,7 +198,7 @@ def modvege(params, tseries, endday=365):
                 gv=params["init_AGE_GV"], gr=params["init_AGE_GR"],
                 dv=params["init_AGE_DV"], dr=params["init_AGE_DR"]
             )
-            # ingested_biomass_part = 0.0
+            water_reserves = params["WR"]
         else:
             biomass = StandingBiomass(
                 gv=outputs_dict["biomass_gv"][i - 1],
@@ -211,7 +212,17 @@ def modvege(params, tseries, endday=365):
                 dv=outputs_dict["age_dv"][i - 1],
                 dr=outputs_dict["age_dr"][i - 1]
             )
-            # ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
+            water_reserves = outputs_dict["water_reserves"][i - 1]
+
+        if tseries["time"][i].dayofyear == 1:
+            # reset sum to zero on the first day of the year
+            ingested_biomass_part = 0.0
+            harvested_biomass_part = 0.0
+            t_sum = 0.0
+        else:
+            ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
+            harvested_biomass_part = outputs_dict["biomass_harvested"][i - 1]
+            t_sum = outputs_dict["temperature_sum"][i - 1]
 
         # total standing biomass at the beginning of the day
         biomass_available = biomass.gv + biomass.gr + biomass.dv + biomass.dr
@@ -225,16 +236,19 @@ def modvege(params, tseries, endday=365):
         )()
 
         # sum of temperatures (ST)
-        if tseries["time"][i].dayofyear == 1:
-            # reset sum to zero on the first day of the year
-            temperature_sum = lm.SumOfTemperatures(
-                t_ts=tseries["T"], day=(i + 1), t_sum=0.0
-            )()
-        else:
-            temperature_sum = lm.SumOfTemperatures(
-                t_ts=tseries["T"], day=(i + 1),
-                t_sum=outputs_dict["temperature_sum"][i - 1]
-            )()
+        # if tseries["time"][i].dayofyear == 1:
+        #     # reset sum to zero on the first day of the year
+        #     temperature_sum = lm.SumOfTemperatures(
+        #         t_ts=tseries["T"], day=(i + 1), t_sum=0.0
+        #     )()
+        # else:
+        #     temperature_sum = lm.SumOfTemperatures(
+        #         t_ts=tseries["T"], day=(i + 1),
+        #         t_sum=outputs_dict["temperature_sum"][i - 1]
+        #     )()
+        temperature_sum = lm.SumOfTemperatures(
+            t_ts=tseries["T"], day=(i + 1), t_sum=t_sum
+        )()
 
         # temperature function (f(T))
         temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()
@@ -242,7 +256,8 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=temperature_sum, st_1=params["ST1"], st_2=params["ST2"]
+            t_sum=temperature_sum, st_1=params["ST1"],
+            st_2=params["ST2"], st_0=params["ST0"]
         )()
         outputs_dict["seasonality"].append(seasonality)
 
@@ -261,8 +276,8 @@ def modvege(params, tseries, endday=365):
         precipitation = tseries["PP"][i]
 
         # water reserves (WR)
-        params["WR"] = lm.WaterReserves(
-            precipitation=precipitation, w_reserves=params["WR"],
+        water_reserves = lm.WaterReserves(
+            precipitation=precipitation, w_reserves=water_reserves,
             aet=eta, whc=params["WHC"]
         )()
 
@@ -301,8 +316,9 @@ def modvege(params, tseries, endday=365):
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
         if (
-            params["ST2"] > temperature_sum > params["ST1"] and
-            bool(is_grazed or is_harvested)
+            bool(is_grazed or is_harvested) and
+            # params["ST2"] > temperature_sum > params["ST1"]
+            params["ST2"] > temperature_sum > params["STg1"]
         ):
             rep_f = 0.0
         else:
@@ -310,6 +326,10 @@ def modvege(params, tseries, endday=365):
                 n_index=params["NI"], t_sum=temperature_sum,
                 st_1=params["ST1"], st_2=params["ST2"]
             )()
+        # rep_f = lm.ReproductiveFunction(
+        #     n_index=params["NI"], t_sum=temperature_sum,
+        #     st_1=params["ST1"], st_2=params["ST2"]
+        # )()
         outputs_dict["reproductive_fn"].append(rep_f)
 
         # senescence (SEN) and abscission (ABS)
@@ -361,11 +381,15 @@ def modvege(params, tseries, endday=365):
             temperature=temperature
         )()
 
-        # compute grazing and harvesting
-        harvested_biomass_part = 0
-        ingested_biomass_part = 0
+        # # compute grazing and harvesting
+        # harvested_biomass_part = 0
+        # ingested_biomass_part = 0
 
-        if is_grazed and params["ST2"] > temperature_sum > params["ST1"]:
+        if (
+            is_grazed and
+            # params["ST2"] > temperature_sum > params["ST1"]
+            params["STg2"] > temperature_sum > params["STg1"]
+        ):
             # organic matter digestibility (OMD)
             omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
             omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
@@ -412,6 +436,45 @@ def modvege(params, tseries, endday=365):
             biomass.gr -= ingestion["gr"]
             biomass.dv -= ingestion["dv"]
             biomass.dr -= ingestion["dr"]
+
+        if (
+            is_harvested and
+            # params["ST2"] > temperature_sum > params["ST2"]
+            params["STg2"] > temperature_sum > params["ST2"]
+        ):
+            # biomass harvested per compartment
+            harvested_biomass_part_gv = cm.HarvestedBiomass(
+                bulk_density=params["rho_GV"],
+                standing_biomass=biomass.gv,
+                cut_height=cut_height
+            )()
+            harvested_biomass_part_gr = cm.HarvestedBiomass(
+                bulk_density=params["rho_GR"],
+                standing_biomass=biomass.gr,
+                cut_height=cut_height
+            )()
+            harvested_biomass_part_dv = cm.HarvestedBiomass(
+                bulk_density=params["rho_DV"],
+                standing_biomass=biomass.dv,
+                cut_height=cut_height
+            )()
+            harvested_biomass_part_dr = cm.HarvestedBiomass(
+                bulk_density=params["rho_DR"],
+                standing_biomass=biomass.dr,
+                cut_height=cut_height
+            )()
+
+            # total harvested biomass
+            harvested_biomass_part += (
+                harvested_biomass_part_gv + harvested_biomass_part_gr +
+                harvested_biomass_part_dv + harvested_biomass_part_dr
+            )
+
+            # update biomass compartments
+            biomass.gv -= harvested_biomass_part_gv
+            biomass.gr -= harvested_biomass_part_gr
+            biomass.dv -= harvested_biomass_part_dv
+            biomass.dr -= harvested_biomass_part_dr
 
         #     # look for flags to indicate mechanical cut
         #     if is_harvested:
@@ -525,6 +588,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["age_gr"].append(age.gr)
         outputs_dict["age_dv"].append(age.dv)
         outputs_dict["age_dr"].append(age.dr)
+        outputs_dict["water_reserves"].append(water_reserves)
 
     return (
         outputs_dict["biomass_gv"],
@@ -546,5 +610,6 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_growth_pot"],
         outputs_dict["reproductive_fn"],
         outputs_dict["leaf_area_index"],
-        outputs_dict["actual_evapotranspiration"]
+        outputs_dict["actual_evapotranspiration"],
+        outputs_dict["water_reserves"]
     )
