@@ -126,7 +126,7 @@ class MaximumAvailableBiomass:
     cut_height: float = 0.05
 
     def __call__(self) -> float:
-        residual_biomass = max(self.cut_height * self.bulk_density * 10, 0.0)
+        residual_biomass = self.cut_height * self.bulk_density * 10
         if residual_biomass < self.standing_biomass:
             available_biomass = (self.standing_biomass - residual_biomass) * .9
         else:
@@ -155,7 +155,7 @@ class StockingRate:
 
     def __call__(self) -> float:
         try:
-            val = max(self.livestock_units / self.grazing_area, 0.0)
+            val = self.livestock_units / self.grazing_area
         except ZeroDivisionError:
             val = 0.0
         return val
@@ -309,11 +309,10 @@ class HarvestedBiomass:
     cut_height: float = 0.05
 
     def __call__(self) -> float:
-        residual_biomass = max(self.cut_height * self.bulk_density * 10, 0.0)
+        residual_biomass = self.cut_height * self.bulk_density * 10
+        harvested_biomass = 0.0
         if residual_biomass < self.standing_biomass:
-            harvested_biomass = (
+            harvested_biomass += (
                 (self.standing_biomass - residual_biomass) * .9
             )
-        else:
-            harvested_biomass = 0.0
         return harvested_biomass

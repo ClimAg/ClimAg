@@ -154,7 +154,7 @@ def modvege(params, tseries, endday=365):
         "biomass_growth": [],
         "biomass_harvested": [],
         "biomass_ingested": [],
-        "biomass_cut_avail": [],
+        "biomass_available": [],
         "temperature_sum": [],
         "age_gv": [],
         "age_gr": [],
@@ -212,6 +212,9 @@ def modvege(params, tseries, endday=365):
                 dr=outputs_dict["age_dr"][i - 1]
             )
             # ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
+
+        # total standing biomass at the beginning of the day
+        biomass_available = biomass.gv + biomass.gr + biomass.dv + biomass.dr
 
         # temperature (T)
         temperature = tseries["T"][i]
@@ -492,7 +495,7 @@ def modvege(params, tseries, endday=365):
         #     a2r = 0
 
         # # compute available biomass for cut (output comparison requirement)
-        # biomass_cut_avail = lm.getAvailableBiomassForCut(
+        # biomass_available = lm.getAvailableBiomassForCut(
         #     biomass.gv=biomass.gv, biomass.dv=biomass.dv,
         #     biomass.gr=biomass.gr, biomass.dr=biomass.dr,
         #     cutHeight=cut_height,
@@ -502,13 +505,11 @@ def modvege(params, tseries, endday=365):
 
         # # accumulate harvestedBiomass
         # if is_harvested:
-        #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
+        #     # harvestedBiomass += outputs_dict["biomass_available"][-1]
         #     harvestedBiomass += harvested_biomass_part
         # # Accumulate ingestedBiomass
         # if is_grazed:
         #     ingestedBiomass += ingested_biomass_part
-
-        biomass_cut_avail = 0
 
         # Recover output streams
         outputs_dict["biomass_gv"].append(biomass.gv)
@@ -518,7 +519,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_harvested"].append(harvested_biomass_part)
         outputs_dict["biomass_ingested"].append(ingested_biomass_part)
         outputs_dict["biomass_growth"].append(gro)
-        outputs_dict["biomass_cut_avail"].append(biomass_cut_avail)
+        outputs_dict["biomass_available"].append(biomass_available)
         outputs_dict["temperature_sum"].append(temperature_sum)
         outputs_dict["age_gv"].append(age.gv)
         outputs_dict["age_gr"].append(age.gr)
@@ -533,7 +534,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_harvested"],
         outputs_dict["biomass_ingested"],
         outputs_dict["biomass_growth"],
-        outputs_dict["biomass_cut_avail"],
+        outputs_dict["biomass_available"],
         outputs_dict["temperature_sum"],
         outputs_dict["age_gv"],
         outputs_dict["age_dv"],

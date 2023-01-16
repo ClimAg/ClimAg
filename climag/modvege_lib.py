@@ -323,6 +323,8 @@ class SeasonalEffect:
     max_sea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
     min_sea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
     t_sum : Sum of temperatures (ST) [°C d]
+    st_0 : Sum of temperatures at the onset of growth (ST₀); default is 200
+        [°C d]
     st_1 : Sum of temperatures at the beginning of the reproductive period
         (ST₁); default is 600 [°C d]
     st_2 : Sum of temperatures at the end of the reproductive period
@@ -336,26 +338,33 @@ class SeasonalEffect:
     t_sum: float
     min_sea: float = 0.8
     max_sea: float = 1.2
+    st_0: float = 200.0
     st_1: float = 600.0
     st_2: float = 1200.0
 
     def __call__(self) -> float:
-        if self.t_sum < 200.0 or self.t_sum > self.st_2:
+        if self.t_sum < self.st_0 or self.t_sum > self.st_2:
             val = self.min_sea
-        elif (self.st_1 - 200.0) <= self.t_sum <= (self.st_1 - 100.0):
+        elif (
+            (self.st_1 - self.st_0)
+            <= self.t_sum <=
+            (self.st_1 - self.st_0 / 2)
+        ):
             val = self.max_sea
-        elif 200.0 <= self.t_sum < (self.st_1 - 200.0):
-            # assume SEA increases linearly from minSEA at 200°C d to maxSEA
+        elif self.st_0 <= self.t_sum < (self.st_1 - self.st_0):
+            # assume SEA increases linearly from minSEA at the onset of growth
+            # to maxSEA
             gradient = (
-                (self.max_sea - self.min_sea) / ((self.st_1 - 200.0) - 200.0)
+                (self.max_sea - self.min_sea) /
+                ((self.st_1 - self.st_0) - self.st_0)
             )
-            intercept = self.min_sea - gradient * 200.0
+            intercept = self.min_sea - gradient * self.st_0
             val = max(gradient * self.t_sum + intercept, self.min_sea)
-        elif (self.st_1 - 100.0) < self.t_sum <= self.st_2:
+        elif (self.st_1 - self.st_0 / 2) < self.t_sum <= self.st_2:
             # SEA decreases linearly from maxSEA to minSEA at ST_2
             gradient = (
                 (self.max_sea - self.min_sea) /
-                ((self.st_1 - 100.0) - self.st_2)
+                ((self.st_1 - self.st_0 / 2) - self.st_2)
             )
             intercept = self.min_sea - gradient * self.st_2
             val = max(gradient * self.t_sum + intercept, self.min_sea)
