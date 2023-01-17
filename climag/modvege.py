@@ -248,8 +248,7 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=temperature_sum, st_1=params["ST1"],
-            st_2=params["ST2"], st_0=params["ST0"]
+            t_sum=t_sum, st_1=params["ST1"], st_2=params["ST2"]
         )()
         outputs_dict["seasonality"].append(seasonality)
 
@@ -458,7 +457,6 @@ def modvege(params, tseries, endday=365):
             biomass.dr -= harvested_biomass_part_dr
 
         #     # allocation to reproductive
-        #     a2r = lm.ReproductiveFunction(n_index=params["NI"])()
         #     # TO-DO: when to change NI, and by how much?
         #     # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
         #     # 0.4       0.30769
@@ -470,13 +468,8 @@ def modvege(params, tseries, endday=365):
         #     # 1.0       1
         #     # 1.1       1.11538
         #     # 1.2       1.23076
-        # else:
-        #     # if (temperature_sum < st1 or st2 < temperature_sum)
-        #     a2r = 0
-        #     is_harvested = False
-        #     is_grazed = False
 
-        # Recover output streams
+        # recover output streams
         outputs_dict["biomass_gv"].append(biomass.gv)
         outputs_dict["biomass_dv"].append(biomass.dv)
         outputs_dict["biomass_gr"].append(biomass.gr)
