@@ -32,7 +32,7 @@ output_vars = {
     "h_b": ["Harvested biomass", "kg DM ha⁻¹"],
     "i_b": ["Ingested biomass", "kg DM ha⁻¹"],
     "gro": ["Biomass growth", "kg DM ha⁻¹"],
-    "abc": ["Available biomass", "kg DM ha⁻¹"],
+    "abc": ["Starting available biomass", "kg DM ha⁻¹"],
     "sumT": ["Sum of temperatures", "°C d"],
     "gva": ["Green vegetative biomass age", "°C d"],
     "dva": ["Dead vegetative biomass age", "°C d"],
@@ -44,7 +44,8 @@ output_vars = {
     "pgr": ["Potential growth", "kg DM ha⁻¹"],
     "atr": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
-    "aet": ["Actual evapotranspiration", "mm"]
+    "aet": ["Actual evapotranspiration", "mm"],
+    "wr": ["Water reserves", "mm"]
 }
 
 
@@ -163,12 +164,6 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                 data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
                 data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
                 data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
-                # data_df[f"{rlon}_{rlat}_{year}"][
-                #     "grazing_animal_count"
-                # ] = 0.0
-                # data_df[f"{rlon}_{rlat}_{year}"][
-                #     "grazing_avg_animal_weight"
-                # ] = 0.0
 
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(

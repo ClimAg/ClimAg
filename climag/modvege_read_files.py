@@ -73,19 +73,6 @@ def read_params(filename):
     - cutHeight   : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
-
-    - NI          : Initial nitrogen nutritional index of cell
-    - WHC         : Soil water-holding capacity (WHC) [mm]
-    - WR          : Water reserve (WR) [mm]
-    - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
-    - W_GR        : Initial biomass of GR [kg DM ha⁻¹]
-    - W_DV        : Initial biomass of DV [kg DM ha⁻¹]
-    - W_DR        : Initial biomass of DR [kg DM ha⁻¹]
-    - init_AGE_GV : Initial GV age [°C d]
-    - init_AGE_GR : Initial GR age [°C d]
-    - init_AGE_DV : Initial DV age [°C d]
-    - init_AGE_DR : Initial DR age [°C d]
-
     - maxOMDgv    : Maximum organic matter digestibility of the green
                     vegetative compartment (maxOMD_GV) [0.90]
     - minOMDgv    : Minimum organic matter digestibility of the green
@@ -99,10 +86,17 @@ def read_params(filename):
     - meanOMDdr   : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
 
-    - beta_T      : Decrease in LUE after T2
-    - b_IN        : Impact of IN on LUE at IN=0
-    - a_IN        : Value of ALLOC at IN=0
-    - max_fIN     : Max of fNI
+    - NI          : Initial nitrogen nutritional index of cell
+    - WHC         : Soil water-holding capacity (WHC) [mm]
+    - WR          : Water reserve (WR) [mm]
+    - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
+    - W_GR        : Initial biomass of GR [kg DM ha⁻¹]
+    - W_DV        : Initial biomass of DV [kg DM ha⁻¹]
+    - W_DR        : Initial biomass of DR [kg DM ha⁻¹]
+    - init_AGE_GV : Initial GV age [°C d]
+    - init_AGE_GR : Initial GR age [°C d]
+    - init_AGE_DV : Initial DV age [°C d]
+    - init_AGE_DR : Initial DR age [°C d]
 
     Parameters
     ----------

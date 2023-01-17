@@ -243,7 +243,8 @@ class TenDayMovingAverageTemperature:
             val = self.t_ts[self.day - 1]
         else:
             val = np.mean([
-                self.t_ts[(self.day - 1) - j] for j in range(10 - 1, 0 - 1, -1)
+                self.t_ts[(self.day - 1) - j]
+                for j in range(10 - 1, 0 - 1, -1)
             ])
         return val
 
@@ -278,9 +279,9 @@ class TemperatureFunction:
     t_max: float = 40.0
 
     def __call__(self) -> float:
-        if self.t_m10 < self.t_0 or self.t_m10 >= self.t_max:
+        if self.t_m10 <= self.t_0 or self.t_m10 >= self.t_max:
             val = 0.0
-        elif self.t_0 <= self.t_m10 < self.t_1:
+        elif self.t_0 < self.t_m10 < self.t_1:
             # linear relationship
             gradient = 1.0 / (self.t_1 - self.t_0)
             intercept = 1.0 - gradient * self.t_1
@@ -339,18 +340,26 @@ class SeasonalEffect:
     st_2: float = 1200.0
 
     def __call__(self) -> float:
-        if self.t_sum < 200.0 or self.t_sum > self.st_2:
+        if self.st_1 <= 200.0:
+            # use a constant value if the sum of temperatures at the
+            # beginning of the reproductive period is lower than the sum of
+            # temperatures at the onset of reproductive growth
+            val = np.mean([self.max_sea, self.min_sea])
+        elif self.t_sum <= 200.0 or self.t_sum >= self.st_2:
             val = self.min_sea
-        elif (self.st_1 - 200.0) <= self.t_sum <= (self.st_1 - 100.0):
+        elif (
+            (self.st_1 - 200.0) <= self.t_sum <= (self.st_1 - 100.0)
+        ):
             val = self.max_sea
-        elif 200.0 <= self.t_sum < (self.st_1 - 200.0):
-            # assume SEA increases linearly from minSEA at 200°C d to maxSEA
+        elif 200.0 < self.t_sum < (self.st_1 - 200.0):
+            # assume SEA increases linearly from minSEA at the onset of
+            # growth to maxSEA
             gradient = (
                 (self.max_sea - self.min_sea) / ((self.st_1 - 200.0) - 200.0)
             )
             intercept = self.min_sea - gradient * 200.0
             val = max(gradient * self.t_sum + intercept, self.min_sea)
-        elif (self.st_1 - 100.0) < self.t_sum <= self.st_2:
+        elif (self.st_1 - 100.0) < self.t_sum < self.st_2:
             # SEA decreases linearly from maxSEA to minSEA at ST_2
             gradient = (
                 (self.max_sea - self.min_sea) /
@@ -375,7 +384,7 @@ class WaterReserves:
     Parameters
     ----------
     precipitation : Precipitation (PP) [mm]
-    wreserves : Water reserve (WR) [mm]
+    w_reserves : Water reserves (WR) [mm]
     aet : Actual evapotranspiration (AET) [mm]
     whc : Soil water-holding capacity (WHC) [mm]
 
@@ -385,13 +394,14 @@ class WaterReserves:
     """
 
     precipitation: float
-    wreserves: float
+    w_reserves: float
     aet: float
     whc: float
 
     def __call__(self) -> float:
         return min(
-            max(0.0, self.wreserves + self.precipitation - self.aet), self.whc
+            max(0.0, self.w_reserves + self.precipitation - self.aet),
+            self.whc
         )
 
 
@@ -404,7 +414,7 @@ class WaterStress:
 
     Parameters
     ----------
-    wreserves : Water reserves (WR) [mm]
+    w_reserves : Water reserves (WR) [mm]
     whc : Soil water-holding capacity (WHC) [mm]
 
     Returns
@@ -412,11 +422,11 @@ class WaterStress:
     - Water stress (*W*) [dimensionless]
     """
 
-    wreserves: float
+    w_reserves: float
     whc: float
 
     def __call__(self) -> float:
-        return min(self.wreserves / self.whc, 1.0)
+        return min(self.w_reserves / self.whc, 1.0)
 
 
 @dataclass
@@ -430,7 +440,7 @@ class WaterStressFunction:
 
     Parameters
     ----------
-    wstress : Water stress (*W*) [dimensionless]
+    w_stress : Water stress (*W*) [dimensionless]
     pet : Potential evapotranspiration (PET) [mm]
 
     Returns
@@ -438,45 +448,45 @@ class WaterStressFunction:
     - Water stress function (*f*(*W*)) [dimensionless]
     """
 
-    wstress: float
+    w_stress: float
     pet: float
 
     def __call__(self) -> float:
         if self.pet < 3.8:
             # linear gradients
-            if self.wstress < 0.2:
+            if self.w_stress < 0.2:
                 gradient = 0.8 / 0.2
-                val = gradient * self.wstress
-            elif self.wstress < 0.4:
+                val = gradient * self.w_stress
+            elif self.w_stress < 0.4:
                 gradient = (0.95 - 0.8) / (0.4 - 0.2)
                 intercept = 0.8 - gradient * 0.2
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.6:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.6:
                 gradient = (1.0 - 0.95) / (0.6 - 0.4)
                 intercept = 1.0 - gradient * 0.6
-                val = gradient * self.wstress + intercept
+                val = gradient * self.w_stress + intercept
             else:
                 val = 1.0
         elif self.pet <= 6.5:
-            if self.wstress < 0.2:
+            if self.w_stress < 0.2:
                 gradient = 0.4 / 0.2
-                val = gradient * self.wstress
-            elif self.wstress < 0.4:
+                val = gradient * self.w_stress
+            elif self.w_stress < 0.4:
                 gradient = (0.7 - 0.4) / (0.4 - 0.2)
                 intercept = 0.4 - gradient * 0.2
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.6:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.6:
                 gradient = (0.9 - 0.7) / (0.6 - 0.4)
                 intercept = 0.9 - gradient * 0.6
-                val = gradient * self.wstress + intercept
-            elif self.wstress < 0.8:
+                val = gradient * self.w_stress + intercept
+            elif self.w_stress < 0.8:
                 gradient = (1.0 - 0.9) / (0.8 - 0.6)
                 intercept = 1.0 - gradient * 0.8
-                val = 0.5 * self.wstress + 0.6
+                val = 0.5 * self.w_stress + 0.6
             else:
                 val = 1.0
         else:
-            val = self.wstress
+            val = self.w_stress
         return val
 
 
@@ -496,6 +506,8 @@ class ReproductiveFunction:
     st_1 : Sum of temperatures at the beginning of the reproductive period
         [°C d]
     st_2 : Sum of temperatures at the end of the reproductive period [°C d]
+    stocking_rate : Stocking rate [LU ha⁻¹]
+    cut_height : Grass cut height [m]
 
     Returns
     -------
@@ -504,14 +516,26 @@ class ReproductiveFunction:
 
     n_index: float
     t_sum: float
+    stocking_rate: float
     st_1: float = 600.0
     st_2: float = 1200.0
+    cut_height: float = 0.05
 
     def __call__(self) -> float:
-        if self.st_1 <= self.t_sum <= self.st_2:
-            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
+        if (
+            self.stocking_rate > 0.0 and
+            self.st_1 + 50.0 <= self.t_sum <= self.st_2
+        ):
+            val = 0.0
+        elif (
+            self.cut_height > 0.0 and
+            self.st_2 >= self.t_sum >= self.st_2 - 50.0
+        ):
+            val = 0.0
+        elif self.t_sum < self.st_1 or self.t_sum > self.st_2:
+            val = 0.0
         else:
-            val = 0
+            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
         return val
 
 
@@ -860,6 +884,7 @@ class BiomassDR:
 @dataclass
 class GrowthGV:
     """
+    Calculate the growth proportion of the GV compartment.
     See Equation (1) in Jouven et al. (2006)
 
     Parameters

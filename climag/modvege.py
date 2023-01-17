@@ -111,8 +111,6 @@ import climag.modvege_consumption as cm
 def modvege(params, tseries, endday=365):
     """**ModVege** model as a function
 
-    ! This model cannot regenerate reproductive growth after a cut !
-
     Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
     of biomass, structure and digestibility of herbage in managed permanent
     pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
@@ -136,16 +134,12 @@ def modvege(params, tseries, endday=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    # # senescent biomass for compartments
-    # gv_senescent_biomass = 0
-    # gr_senescent_biomass = 0
-
     cut_height = params["cutHeight"]
 
-    is_harvested = bool(cut_height != 0)
-    is_grazed = bool(
-        params["livestock_units"] != 0 and params["grazing_area"] != 0
-    )
+    stocking_rate = cm.StockingRate(
+        livestock_units=params["livestock_units"],
+        grazing_area=params["grazing_area"]
+    )()
 
     # nitrogen nutritional index (NI)
     # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
@@ -160,7 +154,7 @@ def modvege(params, tseries, endday=365):
         "biomass_growth": [],
         "biomass_harvested": [],
         "biomass_ingested": [],
-        "biomass_cut_avail": [],
+        "biomass_available": [],
         "temperature_sum": [],
         "age_gv": [],
         "age_gr": [],
@@ -172,7 +166,8 @@ def modvege(params, tseries, endday=365):
         "biomass_growth_pot": [],
         "reproductive_fn": [],
         "leaf_area_index": [],
-        "actual_evapotranspiration": []
+        "actual_evapotranspiration": [],
+        "water_reserves": []
     }
 
     @dataclass
@@ -193,7 +188,8 @@ def modvege(params, tseries, endday=365):
 
     # daily loop
     for i in range(endday):
-        # initialise standing biomass and biomass age
+        # initialise starting parameters
+        # standing biomass, biomass age, and water reserves
         if i == 0:
             biomass = StandingBiomass(
                 gv=params["W_GV"], gr=params["W_GR"],
@@ -203,7 +199,7 @@ def modvege(params, tseries, endday=365):
                 gv=params["init_AGE_GV"], gr=params["init_AGE_GR"],
                 dv=params["init_AGE_DV"], dr=params["init_AGE_DR"]
             )
-            # ingested_biomass_part = 0.0
+            water_reserves = params["WR"]
         else:
             biomass = StandingBiomass(
                 gv=outputs_dict["biomass_gv"][i - 1],
@@ -217,7 +213,21 @@ def modvege(params, tseries, endday=365):
                 dv=outputs_dict["age_dv"][i - 1],
                 dr=outputs_dict["age_dr"][i - 1]
             )
-            # ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
+            water_reserves = outputs_dict["water_reserves"][i - 1]
+
+        # initialise ingested/harvested biomass and temperature sum
+        if tseries["time"][i].dayofyear == 1:
+            # reset to zero on the first day of the year
+            ingested_biomass_part = 0.0
+            harvested_biomass_part = 0.0
+            t_sum = 0.0
+        else:
+            ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
+            harvested_biomass_part = outputs_dict["biomass_harvested"][i - 1]
+            t_sum = outputs_dict["temperature_sum"][i - 1]
+
+        # total standing biomass at the beginning of the day
+        biomass_available = biomass.gv + biomass.gr + biomass.dv + biomass.dr
 
         # temperature (T)
         temperature = tseries["T"][i]
@@ -228,16 +238,9 @@ def modvege(params, tseries, endday=365):
         )()
 
         # sum of temperatures (ST)
-        if tseries["time"][i].dayofyear == 1:
-            # reset sum to zero on the first day of the year
-            temperature_sum = lm.SumOfTemperatures(
-                t_ts=tseries["T"], day=(i + 1), t_sum=0.0
-            )()
-        else:
-            temperature_sum = lm.SumOfTemperatures(
-                t_ts=tseries["T"], day=(i + 1),
-                t_sum=outputs_dict["temperature_sum"][i - 1]
-            )()
+        temperature_sum = lm.SumOfTemperatures(
+            t_ts=tseries["T"], day=(i + 1), t_sum=t_sum
+        )()
 
         # temperature function (f(T))
         temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()
@@ -245,7 +248,7 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=temperature_sum, st_1=params["ST1"], st_2=params["ST2"]
+            t_sum=t_sum, st_1=params["ST1"], st_2=params["ST2"]
         )()
         outputs_dict["seasonality"].append(seasonality)
 
@@ -264,18 +267,20 @@ def modvege(params, tseries, endday=365):
         precipitation = tseries["PP"][i]
 
         # water reserves (WR)
-        params["WR"] = lm.WaterReserves(
-            precipitation=precipitation, wreserves=params["WR"],
+        water_reserves = lm.WaterReserves(
+            precipitation=precipitation, w_reserves=water_reserves,
             aet=eta, whc=params["WHC"]
         )()
 
         # water stress (W)
         waterstress = lm.WaterStress(
-            wreserves=params["WR"], whc=params["WHC"]
+            w_reserves=params["WR"], whc=params["WHC"]
         )()
 
         # water stress function (f(W))
-        waterstress_fn = lm.WaterStressFunction(wstress=waterstress, pet=pet)()
+        waterstress_fn = lm.WaterStressFunction(
+            w_stress=waterstress, pet=pet
+        )()
 
         # incident photosynthetically active radiation (PAR_i)
         pari = tseries["PAR"][i]
@@ -301,16 +306,25 @@ def modvege(params, tseries, endday=365):
         # reproductive function (REP)
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
-        # if params["ST2"] > temperature_sum > params["ST1"] and is_grazed:
-        #     rep_f = 0
-        # else:
-        #     rep_f = lm.ReproductiveFunction(n_index=params["NI"])()
-
         rep_f = lm.ReproductiveFunction(
             n_index=params["NI"], t_sum=temperature_sum,
-            st_1=params["ST1"], st_2=params["ST2"]
+            st_1=params["ST1"], st_2=params["ST2"],
+            stocking_rate=stocking_rate, cut_height=cut_height
         )()
         outputs_dict["reproductive_fn"].append(rep_f)
+
+        # allocation to reproductive
+        # TO-DO: when to change NI, and by how much?
+        # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+        # 0.4       0.30769
+        # 0.5       0.42307
+        # 0.6       0.53846
+        # 0.7       0.65384
+        # 0.8       0.76923
+        # 0.9       0.88461
+        # 1.0       1
+        # 1.1       1.11538
+        # 1.2       1.23076
 
         # senescence (SEN) and abscission (ABS)
         gv_senescent_biomass = lm.SenescenceGV(
@@ -361,11 +375,10 @@ def modvege(params, tseries, endday=365):
             temperature=temperature
         )()
 
-        # compute grazing and harvesting
-        harvested_biomass_part = 0
-        ingested_biomass_part = 0
-
-        if is_grazed and params["ST2"] > temperature_sum > params["ST1"]:
+        if (
+            stocking_rate > 0.0 and
+            params["ST2"] > temperature_sum > params["ST1"] + 50.0
+        ):
             # organic matter digestibility (OMD)
             omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
             omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
@@ -384,11 +397,7 @@ def modvege(params, tseries, endday=365):
                 bulk_density=params["rho_DR"], standing_biomass=biomass.dr
             )()
 
-            # stocking rate and max ingestion
-            stocking_rate = cm.StockingRate(
-                livestock_units=params["livestock_units"],
-                grazing_area=params["grazing_area"]
-            )()
+            # max ingestion based on stocking rate
             bm_ing_max = cm.MaximumIngestedBiomass(
                 stocking_rate=stocking_rate
             )()
@@ -413,144 +422,49 @@ def modvege(params, tseries, endday=365):
             biomass.dv -= ingestion["dv"]
             biomass.dr -= ingestion["dr"]
 
-        # is_harvested = bool(cut_height != 0)
-        # is_grazed = bool(
-        #     params["livestock_units"] != 0 and params["grazing_area"] != 0
-        # )
+        # biomass harvested per compartment
+        harvested_biomass_part_gv = cm.HarvestedBiomass(
+            bulk_density=params["rho_GV"],
+            standing_biomass=biomass.gv,
+            cut_height=cut_height,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_gr = cm.HarvestedBiomass(
+            bulk_density=params["rho_GR"],
+            standing_biomass=biomass.gr,
+            cut_height=cut_height,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_dv = cm.HarvestedBiomass(
+            bulk_density=params["rho_DV"],
+            standing_biomass=biomass.dv,
+            cut_height=cut_height,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_dr = cm.HarvestedBiomass(
+            bulk_density=params["rho_DR"],
+            standing_biomass=biomass.dr,
+            cut_height=cut_height,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
 
-        #     # look for flags to indicate mechanical cut
-        #     if is_harvested:
-        #         harvested_biomass_part = [0, 0, 0, 0]
-        #         harvested_biomass_part[0], biomass.gv = lm.harvest_biomass(
-        #             cutHeight=cut_height, bulkDensity=params["rho_GV"],
-        #             biomass=biomass.gv
-        #         )
-        #         harvested_biomass_part[1], biomass.dv = lm.harvest_biomass(
-        #             cutHeight=cut_height, bulkDensity=params["rho_DV"],
-        #             biomass=biomass.dv
-        #         )
-        #         harvested_biomass_part[2], biomass.gr = lm.harvest_biomass(
-        #             cutHeight=cut_height, bulkDensity=params["rho_GR"],
-        #             biomass=biomass.gr
-        #         )
-        #         harvested_biomass_part[3], biomass.dr = lm.harvest_biomass(
-        #             cutHeight=cut_height, bulkDensity=params["rho_DR"],
-        #             biomass=biomass.dr
-        #         )
-        #         harvested_biomass_part = sum(harvested_biomass_part)
-        #         # (
-        #         #     harvested_biomass_part,
-        #         #     biomass.gv, biomass.dv, biomass.gr, biomass.dr
-        #         # ) = (
-        #         #     lm.cut(
-        #         #         cutHeight=cut_height, rhogv=params["rho_GV"],
-        #         #         rhodv=params["rho_DV"], rhogr=params["rho_GR"],
-        #         #         rhodr=params["rho_DR"], gvb=biomass.gv,
-        #         #         dvb=biomass.dv, grb=biomass.gr, drb=biomass.dr
-        #         #     )
-        #         # )
+        # total harvested biomass
+        harvested_biomass_part += (
+            harvested_biomass_part_gv + harvested_biomass_part_gr +
+            harvested_biomass_part_dv + harvested_biomass_part_dr
+        )
 
-        #     # look for flags to indicate livestock ingestion
-        #     if is_grazed:
-        #         # ingested_biomass_part = lm.defoliation(
-        #         #     biomass.gv=biomass.gv, biomass.dv=biomass.dv,
-        #         #     biomass.gr=biomass.gr, biomass.dr=biomass.dr,
-        #         #     cutHeight=cut_height, rhogv=params["rho_GV"],
-        #         #     rhodv=params["rho_DV"], rhogr=params["rho_GR"],
-        #         #     rhodr=params["rho_DR"]
-        #         # )  # ** MODIFIED -- NEED TO CHECK!
-        #         # ingested biomass based on stocking rate
-        #         # for bd in ["rho_GV", "rho_GR", "rho_DV", "rho_DR"]:
-        #         #     ingested_biomass_part += lm.ingested_biomass(
-        #         #         livestock_units=params["livestock_units"],
-        #         #         grazing_area=params["grazing_area"],
-        #         #         bulk_density=params[bd]
-        #         #     )
-        #         # ingested_biomass_part = [0, 0, 0, 0]
-        #         ingested_biomass_part = lm.ingested_biomass(
-        #             livestock_units=params["livestock_units"],
-        #             grazing_area=params["grazing_area"],
-        #             bulk_density=params["rho_GV"],
-        #             min_cut_height=params["cutHeight"]
-        #         )
-        #         # ingested_biomass_part = sum(ingested_biomass_part)
-        #     # allocation to reproductive
-        #     a2r = lm.ReproductiveFunction(n_index=params["NI"])()
-        #     # TO-DO: when to change NI, and by how much?
-        #     # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
-        #     # 0.4       0.30769
-        #     # 0.5       0.42307
-        #     # 0.6       0.53846
-        #     # 0.7       0.65384
-        #     # 0.8       0.76923
-        #     # 0.9       0.88461
-        #     # 1.0       1
-        #     # 1.1       1.11538
-        #     # 1.2       1.23076
-        # else:
-        #     # if (temperature_sum < st1 or st2 < temperature_sum)
-        #     a2r = 0
-        #     is_harvested = False
-        #     is_grazed = False
+        # update biomass compartments
+        biomass.gv -= harvested_biomass_part_gv
+        biomass.gr -= harvested_biomass_part_gr
+        biomass.dv -= harvested_biomass_part_dv
+        biomass.dr -= harvested_biomass_part_dr
 
-        # # isCut = bool(is_grazed is True or is_harvested is True)
-
-        # if bool(is_grazed is True or is_harvested is True):
-        #     # permanently stop reproduction
-        #     a2r = 0
-
-        # gro_gr = lm.GrowthGR(gro=gro, rep=rep_f)
-        # biomass.gv, age.gv = lm.BiomassGV(
-        #     gro_gv=lm.GrowthGV(gro=gro, rep=rep_f),
-        #     sen_gv=lm.SenescenceGV(temperature, age_gv, bm_gv), bm_gv,
-        #     age_gv, temperature
-        # )
-
-        # # update the state of the vegetative parts
-        # biomass.gv, age.gv, gv_senescent_biomass = lm.gv_update(
-        #     gro=gro, a2r=rep_f, temperature=temperature,
-        #     t0=params["T0"], biomass.gv=biomass.gv,
-        #     age.gv=age.gv
-        # )
-        # biomass.dv, age.dv = lm.dv_update(
-        #     gv_gamma=params["sigmaGV"],
-        #     gv_senescent_biomass=gv_senescent_biomass,
-        #     temperature=temperature,
-        #     biomass.dv=biomass.dv, age.dv=age.dv
-        # )
-
-        # # start the reproductive phase of the vegetation
-        # biomass.gr, age.gr, gr_senescent_biomass = lm.gr_update(
-        #     temperature=temperature, a2r=a2r, gro=gro, t0=params["T0"],
-        #     biomass.gr=biomass.gr, age.gr=age.gr
-        # )  # ** UNUSED ARGUMENTS REMOVED!
-        # biomass.dr, age.dr = lm.dr_update(
-        #     gr_gamma=params["sigmaGR"],
-        #     gr_senescent_biomass=gr_senescent_biomass,
-        #     temperature=temperature,
-        #     biomass.dr=biomass.dr, age.dr=age.dr
-        # )
-
-        # # compute available biomass for cut (output comparison requirement)
-        # biomass_cut_avail = lm.getAvailableBiomassForCut(
-        #     biomass.gv=biomass.gv, biomass.dv=biomass.dv,
-        #     biomass.gr=biomass.gr, biomass.dr=biomass.dr,
-        #     cutHeight=cut_height,
-        #     rhogv=params["rho_GV"], rhodv=params["rho_DV"],
-        #     rhogr=params["rho_GR"], rhodr=params["rho_DR"]
-        # )
-
-        # # accumulate harvestedBiomass
-        # if is_harvested:
-        #     # harvestedBiomass += outputs_dict["biomass_cut_avail"][-1]
-        #     harvestedBiomass += harvested_biomass_part
-        # # Accumulate ingestedBiomass
-        # if is_grazed:
-        #     ingestedBiomass += ingested_biomass_part
-
-        biomass_cut_avail = 0
-
-        # Recover output streams
+        # recover output streams
         outputs_dict["biomass_gv"].append(biomass.gv)
         outputs_dict["biomass_dv"].append(biomass.dv)
         outputs_dict["biomass_gr"].append(biomass.gr)
@@ -558,23 +472,34 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_harvested"].append(harvested_biomass_part)
         outputs_dict["biomass_ingested"].append(ingested_biomass_part)
         outputs_dict["biomass_growth"].append(gro)
-        outputs_dict["biomass_cut_avail"].append(biomass_cut_avail)
+        outputs_dict["biomass_available"].append(biomass_available)
         outputs_dict["temperature_sum"].append(temperature_sum)
         outputs_dict["age_gv"].append(age.gv)
         outputs_dict["age_gr"].append(age.gr)
         outputs_dict["age_dv"].append(age.dv)
         outputs_dict["age_dr"].append(age.dr)
+        outputs_dict["water_reserves"].append(water_reserves)
 
     return (
-        outputs_dict["biomass_gv"], outputs_dict["biomass_dv"],
-        outputs_dict["biomass_gr"], outputs_dict["biomass_dr"],
-        outputs_dict["biomass_harvested"], outputs_dict["biomass_ingested"],
-        outputs_dict["biomass_growth"], outputs_dict["biomass_cut_avail"],
-        outputs_dict["temperature_sum"], outputs_dict["age_gv"],
-        outputs_dict["age_dv"], outputs_dict["age_gr"], outputs_dict["age_dr"],
-        outputs_dict["seasonality"], outputs_dict["temperature_fn"],
-        outputs_dict["env"], outputs_dict["biomass_growth_pot"],
+        outputs_dict["biomass_gv"],
+        outputs_dict["biomass_dv"],
+        outputs_dict["biomass_gr"],
+        outputs_dict["biomass_dr"],
+        outputs_dict["biomass_harvested"],
+        outputs_dict["biomass_ingested"],
+        outputs_dict["biomass_growth"],
+        outputs_dict["biomass_available"],
+        outputs_dict["temperature_sum"],
+        outputs_dict["age_gv"],
+        outputs_dict["age_dv"],
+        outputs_dict["age_gr"],
+        outputs_dict["age_dr"],
+        outputs_dict["seasonality"],
+        outputs_dict["temperature_fn"],
+        outputs_dict["env"],
+        outputs_dict["biomass_growth_pot"],
         outputs_dict["reproductive_fn"],
         outputs_dict["leaf_area_index"],
-        outputs_dict["actual_evapotranspiration"]
+        outputs_dict["actual_evapotranspiration"],
+        outputs_dict["water_reserves"]
     )
