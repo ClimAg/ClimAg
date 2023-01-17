@@ -128,7 +128,9 @@ class MaximumAvailableBiomass:
     def __call__(self) -> float:
         residual_biomass = self.cut_height * self.bulk_density * 10
         if residual_biomass < self.standing_biomass:
-            available_biomass = (self.standing_biomass - residual_biomass) * .9
+            available_biomass = (
+                (self.standing_biomass - residual_biomass) * .9
+            )
         else:
             available_biomass = 0.0
         return available_biomass

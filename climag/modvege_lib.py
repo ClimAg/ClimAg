@@ -279,9 +279,9 @@ class TemperatureFunction:
     t_max: float = 40.0
 
     def __call__(self) -> float:
-        if self.t_m10 < self.t_0 or self.t_m10 >= self.t_max:
+        if self.t_m10 <= self.t_0 or self.t_m10 >= self.t_max:
             val = 0.0
-        elif self.t_0 <= self.t_m10 < self.t_1:
+        elif self.t_0 < self.t_m10 < self.t_1:
             # linear relationship
             gradient = 1.0 / (self.t_1 - self.t_0)
             intercept = 1.0 - gradient * self.t_1
