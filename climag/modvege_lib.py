@@ -506,6 +506,8 @@ class ReproductiveFunction:
     st_1 : Sum of temperatures at the beginning of the reproductive period
         [°C d]
     st_2 : Sum of temperatures at the end of the reproductive period [°C d]
+    stocking_rate : Stocking rate [LU ha⁻¹]
+    cut_height : Grass cut height [m]
 
     Returns
     -------
@@ -514,14 +516,26 @@ class ReproductiveFunction:
 
     n_index: float
     t_sum: float
+    stocking_rate: float
     st_1: float = 600.0
     st_2: float = 1200.0
+    cut_height: float = 0.05
 
     def __call__(self) -> float:
-        if self.st_1 <= self.t_sum <= self.st_2:
-            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
+        if (
+            self.stocking_rate > 0.0 and
+            self.st_1 + 50.0 <= self.t_sum <= self.st_2
+        ):
+            val = 0.0
+        elif (
+            self.cut_height > 0.0 and
+            self.st_2 >= self.t_sum >= self.st_2 - 50.0
+        ):
+            val = 0.0
+        elif self.t_sum < self.st_1 or self.t_sum > self.st_2:
+            val = 0.0
         else:
-            val = 0
+            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
         return val
 
 

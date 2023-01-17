@@ -136,10 +136,10 @@ def modvege(params, tseries, endday=365):
 
     cut_height = params["cutHeight"]
 
-    is_harvested = bool(cut_height != 0)
-    is_grazed = bool(
-        params["livestock_units"] != 0 and params["grazing_area"] != 0
-    )
+    stocking_rate = cm.StockingRate(
+        livestock_units=params["livestock_units"],
+        grazing_area=params["grazing_area"]
+    )()
 
     # nitrogen nutritional index (NI)
     # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
@@ -306,17 +306,25 @@ def modvege(params, tseries, endday=365):
         # reproductive function (REP)
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
-        if (
-            bool(is_grazed or is_harvested) and
-            params["ST2"] > temperature_sum > params["ST1"] + 50.0
-        ):
-            rep_f = 0.0
-        else:
-            rep_f = lm.ReproductiveFunction(
-                n_index=params["NI"], t_sum=temperature_sum,
-                st_1=params["ST1"], st_2=params["ST2"]
-            )()
+        rep_f = lm.ReproductiveFunction(
+            n_index=params["NI"], t_sum=temperature_sum,
+            st_1=params["ST1"], st_2=params["ST2"],
+            stocking_rate=stocking_rate, cut_height=cut_height
+        )()
         outputs_dict["reproductive_fn"].append(rep_f)
+
+        # allocation to reproductive
+        # TO-DO: when to change NI, and by how much?
+        # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+        # 0.4       0.30769
+        # 0.5       0.42307
+        # 0.6       0.53846
+        # 0.7       0.65384
+        # 0.8       0.76923
+        # 0.9       0.88461
+        # 1.0       1
+        # 1.1       1.11538
+        # 1.2       1.23076
 
         # senescence (SEN) and abscission (ABS)
         gv_senescent_biomass = lm.SenescenceGV(
@@ -368,7 +376,7 @@ def modvege(params, tseries, endday=365):
         )()
 
         if (
-            is_grazed and
+            stocking_rate > 0.0 and
             params["ST2"] > temperature_sum > params["ST1"] + 50.0
         ):
             # organic matter digestibility (OMD)
@@ -389,11 +397,7 @@ def modvege(params, tseries, endday=365):
                 bulk_density=params["rho_DR"], standing_biomass=biomass.dr
             )()
 
-            # stocking rate and max ingestion
-            stocking_rate = cm.StockingRate(
-                livestock_units=params["livestock_units"],
-                grazing_area=params["grazing_area"]
-            )()
+            # max ingestion based on stocking rate
             bm_ing_max = cm.MaximumIngestedBiomass(
                 stocking_rate=stocking_rate
             )()
@@ -423,7 +427,6 @@ def modvege(params, tseries, endday=365):
             bulk_density=params["rho_GV"],
             standing_biomass=biomass.gv,
             cut_height=cut_height,
-            is_harvested=is_harvested,
             t_sum=temperature_sum,
             st_2=params["ST2"]
         )()
@@ -431,7 +434,6 @@ def modvege(params, tseries, endday=365):
             bulk_density=params["rho_GR"],
             standing_biomass=biomass.gr,
             cut_height=cut_height,
-            is_harvested=is_harvested,
             t_sum=temperature_sum,
             st_2=params["ST2"]
         )()
@@ -439,7 +441,6 @@ def modvege(params, tseries, endday=365):
             bulk_density=params["rho_DV"],
             standing_biomass=biomass.dv,
             cut_height=cut_height,
-            is_harvested=is_harvested,
             t_sum=temperature_sum,
             st_2=params["ST2"]
         )()
@@ -447,7 +448,6 @@ def modvege(params, tseries, endday=365):
             bulk_density=params["rho_DR"],
             standing_biomass=biomass.dr,
             cut_height=cut_height,
-            is_harvested=is_harvested,
             t_sum=temperature_sum,
             st_2=params["ST2"]
         )()
@@ -463,19 +463,6 @@ def modvege(params, tseries, endday=365):
         biomass.gr -= harvested_biomass_part_gr
         biomass.dv -= harvested_biomass_part_dv
         biomass.dr -= harvested_biomass_part_dr
-
-        # allocation to reproductive
-        # TO-DO: when to change NI, and by how much?
-        # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
-        # 0.4       0.30769
-        # 0.5       0.42307
-        # 0.6       0.53846
-        # 0.7       0.65384
-        # 0.8       0.76923
-        # 0.9       0.88461
-        # 1.0       1
-        # 1.1       1.11538
-        # 1.2       1.23076
 
         # recover output streams
         outputs_dict["biomass_gv"].append(biomass.gv)
