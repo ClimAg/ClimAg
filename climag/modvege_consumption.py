@@ -306,13 +306,20 @@ class HarvestedBiomass:
 
     bulk_density: float
     standing_biomass: float
+    t_sum: float
+    is_harvested: bool = True
     cut_height: float = 0.05
+    st_2: float = 1200.0
 
     def __call__(self) -> float:
-        residual_biomass = self.cut_height * self.bulk_density * 10
         harvested_biomass = 0.0
-        if residual_biomass < self.standing_biomass:
-            harvested_biomass += (
-                (self.standing_biomass - residual_biomass) * .9
-            )
+        if (
+            self.is_harvested and
+            self.st_2 >= self.t_sum >= self.st_2 - 50.0
+        ):
+            residual_biomass = self.cut_height * self.bulk_density * 10
+            if residual_biomass < self.standing_biomass:
+                harvested_biomass += (
+                    (self.standing_biomass - residual_biomass) * .9
+                )
         return harvested_biomass

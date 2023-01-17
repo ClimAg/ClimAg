@@ -308,7 +308,7 @@ def modvege(params, tseries, endday=365):
         # stocking rate is > 0
         if (
             bool(is_grazed or is_harvested) and
-            params["ST2"] > temperature_sum > params["STg1"]
+            params["ST2"] > temperature_sum > params["ST1"] + 50.0
         ):
             rep_f = 0.0
         else:
@@ -369,7 +369,7 @@ def modvege(params, tseries, endday=365):
 
         if (
             is_grazed and
-            params["STg2"] > temperature_sum > params["STg1"]
+            params["ST2"] > temperature_sum > params["ST1"] + 50.0
         ):
             # organic matter digestibility (OMD)
             omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
@@ -418,56 +418,64 @@ def modvege(params, tseries, endday=365):
             biomass.dv -= ingestion["dv"]
             biomass.dr -= ingestion["dr"]
 
-        if (
-            is_harvested and
-            params["ST2"] > temperature_sum > params["STg2"]
-        ):
-            # biomass harvested per compartment
-            harvested_biomass_part_gv = cm.HarvestedBiomass(
-                bulk_density=params["rho_GV"],
-                standing_biomass=biomass.gv,
-                cut_height=cut_height
-            )()
-            harvested_biomass_part_gr = cm.HarvestedBiomass(
-                bulk_density=params["rho_GR"],
-                standing_biomass=biomass.gr,
-                cut_height=cut_height
-            )()
-            harvested_biomass_part_dv = cm.HarvestedBiomass(
-                bulk_density=params["rho_DV"],
-                standing_biomass=biomass.dv,
-                cut_height=cut_height
-            )()
-            harvested_biomass_part_dr = cm.HarvestedBiomass(
-                bulk_density=params["rho_DR"],
-                standing_biomass=biomass.dr,
-                cut_height=cut_height
-            )()
+        # biomass harvested per compartment
+        harvested_biomass_part_gv = cm.HarvestedBiomass(
+            bulk_density=params["rho_GV"],
+            standing_biomass=biomass.gv,
+            cut_height=cut_height,
+            is_harvested=is_harvested,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_gr = cm.HarvestedBiomass(
+            bulk_density=params["rho_GR"],
+            standing_biomass=biomass.gr,
+            cut_height=cut_height,
+            is_harvested=is_harvested,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_dv = cm.HarvestedBiomass(
+            bulk_density=params["rho_DV"],
+            standing_biomass=biomass.dv,
+            cut_height=cut_height,
+            is_harvested=is_harvested,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
+        harvested_biomass_part_dr = cm.HarvestedBiomass(
+            bulk_density=params["rho_DR"],
+            standing_biomass=biomass.dr,
+            cut_height=cut_height,
+            is_harvested=is_harvested,
+            t_sum=temperature_sum,
+            st_2=params["ST2"]
+        )()
 
-            # total harvested biomass
-            harvested_biomass_part += (
-                harvested_biomass_part_gv + harvested_biomass_part_gr +
-                harvested_biomass_part_dv + harvested_biomass_part_dr
-            )
+        # total harvested biomass
+        harvested_biomass_part += (
+            harvested_biomass_part_gv + harvested_biomass_part_gr +
+            harvested_biomass_part_dv + harvested_biomass_part_dr
+        )
 
-            # update biomass compartments
-            biomass.gv -= harvested_biomass_part_gv
-            biomass.gr -= harvested_biomass_part_gr
-            biomass.dv -= harvested_biomass_part_dv
-            biomass.dr -= harvested_biomass_part_dr
+        # update biomass compartments
+        biomass.gv -= harvested_biomass_part_gv
+        biomass.gr -= harvested_biomass_part_gr
+        biomass.dv -= harvested_biomass_part_dv
+        biomass.dr -= harvested_biomass_part_dr
 
-        #     # allocation to reproductive
-        #     # TO-DO: when to change NI, and by how much?
-        #     # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
-        #     # 0.4       0.30769
-        #     # 0.5       0.42307
-        #     # 0.6       0.53846
-        #     # 0.7       0.65384
-        #     # 0.8       0.76923
-        #     # 0.9       0.88461
-        #     # 1.0       1
-        #     # 1.1       1.11538
-        #     # 1.2       1.23076
+        # allocation to reproductive
+        # TO-DO: when to change NI, and by how much?
+        # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
+        # 0.4       0.30769
+        # 0.5       0.42307
+        # 0.6       0.53846
+        # 0.7       0.65384
+        # 0.8       0.76923
+        # 0.9       0.88461
+        # 1.0       1
+        # 1.1       1.11538
+        # 1.2       1.23076
 
         # recover output streams
         outputs_dict["biomass_gv"].append(biomass.gv)
