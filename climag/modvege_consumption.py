@@ -9,7 +9,9 @@ import numpy as np
 np.seterr("raise")
 
 
-def organic_matter_digestibility_gv(age_gv: float, params: dict) -> float:
+def organic_matter_digestibility_gv(
+    age_gv: float, params: dict[str, float]
+) -> float:
     """
     Organic matter digestibility of the green vegetative (GV) compartment.
     See Equation (9) in Jouven et al. (2006)
@@ -60,7 +62,9 @@ def organic_matter_digestibility_gv(age_gv: float, params: dict) -> float:
 #         )
 
 
-def organic_matter_digestibility_gr(age_gr: float, params: dict) -> float:
+def organic_matter_digestibility_gr(
+    age_gr: float, params: dict[str, float]
+) -> float:
     """
     Organic matter digestibility of the green reproductive (GR) compartment.
     See Equation (9) in Jouven et al. (2006)
@@ -116,7 +120,9 @@ def organic_matter_digestibility_gr(age_gr: float, params: dict) -> float:
 #         )
 
 
-def maximum_available_biomass(ts_vals: dict, params: dict) -> dict:
+def maximum_available_biomass(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> dict[str, float]:
     """
     The maximum amount of biomass available for grazing and/or harvesting for
     each structural compartment.
@@ -150,25 +156,25 @@ def maximum_available_biomass(ts_vals: dict, params: dict) -> dict:
             )
         else:
             available_biomass[f"bm_{key}"] = 0.0
-        return available_biomass
+    return available_biomass
 
 
-@dataclass
-class MaximumAvailableBiomass:
+# @dataclass
+# class MaximumAvailableBiomass:
 
-    bulk_density: float
-    standing_biomass: float
-    cut_height: float = 0.05
+#     bulk_density: float
+#     standing_biomass: float
+#     cut_height: float = 0.05
 
-    def __call__(self) -> float:
-        residual_biomass = self.cut_height * self.bulk_density * 10
-        if residual_biomass < self.standing_biomass:
-            available_biomass = (
-                (self.standing_biomass - residual_biomass) * .9
-            )
-        else:
-            available_biomass = 0.0
-        return available_biomass
+#     def __call__(self) -> float:
+#         residual_biomass = self.cut_height * self.bulk_density * 10
+#         if residual_biomass < self.standing_biomass:
+#             available_biomass = (
+#                 (self.standing_biomass - residual_biomass) * .9
+#             )
+#         else:
+#             available_biomass = 0.0
+#         return available_biomass
 
 
 @dataclass
@@ -282,7 +288,7 @@ class Ingestion:
     omd_dv: float = 0.45
     omd_dr: float = 0.40
 
-    def __call__(self) -> float:
+    def __call__(self) -> dict[str, float]:
         weights = {}
         ingested = {}
         available = {}

@@ -134,9 +134,9 @@ def modvege(params, tseries, endday=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    cut_height = params["cut_height"]
+    # cut_height = params["cut_height"]
 
-    stocking_rate = cm.StockingRate(
+    params["stocking_rate"] = cm.StockingRate(
         livestock_units=params["livestock_units"],
         grazing_area=params["grazing_area"]
     )()
@@ -169,14 +169,6 @@ def modvege(params, tseries, endday=365):
         "actual_evapotranspiration": [],
         "water_reserves": []
     }
-
-    # @dataclass
-    # class StandingBiomass:
-    #     """Standing biomass"""
-    #     gv: float
-    #     gr: float
-    #     dv: float
-    #     dr: float
 
     @dataclass
     class BiomassAge:
@@ -325,7 +317,8 @@ def modvege(params, tseries, endday=365):
         rep_f = lm.ReproductiveFunction(
             n_index=params["n_index"], t_sum=temperature_sum,
             st_1=params["st_1"], st_2=params["st_2"],
-            stocking_rate=stocking_rate, cut_height=cut_height
+            stocking_rate=params["stocking_rate"],
+            cut_height=params["cut_height"]
         )()
         outputs_dict["reproductive_fn"].append(rep_f)
 
@@ -392,7 +385,7 @@ def modvege(params, tseries, endday=365):
         )()
 
         if (
-            stocking_rate > 0.0 and
+            params["stocking_rate"] > 0.0 and
             params["st_2"] > temperature_sum > params["st_1"] + 50.0
         ):
             # organic matter digestibility (OMD)
@@ -406,32 +399,41 @@ def modvege(params, tseries, endday=365):
             )
 
             # available biomass per compartment
-            bm_gv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_gv"], standing_biomass=ts_vals["bm_gv"]
-            )()
-            bm_gr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_gr"], standing_biomass=ts_vals["bm_gr"]
-            )()
-            bm_dv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_dv"], standing_biomass=ts_vals["bm_dv"]
-            )()
-            bm_dr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_dr"], standing_biomass=ts_vals["bm_dr"]
-            )()
-
-            # bm_max = cm.maximum_available_biomass(
-            #     ts_vals=ts_vals, params=params
-            # )
+            # bm_gv_max = cm.MaximumAvailableBiomass(
+            #     bulk_density=params["bd_gv"],
+            #     standing_biomass=ts_vals["bm_gv"]
+            # )()
+            # bm_gr_max = cm.MaximumAvailableBiomass(
+            #     bulk_density=params["bd_gr"],
+            #     standing_biomass=ts_vals["bm_gr"]
+            # )()
+            # bm_dv_max = cm.MaximumAvailableBiomass(
+            #     bulk_density=params["bd_dv"],
+            #     standing_biomass=ts_vals["bm_dv"]
+            # )()
+            # bm_dr_max = cm.MaximumAvailableBiomass(
+            #     bulk_density=params["bd_dr"],
+            #     standing_biomass=ts_vals["bm_dr"]
+            # )()
+            bm_max = cm.maximum_available_biomass(
+                ts_vals=ts_vals, params=params
+            )
 
             # max ingestion based on stocking rate
             bm_ing_max = cm.MaximumIngestedBiomass(
-                stocking_rate=stocking_rate
+                stocking_rate=params["stocking_rate"]
             )()
 
             # actual ingestion
+            # ingestion = cm.Ingestion(
+            #     bm_gv_av=bm_gv_max, bm_gr_av=bm_gr_max,
+            #     bm_dv_av=bm_dv_max, bm_dr_av=bm_dr_max,
+            #     max_ingested_biomass=bm_ing_max,
+            #     omd_gv=omd_gv, omd_gr=omd_gr
+            # )()
             ingestion = cm.Ingestion(
-                bm_gv_av=bm_gv_max, bm_gr_av=bm_gr_max,
-                bm_dv_av=bm_dv_max, bm_dr_av=bm_dr_max,
+                bm_gv_av=bm_max["bm_gv"], bm_gr_av=bm_max["bm_gr"],
+                bm_dv_av=bm_max["bm_dv"], bm_dr_av=bm_max["bm_dr"],
                 max_ingested_biomass=bm_ing_max,
                 omd_gv=omd_gv, omd_gr=omd_gr
             )()
@@ -452,28 +454,28 @@ def modvege(params, tseries, endday=365):
         harvested_biomass_part_gv = cm.HarvestedBiomass(
             bulk_density=params["bd_gv"],
             standing_biomass=ts_vals["bm_gv"],
-            cut_height=cut_height,
+            cut_height=params["cut_height"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
             bulk_density=params["bd_gr"],
             standing_biomass=ts_vals["bm_gr"],
-            cut_height=cut_height,
+            cut_height=params["cut_height"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
             bulk_density=params["bd_dv"],
             standing_biomass=ts_vals["bm_dv"],
-            cut_height=cut_height,
+            cut_height=params["cut_height"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
             bulk_density=params["bd_dr"],
             standing_biomass=ts_vals["bm_dr"],
-            cut_height=cut_height,
+            cut_height=params["cut_height"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
