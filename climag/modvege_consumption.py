@@ -319,7 +319,7 @@ class HarvestedBiomass:
         harvested_biomass = 0.0
         if (
             self.cut_height > 0 and
-            self.st_2 >= self.t_sum >= self.st_2 - 50.0
+            self.st_2 + 50.0 >= self.t_sum >= self.st_2
         ):
             residual_biomass = self.cut_height * self.bulk_density * 10
             if residual_biomass < self.standing_biomass:

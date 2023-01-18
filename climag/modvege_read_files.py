@@ -21,7 +21,8 @@ import pandas as pd
 
 
 def read_params(filename):
-    """Read the input parameters (constants) file
+    """
+    Read the input parameters (constants) file
 
     See Tables 2 and 3 in Jouven et al. (2006) for estimates of these
     parameters. Temperate grasses have been classified into four groups based
@@ -70,7 +71,7 @@ def read_params(filename):
                     (Kl_DV) [0.001]
     - Kl_DR       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
-    - cutHeight   : Grass cut height; see sec. "Harvested biomass" in Jouven
+    - cut_height  : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
     - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
     - maxOMDgv    : Maximum organic matter digestibility of the green
@@ -85,18 +86,19 @@ def read_params(filename):
                     compartment (OMD_DV) [0.45]
     - meanOMDdr   : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
-
-    - NI          : Initial nitrogen nutritional index of cell
-    - WHC         : Soil water-holding capacity (WHC) [mm]
-    - WR          : Water reserve (WR) [mm]
-    - W_GV        : Initial biomass of GV [kg DM ha⁻¹]
-    - W_GR        : Initial biomass of GR [kg DM ha⁻¹]
-    - W_DV        : Initial biomass of DV [kg DM ha⁻¹]
-    - W_DR        : Initial biomass of DR [kg DM ha⁻¹]
-    - init_AGE_GV : Initial GV age [°C d]
-    - init_AGE_GR : Initial GR age [°C d]
-    - init_AGE_DV : Initial DV age [°C d]
-    - init_AGE_DR : Initial DR age [°C d]
+    - n_index     : Nitrogen nutritional index
+    - whc         : Soil water-holding capacity (WHC) [mm]
+    - wr_init     : Initial water reserves (WR) [mm]
+    - bm_gv_init  : Initial biomass of GV [kg DM ha⁻¹]
+    - bm_gr_init  : Initial biomass of GR [kg DM ha⁻¹]
+    - bm_dv_init  : Initial biomass of DV [kg DM ha⁻¹]
+    - bm_dr_init  : Initial biomass of DR [kg DM ha⁻¹]
+    - age_gv_init : Initial GV age [°C d]
+    - age_gr_init : Initial GR age [°C d]
+    - age_dv_init : Initial DV age [°C d]
+    - age_dr_init : Initial DR age [°C d]
+    - livestock_units
+    - grazing_area
 
     Parameters
     ----------
@@ -114,7 +116,8 @@ def read_params(filename):
 
 
 def read_timeseries(filename):
-    """Read the time series input data
+    """
+    Read the time series input data
 
     Definition of inputs
     --------------------

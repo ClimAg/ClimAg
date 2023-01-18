@@ -134,7 +134,7 @@ def modvege(params, tseries, endday=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    cut_height = params["cutHeight"]
+    cut_height = params["cut_height"]
 
     stocking_rate = cm.StockingRate(
         livestock_units=params["livestock_units"],
@@ -143,7 +143,7 @@ def modvege(params, tseries, endday=365):
 
     # nitrogen nutritional index (NI)
     # if NI is below 0.35, force it to 0.35 (Bélanger et al. 1994)
-    params["NI"] = max(params["NI"], 0.35)
+    params["n_index"] = max(params["n_index"], 0.35)
 
     # outputs
     outputs_dict = {
@@ -192,14 +192,14 @@ def modvege(params, tseries, endday=365):
         # standing biomass, biomass age, and water reserves
         if i == 0:
             biomass = StandingBiomass(
-                gv=params["W_GV"], gr=params["W_GR"],
-                dv=params["W_DV"], dr=params["W_DR"]
+                gv=params["bm_gv_init"], gr=params["bm_gr_init"],
+                dv=params["bm_dv_init"], dr=params["bm_dr_init"]
             )
             age = BiomassAge(
-                gv=params["init_AGE_GV"], gr=params["init_AGE_GR"],
-                dv=params["init_AGE_DV"], dr=params["init_AGE_DR"]
+                gv=params["age_gv_init"], gr=params["age_gr_init"],
+                dv=params["age_dv_init"], dr=params["age_dr_init"]
             )
-            water_reserves = params["WR"]
+            water_reserves = params["wr_init"]
         else:
             biomass = StandingBiomass(
                 gv=outputs_dict["biomass_gv"][i - 1],
@@ -269,12 +269,12 @@ def modvege(params, tseries, endday=365):
         # water reserves (WR)
         water_reserves = lm.WaterReserves(
             precipitation=precipitation, w_reserves=water_reserves,
-            aet=eta, whc=params["WHC"]
+            aet=eta, whc=params["whc"]
         )()
 
         # water stress (W)
         waterstress = lm.WaterStress(
-            w_reserves=params["WR"], whc=params["WHC"]
+            w_reserves=water_reserves, whc=params["whc"]
         )()
 
         # water stress function (f(W))
@@ -289,7 +289,7 @@ def modvege(params, tseries, endday=365):
         env = lm.EnvironmentalLimitation(
             t_fn=temperature_fn,
             par_i=pari,
-            n_index=params["NI"],
+            n_index=params["n_index"],
             w_fn=waterstress_fn
         )()
         outputs_dict["env"].append(env)
@@ -307,7 +307,7 @@ def modvege(params, tseries, endday=365):
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
         rep_f = lm.ReproductiveFunction(
-            n_index=params["NI"], t_sum=temperature_sum,
+            n_index=params["n_index"], t_sum=temperature_sum,
             st_1=params["ST1"], st_2=params["ST2"],
             stocking_rate=stocking_rate, cut_height=cut_height
         )()
