@@ -48,17 +48,17 @@ def read_params(filename):
     - max_sea     : Maximum seasonal effect (maxSEA) [1.20]
     - min_sea     : Minimum seasonal effect (minSEA) [0.80]
     - lls         : Leaf lifespan (LLS) [500 °C d]
-    - rho_gv      : Bulk density of the green vegetative compartment (BD_GV)
+    - bd_gv       : Bulk density of the green vegetative compartment (BD_GV)
                     [850 g DM m⁻³]
-    - rho_dv      : Bulk density of the dead vegetative compartment (BD_DV)
+    - bd_dv       : Bulk density of the dead vegetative compartment (BD_DV)
                     [500 g DM m⁻³]
-    - rho_gr      : Bulk density of the green reproductive compartment (BD_GR)
+    - bd_gr       : Bulk density of the green reproductive compartment (BD_GR)
                     [300 g DM m⁻³]
-    - rho_dr      : Bulk density of the dead reproductive compartment (BD_DR)
+    - bd_dr       : Bulk density of the dead reproductive compartment (BD_DR)
                     [150 g DM m⁻³]
-    - sigmaGV     : Rate of biomass loss with respiration for the green
+    - sigma_gv    : Rate of biomass loss with respiration for the green
                     vegetative compartment (σ_GV) [0.4]
-    - sigmaGR     : Rate of biomass loss with respiration for the green
+    - sigma_gr    : Rate of biomass loss with respiration for the green
                     reproductive compartment (σ_GR) [0.2]
     - t_0         : Minimum temperature for growth (T₀) [4 °C]
     - t_1         : Minimum temperature for optimal growth (T₁) [10 °C]
@@ -75,17 +75,17 @@ def read_params(filename):
     - cut_height  : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
     - rue_max     : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
-    - maxOMDgv    : Maximum organic matter digestibility of the green
+    - max_omd_gv  : Maximum organic matter digestibility of the green
                     vegetative compartment (maxOMD_GV) [0.90]
-    - minOMDgv    : Minimum organic matter digestibility of the green
+    - min_omd_gv  : Minimum organic matter digestibility of the green
                     vegetative compartment (minOMD_GV) [0.75]
-    - maxOMDgr    : Maximum organic matter digestibility of the green
+    - max_omd_gr  : Maximum organic matter digestibility of the green
                     reproductive compartment (maxOMD_GR) [0.90]
-    - minOMDgr    : Minimum organic matter digestibility of the green
+    - min_omd_gr  : Minimum organic matter digestibility of the green
                     reproductive compartment (minOMD_GR) [0.65]
-    - meanOMDdv   : Organic matter digestibility for the dead vegetative
+    - mean_omd_dv : Organic matter digestibility for the dead vegetative
                     compartment (OMD_DV) [0.45]
-    - meanOMDdr   : Organic matter digestibility for the dead reproductive
+    - mean_omd_dr : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
     - n_index     : Nitrogen nutritional index
     - whc         : Soil water-holding capacity (WHC) [mm]
