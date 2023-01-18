@@ -9,8 +9,7 @@ import numpy as np
 np.seterr("raise")
 
 
-@dataclass
-class OrganicMatterDigestibilityGV:
+def organic_matter_digestibility_gv(age_gv: float, params: dict) -> float:
     """
     Organic matter digestibility of the green vegetative (GV) compartment.
     See Equation (9) in Jouven et al. (2006)
@@ -25,32 +24,43 @@ class OrganicMatterDigestibilityGV:
     Parameters
     ----------
     age_gv : Age of the GV compartment [°C d]
-    min_omd_gv : Minimum OMD of the GV compartment; default is 0.75
-        [dimensionless]
-    max_omd_gv : Maximum OMD of the GV compartment; default is 0.9
-        [dimensionless]
-    lls : Leaf lifespan; default is 500 [°C d]
+    params : A dictionary of parameters with the following entries
+        - min_omd_gv: Minimum OMD of the GV compartment; default is 0.75
+            [dimensionless]
+        - max_omd_gv: Maximum OMD of the GV compartment; default is 0.9
+            [dimensionless]
+        - lls: Leaf lifespan; default is 500 [°C d]
 
     Returns
     -------
     - Organic matter digestibility of the GV compartment [dimensionless]
     """
 
-    age_gv: float
-    min_omd_gv: float = 0.75
-    max_omd_gv: float = 0.9
-    lls: float = 500.0
-
-    def __call__(self) -> float:
-        return max(
-            self.max_omd_gv -
-            (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls,
-            self.min_omd_gv
-        )
+    return max(
+        params["max_omd_gv"] -
+        (age_gv * (params["max_omd_gv"] - params["min_omd_gv"])) /
+        params["lls"],
+        params["min_omd_gv"]
+    )
 
 
-@dataclass
-class OrganicMatterDigestibilityGR:
+# @dataclass
+# class OrganicMatterDigestibilityGV:
+
+#     age_gv: float
+#     min_omd_gv: float = 0.75
+#     max_omd_gv: float = 0.9
+#     lls: float = 500.0
+
+#     def __call__(self) -> float:
+#         return max(
+#             self.max_omd_gv -
+#             (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls,
+#             self.min_omd_gv
+#         )
+
+
+def organic_matter_digestibility_gr(age_gr: float, params: dict) -> float:
     """
     Organic matter digestibility of the green reproductive (GR) compartment.
     See Equation (9) in Jouven et al. (2006)
@@ -65,37 +75,48 @@ class OrganicMatterDigestibilityGR:
     Parameters
     ----------
     age_gr : Age of the GR compartment [°C d]
-    min_omd_gr : Minimum OMD of the GR compartment; default is 0.65
-        [dimensionless]
-    max_omd_gr : Maximum OMD of the GR compartment; default is 0.9
-        [dimensionless]
-    st_1 : Sum of temperatures at the beginning of the reproductive period;
-        default is 600 [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period; default
-        is 1200 [°C d]
+    params : A dictionary of parameters with the following entries
+        - min_omd_gr: Minimum OMD of the GR compartment; default is 0.65
+            [dimensionless]
+        - max_omd_gr: Maximum OMD of the GR compartment; default is 0.9
+            [dimensionless]
+        - st_1: Sum of temperatures at the beginning of the reproductive
+            period; default is 600 [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period;
+            default is 1200 [°C d]
 
     Returns
     -------
     - Organic matter digestibility of the GR compartment [dimensionless]
     """
 
-    age_gr: float
-    min_omd_gr: float = 0.65
-    max_omd_gr: float = 0.9
-    st_1: float = 600.0
-    st_2: float = 1200.0
-
-    def __call__(self) -> float:
-        return max(
-            self.max_omd_gr -
-            (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
-            (self.st_2 - self.st_1),
-            self.min_omd_gr
-        )
+    return max(
+        params["max_omd_gr"] -
+        (age_gr * (params["max_omd_gr"] - params["min_omd_gr"])) /
+        (params["st_2"] - params["st_1"]),
+        params["min_omd_gr"]
+    )
 
 
-@dataclass
-class MaximumAvailableBiomass:
+# @dataclass
+# class OrganicMatterDigestibilityGR:
+
+#     age_gr: float
+#     min_omd_gr: float = 0.65
+#     max_omd_gr: float = 0.9
+#     st_1: float = 600.0
+#     st_2: float = 1200.0
+
+#     def __call__(self) -> float:
+#         return max(
+#             self.max_omd_gr -
+#             (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
+#             (self.st_2 - self.st_1),
+#             self.min_omd_gr
+#         )
+
+
+def maximum_available_biomass(ts_vals: dict, params: dict) -> dict:
     """
     The maximum amount of biomass available for grazing and/or harvesting for
     each structural compartment.
@@ -118,8 +139,22 @@ class MaximumAvailableBiomass:
     Returns
     -------
     - Maximum available biomass [kg DM ha⁻¹]
-    - Residual biomass [kg DM ha⁻¹]
     """
+
+    available_biomass = {}
+    for key in ["gv", "gr", "dv", "dr"]:
+        residual_biomass = params["cut_height"] * params[f"bd_{key}"] * 10
+        if residual_biomass < ts_vals[f"bm_{key}"]:
+            available_biomass[f"bm_{key}"] = (
+                (ts_vals[f"bm_{key}"] - residual_biomass) * .9
+            )
+        else:
+            available_biomass[f"bm_{key}"] = 0.0
+        return available_biomass
+
+
+@dataclass
+class MaximumAvailableBiomass:
 
     bulk_density: float
     standing_biomass: float

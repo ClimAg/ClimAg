@@ -170,13 +170,13 @@ def modvege(params, tseries, endday=365):
         "water_reserves": []
     }
 
-    @dataclass
-    class StandingBiomass:
-        """Standing biomass"""
-        gv: float
-        gr: float
-        dv: float
-        dr: float
+    # @dataclass
+    # class StandingBiomass:
+    #     """Standing biomass"""
+    #     gv: float
+    #     gr: float
+    #     dv: float
+    #     dr: float
 
     @dataclass
     class BiomassAge:
@@ -186,27 +186,39 @@ def modvege(params, tseries, endday=365):
         dv: float
         dr: float
 
+    ts_vals = {}
+
     # daily loop
     for i in range(endday):
         # initialise starting parameters
         # standing biomass, biomass age, and water reserves
         if i == 0:
-            biomass = StandingBiomass(
-                gv=params["bm_gv_init"], gr=params["bm_gr_init"],
-                dv=params["bm_dv_init"], dr=params["bm_dr_init"]
-            )
+            # biomass = StandingBiomass(
+            #     gv=params["bm_gv_init"], gr=params["bm_gr_init"],
+            #     dv=params["bm_dv_init"], dr=params["bm_dr_init"]
+            # )
+            ts_vals["bm_gv"] = params["bm_gv_init"]
+            ts_vals["bm_gr"] = params["bm_gr_init"]
+            ts_vals["bm_dv"] = params["bm_dv_init"]
+            ts_vals["bm_dr"] = params["bm_dr_init"]
+
             age = BiomassAge(
                 gv=params["age_gv_init"], gr=params["age_gr_init"],
                 dv=params["age_dv_init"], dr=params["age_dr_init"]
             )
             water_reserves = params["wr_init"]
         else:
-            biomass = StandingBiomass(
-                gv=outputs_dict["biomass_gv"][i - 1],
-                gr=outputs_dict["biomass_gr"][i - 1],
-                dv=outputs_dict["biomass_dv"][i - 1],
-                dr=outputs_dict["biomass_dr"][i - 1]
-            )
+            # biomass = StandingBiomass(
+            #     gv=outputs_dict["biomass_gv"][i - 1],
+            #     gr=outputs_dict["biomass_gr"][i - 1],
+            #     dv=outputs_dict["biomass_dv"][i - 1],
+            #     dr=outputs_dict["biomass_dr"][i - 1]
+            # )
+            ts_vals["bm_gv"] = outputs_dict["biomass_gv"][i - 1]
+            ts_vals["bm_gr"] = outputs_dict["biomass_gr"][i - 1]
+            ts_vals["bm_dv"] = outputs_dict["biomass_dv"][i - 1]
+            ts_vals["bm_dr"] = outputs_dict["biomass_dr"][i - 1]
+
             age = BiomassAge(
                 gv=outputs_dict["age_gv"][i - 1],
                 gr=outputs_dict["age_gr"][i - 1],
@@ -227,7 +239,10 @@ def modvege(params, tseries, endday=365):
             t_sum = outputs_dict["temperature_sum"][i - 1]
 
         # total standing biomass at the beginning of the day
-        biomass_available = biomass.gv + biomass.gr + biomass.dv + biomass.dr
+        biomass_available = (
+            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
+            ts_vals["bm_dv"] + ts_vals["bm_dr"]
+        )
 
         # temperature (T)
         temperature = tseries["T"][i]
@@ -254,7 +269,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["seasonality"].append(seasonality)
 
         # leaf area index (LAI)
-        lai = lm.LeafAreaIndex(bm_gv=biomass.gv)()
+        lai = lm.LeafAreaIndex(bm_gv=ts_vals["bm_gv"])()
         outputs_dict["leaf_area_index"].append(lai)
 
         # potential evapotranspiration (PET)
@@ -329,47 +344,47 @@ def modvege(params, tseries, endday=365):
 
         # senescence (SEN) and abscission (ABS)
         gv_senescent_biomass = lm.SenescenceGV(
-            temperature=temperature, age_gv=age.gv, bm_gv=biomass.gv
+            temperature=temperature, age_gv=age.gv, bm_gv=ts_vals["bm_gv"]
         )()
         gr_senescent_biomass = lm.SenescenceGR(
-            temperature=temperature, age_gr=age.gr, bm_gr=biomass.gr,
+            temperature=temperature, age_gr=age.gr, bm_gr=ts_vals["bm_gr"],
             st_1=params["st_1"], st_2=params["st_2"]
         )()
         dv_abscission_biomass = lm.AbscissionDV(
-            temperature=temperature, bm_dv=biomass.dv, age_dv=age.dv
+            temperature=temperature, bm_dv=ts_vals["bm_dv"], age_dv=age.dv
         )()
         dr_abscission_biomass = lm.AbscissionDR(
-            temperature=temperature, bm_dr=biomass.dr, age_dr=age.dr,
+            temperature=temperature, bm_dr=ts_vals["bm_dr"], age_dr=age.dr,
             st_1=params["st_1"], st_2=params["st_2"]
         )()
 
         # standing biomass (BM) and biomass age (AGE)
-        biomass.gv, age.gv = lm.BiomassGV(
+        ts_vals["bm_gv"], age.gv = lm.BiomassGV(
             gro_gv=lm.GrowthGV(gro=gro, rep=rep_f)(),
             sen_gv=gv_senescent_biomass,
-            bm_gv=biomass.gv,
+            bm_gv=ts_vals["bm_gv"],
             age_gv=age.gv,
             temperature=temperature
         )()
 
-        biomass.gr, age.gr = lm.BiomassGR(
+        ts_vals["bm_gr"], age.gr = lm.BiomassGR(
             gro_gr=lm.GrowthGR(gro=gro, rep=rep_f)(),
             sen_gr=gr_senescent_biomass,
-            bm_gr=biomass.gr,
+            bm_gr=ts_vals["bm_gr"],
             age_gr=age.gr,
             temperature=temperature
         )()
 
-        biomass.dv, age.dv = lm.BiomassDV(
-            bm_dv=biomass.dv,
+        ts_vals["bm_dv"], age.dv = lm.BiomassDV(
+            bm_dv=ts_vals["bm_dv"],
             abs_dv=dv_abscission_biomass,
             sen_gv=gv_senescent_biomass,
             age_dv=age.dv,
             temperature=temperature
         )()
 
-        biomass.dr, age.dr = lm.BiomassDR(
-            bm_dr=biomass.dr,
+        ts_vals["bm_dr"], age.dr = lm.BiomassDR(
+            bm_dr=ts_vals["bm_dr"],
             abs_dr=dr_abscission_biomass,
             sen_gr=gr_senescent_biomass,
             age_dr=age.dr,
@@ -381,22 +396,32 @@ def modvege(params, tseries, endday=365):
             params["st_2"] > temperature_sum > params["st_1"] + 50.0
         ):
             # organic matter digestibility (OMD)
-            omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
-            omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
+            # omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
+            omd_gv = cm.organic_matter_digestibility_gv(
+                age_gv=age.gv, params=params
+            )
+            # omd_gr = cm.OrganicMatterDigestibilityGR(age_gr=age.gr)()
+            omd_gr = cm.organic_matter_digestibility_gr(
+                age_gr=age.gr, params=params
+            )
 
             # available biomass per compartment
             bm_gv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_gv"], standing_biomass=biomass.gv
+                bulk_density=params["bd_gv"], standing_biomass=ts_vals["bm_gv"]
             )()
             bm_gr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_gr"], standing_biomass=biomass.gr
+                bulk_density=params["bd_gr"], standing_biomass=ts_vals["bm_gr"]
             )()
             bm_dv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_dv"], standing_biomass=biomass.dv
+                bulk_density=params["bd_dv"], standing_biomass=ts_vals["bm_dv"]
             )()
             bm_dr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["bd_dr"], standing_biomass=biomass.dr
+                bulk_density=params["bd_dr"], standing_biomass=ts_vals["bm_dr"]
             )()
+
+            # bm_max = cm.maximum_available_biomass(
+            #     ts_vals=ts_vals, params=params
+            # )
 
             # max ingestion based on stocking rate
             bm_ing_max = cm.MaximumIngestedBiomass(
@@ -418,36 +443,36 @@ def modvege(params, tseries, endday=365):
             )
 
             # update biomass compartments
-            biomass.gv -= ingestion["gv"]
-            biomass.gr -= ingestion["gr"]
-            biomass.dv -= ingestion["dv"]
-            biomass.dr -= ingestion["dr"]
+            ts_vals["bm_gv"] -= ingestion["gv"] / 0.9
+            ts_vals["bm_gr"] -= ingestion["gr"] / 0.9
+            ts_vals["bm_dv"] -= ingestion["dv"] / 0.9
+            ts_vals["bm_dr"] -= ingestion["dr"] / 0.9
 
         # biomass harvested per compartment
         harvested_biomass_part_gv = cm.HarvestedBiomass(
             bulk_density=params["bd_gv"],
-            standing_biomass=biomass.gv,
+            standing_biomass=ts_vals["bm_gv"],
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
             bulk_density=params["bd_gr"],
-            standing_biomass=biomass.gr,
+            standing_biomass=ts_vals["bm_gr"],
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
             bulk_density=params["bd_dv"],
-            standing_biomass=biomass.dv,
+            standing_biomass=ts_vals["bm_dv"],
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
             bulk_density=params["bd_dr"],
-            standing_biomass=biomass.dr,
+            standing_biomass=ts_vals["bm_dr"],
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
@@ -460,16 +485,16 @@ def modvege(params, tseries, endday=365):
         )
 
         # update biomass compartments
-        biomass.gv -= harvested_biomass_part_gv
-        biomass.gr -= harvested_biomass_part_gr
-        biomass.dv -= harvested_biomass_part_dv
-        biomass.dr -= harvested_biomass_part_dr
+        ts_vals["bm_gv"] -= harvested_biomass_part_gv / 0.9
+        ts_vals["bm_gr"] -= harvested_biomass_part_gr / 0.9
+        ts_vals["bm_dv"] -= harvested_biomass_part_dv / 0.9
+        ts_vals["bm_dr"] -= harvested_biomass_part_dr / 0.9
 
         # recover output streams
-        outputs_dict["biomass_gv"].append(biomass.gv)
-        outputs_dict["biomass_dv"].append(biomass.dv)
-        outputs_dict["biomass_gr"].append(biomass.gr)
-        outputs_dict["biomass_dr"].append(biomass.dr)
+        outputs_dict["biomass_gv"].append(ts_vals["bm_gv"])
+        outputs_dict["biomass_dv"].append(ts_vals["bm_dv"])
+        outputs_dict["biomass_gr"].append(ts_vals["bm_gr"])
+        outputs_dict["biomass_dr"].append(ts_vals["bm_dr"])
         outputs_dict["biomass_harvested"].append(harvested_biomass_part)
         outputs_dict["biomass_ingested"].append(ingested_biomass_part)
         outputs_dict["biomass_growth"].append(gro)
