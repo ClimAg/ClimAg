@@ -248,7 +248,8 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=t_sum, st_1=params["ST1"], st_2=params["ST2"]
+            t_sum=t_sum, st_1=params["st_1"], st_2=params["st_2"],
+            min_sea=params["min_sea"], max_sea=params["max_sea"]
         )()
         outputs_dict["seasonality"].append(seasonality)
 
@@ -308,7 +309,7 @@ def modvege(params, tseries, endday=365):
         # stocking rate is > 0
         rep_f = lm.ReproductiveFunction(
             n_index=params["n_index"], t_sum=temperature_sum,
-            st_1=params["ST1"], st_2=params["ST2"],
+            st_1=params["st_1"], st_2=params["st_2"],
             stocking_rate=stocking_rate, cut_height=cut_height
         )()
         outputs_dict["reproductive_fn"].append(rep_f)
@@ -332,14 +333,14 @@ def modvege(params, tseries, endday=365):
         )()
         gr_senescent_biomass = lm.SenescenceGR(
             temperature=temperature, age_gr=age.gr, bm_gr=biomass.gr,
-            st_1=params["ST1"], st_2=params["ST2"]
+            st_1=params["st_1"], st_2=params["st_2"]
         )()
         dv_abscission_biomass = lm.AbscissionDV(
             temperature=temperature, bm_dv=biomass.dv, age_dv=age.dv
         )()
         dr_abscission_biomass = lm.AbscissionDR(
             temperature=temperature, bm_dr=biomass.dr, age_dr=age.dr,
-            st_1=params["ST1"], st_2=params["ST2"]
+            st_1=params["st_1"], st_2=params["st_2"]
         )()
 
         # standing biomass (BM) and biomass age (AGE)
@@ -377,7 +378,7 @@ def modvege(params, tseries, endday=365):
 
         if (
             stocking_rate > 0.0 and
-            params["ST2"] > temperature_sum > params["ST1"] + 50.0
+            params["st_2"] > temperature_sum > params["st_1"] + 50.0
         ):
             # organic matter digestibility (OMD)
             omd_gv = cm.OrganicMatterDigestibilityGV(age_gv=age.gv)()
@@ -428,28 +429,28 @@ def modvege(params, tseries, endday=365):
             standing_biomass=biomass.gv,
             cut_height=cut_height,
             t_sum=temperature_sum,
-            st_2=params["ST2"]
+            st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
             bulk_density=params["rho_GR"],
             standing_biomass=biomass.gr,
             cut_height=cut_height,
             t_sum=temperature_sum,
-            st_2=params["ST2"]
+            st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
             bulk_density=params["rho_DV"],
             standing_biomass=biomass.dv,
             cut_height=cut_height,
             t_sum=temperature_sum,
-            st_2=params["ST2"]
+            st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
             bulk_density=params["rho_DR"],
             standing_biomass=biomass.dr,
             cut_height=cut_height,
             t_sum=temperature_sum,
-            st_2=params["ST2"]
+            st_2=params["st_2"]
         )()
 
         # total harvested biomass

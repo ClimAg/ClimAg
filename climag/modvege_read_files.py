@@ -38,16 +38,16 @@ def read_params(filename):
 
     Definition of inputs
     --------------------
-    - SLA         : Specific leaf area (SLA) [0.033 m² g⁻¹]
-    - pctLAM      : Percentage of laminae in the green vegetative compartment
+    - sla         : Specific leaf area (SLA) [0.033 m² g⁻¹]
+    - pct_lam     : Percentage of laminae in the green vegetative compartment
                     (%LAM) [0.68]
-    - ST1         : Sum of temperatures at the beginning of the reproductive
+    - st_1        : Sum of temperatures at the beginning of the reproductive
                     period (ST₁) [600 °C d]
-    - ST2         : Sum of temperatures at the end of the reproductive period
+    - st_2        : Sum of temperatures at the end of the reproductive period
                     (ST₂) [1200 °C d]
-    - maxSEA      : Maximum seasonal effect (maxSEA) [1.20]
-    - minSEA      : Minimum seasonal effect (minSEA) [0.80]
-    - LLS         : Leaf lifespan (LLS) [500 °C d]
+    - max_sea     : Maximum seasonal effect (maxSEA) [1.20]
+    - min_sea     : Minimum seasonal effect (minSEA) [0.80]
+    - lls         : Leaf lifespan (LLS) [500 °C d]
     - rho_GV      : Bulk density of the green vegetative compartment (BD_GV)
                     [850 g DM m⁻³]
     - rho_DV      : Bulk density of the dead vegetative compartment (BD_DV)
@@ -60,9 +60,10 @@ def read_params(filename):
                     vegetative compartment (σ_GV) [0.4]
     - sigmaGR     : Rate of biomass loss with respiration for the green
                     reproductive compartment (σ_GR) [0.2]
-    - T0          : Minimum temperature for growth (T₀) [4 °C]
-    - T1          : Minimum temperature for optimal growth (T₁) [10 °C]
-    - T2          : Maximum temperature for optimal growth (T₂) [20 °C]
+    - t_0         : Minimum temperature for growth (T₀) [4 °C]
+    - t_1         : Minimum temperature for optimal growth (T₁) [10 °C]
+    - t_2         : Maximum temperature for optimal growth (T₂) [20 °C]
+    - t_max       : Maximum temperature for growth (Tmax) [40 °C]
     - K_GV        : Basic senescence rate for the green vegetative compartment
                     (K_GV) [0.002]
     - K_GR        : Basic senescence rate for the green reproductive
