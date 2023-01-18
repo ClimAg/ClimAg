@@ -386,16 +386,16 @@ def modvege(params, tseries, endday=365):
 
             # available biomass per compartment
             bm_gv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["rho_GV"], standing_biomass=biomass.gv
+                bulk_density=params["rho_gv"], standing_biomass=biomass.gv
             )()
             bm_gr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["rho_GR"], standing_biomass=biomass.gr
+                bulk_density=params["rho_gr"], standing_biomass=biomass.gr
             )()
             bm_dv_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["rho_DV"], standing_biomass=biomass.dv
+                bulk_density=params["rho_dv"], standing_biomass=biomass.dv
             )()
             bm_dr_max = cm.MaximumAvailableBiomass(
-                bulk_density=params["rho_DR"], standing_biomass=biomass.dr
+                bulk_density=params["rho_dr"], standing_biomass=biomass.dr
             )()
 
             # max ingestion based on stocking rate
@@ -425,28 +425,28 @@ def modvege(params, tseries, endday=365):
 
         # biomass harvested per compartment
         harvested_biomass_part_gv = cm.HarvestedBiomass(
-            bulk_density=params["rho_GV"],
+            bulk_density=params["rho_gv"],
             standing_biomass=biomass.gv,
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
-            bulk_density=params["rho_GR"],
+            bulk_density=params["rho_gr"],
             standing_biomass=biomass.gr,
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
-            bulk_density=params["rho_DV"],
+            bulk_density=params["rho_dv"],
             standing_biomass=biomass.dv,
             cut_height=cut_height,
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
-            bulk_density=params["rho_DR"],
+            bulk_density=params["rho_dr"],
             standing_biomass=biomass.dr,
             cut_height=cut_height,
             t_sum=temperature_sum,

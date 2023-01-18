@@ -48,13 +48,13 @@ def read_params(filename):
     - max_sea     : Maximum seasonal effect (maxSEA) [1.20]
     - min_sea     : Minimum seasonal effect (minSEA) [0.80]
     - lls         : Leaf lifespan (LLS) [500 °C d]
-    - rho_GV      : Bulk density of the green vegetative compartment (BD_GV)
+    - rho_gv      : Bulk density of the green vegetative compartment (BD_GV)
                     [850 g DM m⁻³]
-    - rho_DV      : Bulk density of the dead vegetative compartment (BD_DV)
+    - rho_dv      : Bulk density of the dead vegetative compartment (BD_DV)
                     [500 g DM m⁻³]
-    - rho_GR      : Bulk density of the green reproductive compartment (BD_GR)
+    - rho_gr      : Bulk density of the green reproductive compartment (BD_GR)
                     [300 g DM m⁻³]
-    - rho_DR      : Bulk density of the dead reproductive compartment (BD_DR)
+    - rho_dr      : Bulk density of the dead reproductive compartment (BD_DR)
                     [150 g DM m⁻³]
     - sigmaGV     : Rate of biomass loss with respiration for the green
                     vegetative compartment (σ_GV) [0.4]
@@ -64,17 +64,17 @@ def read_params(filename):
     - t_1         : Minimum temperature for optimal growth (T₁) [10 °C]
     - t_2         : Maximum temperature for optimal growth (T₂) [20 °C]
     - t_max       : Maximum temperature for growth (Tmax) [40 °C]
-    - K_GV        : Basic senescence rate for the green vegetative compartment
+    - k_gv        : Basic senescence rate for the green vegetative compartment
                     (K_GV) [0.002]
-    - K_GR        : Basic senescence rate for the green reproductive
+    - k_gr        : Basic senescence rate for the green reproductive
                     compartment (K_GR) [0.001]
-    - Kl_DV       : Basic abscission rate for the dead vegetative compartment
+    - kl_dv       : Basic abscission rate for the dead vegetative compartment
                     (Kl_DV) [0.001]
-    - Kl_DR       : Basic abscission rate for the dead reproductive
+    - kl_dr       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
     - cut_height  : Grass cut height; see sec. "Harvested biomass" in Jouven
                     et al. (2005)  [0.05 m]
-    - RUEmax      : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
+    - rue_max     : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
     - maxOMDgv    : Maximum organic matter digestibility of the green
                     vegetative compartment (maxOMD_GV) [0.90]
     - minOMDgv    : Minimum organic matter digestibility of the green
