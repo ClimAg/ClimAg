@@ -177,8 +177,7 @@ def maximum_available_biomass(
 #         return available_biomass
 
 
-@dataclass
-class StockingRate:
+def stocking_rate(params: dict[str, float]) -> float:
     """
     Calculate the stocking rate
 
@@ -193,15 +192,25 @@ class StockingRate:
     - Stocking rate [LU ha⁻¹]
     """
 
-    livestock_units: float
-    grazing_area: float
+    try:
+        val = params["livestock_units"] / params["grazing_area"]
+    except ZeroDivisionError:
+        val = 0.0
+    return val
 
-    def __call__(self) -> float:
-        try:
-            val = self.livestock_units / self.grazing_area
-        except ZeroDivisionError:
-            val = 0.0
-        return val
+
+# @dataclass
+# class StockingRate:
+
+#     livestock_units: float
+#     grazing_area: float
+
+#     def __call__(self) -> float:
+#         try:
+#             val = self.livestock_units / self.grazing_area
+#         except ZeroDivisionError:
+#             val = 0.0
+#         return val
 
 
 @dataclass
