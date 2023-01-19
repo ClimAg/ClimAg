@@ -46,22 +46,6 @@ def organic_matter_digestibility_gv(
     )
 
 
-# @dataclass
-# class OrganicMatterDigestibilityGV:
-
-#     age_gv: float
-#     min_omd_gv: float = 0.75
-#     max_omd_gv: float = 0.9
-#     lls: float = 500.0
-
-#     def __call__(self) -> float:
-#         return max(
-#             self.max_omd_gv -
-#             (self.age_gv * (self.max_omd_gv - self.min_omd_gv)) / self.lls,
-#             self.min_omd_gv
-#         )
-
-
 def organic_matter_digestibility_gr(
     age_gr: float, params: dict[str, float]
 ) -> float:
@@ -100,24 +84,6 @@ def organic_matter_digestibility_gr(
         (params["st_2"] - params["st_1"]),
         params["min_omd_gr"]
     )
-
-
-# @dataclass
-# class OrganicMatterDigestibilityGR:
-
-#     age_gr: float
-#     min_omd_gr: float = 0.65
-#     max_omd_gr: float = 0.9
-#     st_1: float = 600.0
-#     st_2: float = 1200.0
-
-#     def __call__(self) -> float:
-#         return max(
-#             self.max_omd_gr -
-#             (self.age_gr * (self.max_omd_gr - self.min_omd_gr)) /
-#             (self.st_2 - self.st_1),
-#             self.min_omd_gr
-#         )
 
 
 def maximum_available_biomass(
@@ -159,24 +125,6 @@ def maximum_available_biomass(
     return available_biomass
 
 
-# @dataclass
-# class MaximumAvailableBiomass:
-
-#     bulk_density: float
-#     standing_biomass: float
-#     cut_height: float = 0.05
-
-#     def __call__(self) -> float:
-#         residual_biomass = self.cut_height * self.bulk_density * 10
-#         if residual_biomass < self.standing_biomass:
-#             available_biomass = (
-#                 (self.standing_biomass - residual_biomass) * .9
-#             )
-#         else:
-#             available_biomass = 0.0
-#         return available_biomass
-
-
 def stocking_rate(params: dict[str, float]) -> float:
     """
     Calculate the stocking rate
@@ -197,20 +145,6 @@ def stocking_rate(params: dict[str, float]) -> float:
     except ZeroDivisionError:
         val = 0.0
     return val
-
-
-# @dataclass
-# class StockingRate:
-
-#     livestock_units: float
-#     grazing_area: float
-
-#     def __call__(self) -> float:
-#         try:
-#             val = self.livestock_units / self.grazing_area
-#         except ZeroDivisionError:
-#             val = 0.0
-#         return val
 
 
 @dataclass

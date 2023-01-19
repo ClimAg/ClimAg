@@ -103,7 +103,6 @@ short leaf lifespan, and early reproductive growth and flowering).
 - Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
-# from dataclasses import dataclass
 import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
@@ -133,13 +132,6 @@ def modvege(params, tseries, endday=365):
     - GRO biomass [kg DM ha⁻¹]
     - Available biomass for [kg DM ha⁻¹]
     """
-
-    # cut_height = params["cut_height"]
-
-    # params["stocking_rate"] = cm.StockingRate(
-    #     livestock_units=params["livestock_units"],
-    #     grazing_area=params["grazing_area"]
-    # )()
 
     params["stocking_rate"] = cm.stocking_rate(params=params)
 
@@ -172,14 +164,6 @@ def modvege(params, tseries, endday=365):
         "water_reserves": []
     }
 
-    # @dataclass
-    # class BiomassAge:
-    #     """Biomass age"""
-    #     gv: float
-    #     gr: float
-    #     dv: float
-    #     dr: float
-
     ts_vals = {}
 
     # daily loop
@@ -187,14 +171,6 @@ def modvege(params, tseries, endday=365):
         # initialise starting parameters
         # standing biomass, biomass age, and water reserves
         if i == 0:
-            # biomass = StandingBiomass(
-            #     gv=params["bm_gv_init"], gr=params["bm_gr_init"],
-            #     dv=params["bm_dv_init"], dr=params["bm_dr_init"]
-            # )
-            # ts_vals["bm_gv"] = params["bm_gv_init"]
-            # ts_vals["bm_gr"] = params["bm_gr_init"]
-            # ts_vals["bm_dv"] = params["bm_dv_init"]
-            # ts_vals["bm_dr"] = params["bm_dr_init"]
             (
                 ts_vals["bm_gv"], ts_vals["bm_gr"],
                 ts_vals["bm_dv"], ts_vals["bm_dr"]
@@ -203,14 +179,6 @@ def modvege(params, tseries, endday=365):
                 params["bm_dv_init"], params["bm_dr_init"]
             )
 
-            # ts_vals["age_gv"] = params["age_gv_init"]
-            # ts_vals["age_gr"] = params["age_gr_init"]
-            # ts_vals["age_dv"] = params["age_dv_init"]
-            # ts_vals["age_dr"] = params["age_dr_init"]
-            # age = BiomassAge(
-            #     gv=params["age_gv_init"], gr=params["age_gr_init"],
-            #     dv=params["age_dv_init"], dr=params["age_dr_init"]
-            # )
             (
                 ts_vals["age_gv"], ts_vals["age_gr"],
                 ts_vals["age_dv"], ts_vals["age_dr"]
@@ -221,16 +189,6 @@ def modvege(params, tseries, endday=365):
 
             ts_vals["wr"] = params["wr_init"]
         else:
-            # biomass = StandingBiomass(
-            #     gv=outputs_dict["biomass_gv"][i - 1],
-            #     gr=outputs_dict["biomass_gr"][i - 1],
-            #     dv=outputs_dict["biomass_dv"][i - 1],
-            #     dr=outputs_dict["biomass_dr"][i - 1]
-            # )
-            # ts_vals["bm_gv"] = outputs_dict["biomass_gv"][i - 1]
-            # ts_vals["bm_gr"] = outputs_dict["biomass_gr"][i - 1]
-            # ts_vals["bm_dv"] = outputs_dict["biomass_dv"][i - 1]
-            # ts_vals["bm_dr"] = outputs_dict["biomass_dr"][i - 1]
             (
                 ts_vals["bm_gv"], ts_vals["bm_gr"],
                 ts_vals["bm_dv"], ts_vals["bm_dr"]
@@ -241,16 +199,15 @@ def modvege(params, tseries, endday=365):
                 outputs_dict["biomass_dr"][i - 1]
             )
 
-            ts_vals["age_gv"] = outputs_dict["age_gv"][i - 1]
-            ts_vals["age_gr"] = outputs_dict["age_gr"][i - 1]
-            ts_vals["age_dv"] = outputs_dict["age_dv"][i - 1]
-            ts_vals["age_dr"] = outputs_dict["age_dr"][i - 1]
-            # age = BiomassAge(
-            #     gv=outputs_dict["age_gv"][i - 1],
-            #     gr=outputs_dict["age_gr"][i - 1],
-            #     dv=outputs_dict["age_dv"][i - 1],
-            #     dr=outputs_dict["age_dr"][i - 1]
-            # )
+            (
+                ts_vals["age_gv"], ts_vals["age_gr"],
+                ts_vals["age_dv"], ts_vals["age_dr"]
+            ) = (
+                outputs_dict["age_gv"][i - 1],
+                outputs_dict["age_gr"][i - 1],
+                outputs_dict["age_dv"][i - 1],
+                outputs_dict["age_dr"][i - 1]
+            )
 
             ts_vals["wr"] = outputs_dict["water_reserves"][i - 1]
 
@@ -428,36 +385,14 @@ def modvege(params, tseries, endday=365):
             params["st_2"] > temperature_sum > params["st_1"] + 50.0
         ):
             # organic matter digestibility (OMD)
-            # omd_gv = cm.OrganicMatterDigestibilityGV(
-            #     age_gv=ts_vals["age_gv"]
-            # )()
             omd_gv = cm.organic_matter_digestibility_gv(
                 age_gv=ts_vals["age_gv"], params=params
             )
-            # omd_gr = cm.OrganicMatterDigestibilityGR(
-            #     age_gr=ts_vals["age_gr"]
-            # )()
             omd_gr = cm.organic_matter_digestibility_gr(
                 age_gr=ts_vals["age_gr"], params=params
             )
 
             # available biomass per compartment
-            # bm_gv_max = cm.MaximumAvailableBiomass(
-            #     bulk_density=params["bd_gv"],
-            #     standing_biomass=ts_vals["bm_gv"]
-            # )()
-            # bm_gr_max = cm.MaximumAvailableBiomass(
-            #     bulk_density=params["bd_gr"],
-            #     standing_biomass=ts_vals["bm_gr"]
-            # )()
-            # bm_dv_max = cm.MaximumAvailableBiomass(
-            #     bulk_density=params["bd_dv"],
-            #     standing_biomass=ts_vals["bm_dv"]
-            # )()
-            # bm_dr_max = cm.MaximumAvailableBiomass(
-            #     bulk_density=params["bd_dr"],
-            #     standing_biomass=ts_vals["bm_dr"]
-            # )()
             bm_max = cm.maximum_available_biomass(
                 ts_vals=ts_vals, params=params
             )
@@ -468,12 +403,6 @@ def modvege(params, tseries, endday=365):
             )()
 
             # actual ingestion
-            # ingestion = cm.Ingestion(
-            #     bm_gv_av=bm_gv_max, bm_gr_av=bm_gr_max,
-            #     bm_dv_av=bm_dv_max, bm_dr_av=bm_dr_max,
-            #     max_ingested_biomass=bm_ing_max,
-            #     omd_gv=omd_gv, omd_gr=omd_gr
-            # )()
             ingestion = cm.Ingestion(
                 bm_gv_av=bm_max["bm_gv"], bm_gr_av=bm_max["bm_gr"],
                 bm_dv_av=bm_max["bm_dv"], bm_dr_av=bm_max["bm_dr"],
