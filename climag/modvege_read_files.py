@@ -87,17 +87,16 @@ def read_params(filename):
                     compartment (OMD_DV) [0.45]
     - mean_omd_dr : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
-    - n_index     : Nitrogen nutritional index
+    - ni          : Nitrogen nutritional index
     - whc         : Soil water-holding capacity (WHC) [mm]
-    - wr_init     : Initial water reserves (WR) [mm]
-    - bm_gv_init  : Initial biomass of GV [kg DM ha⁻¹]
-    - bm_gr_init  : Initial biomass of GR [kg DM ha⁻¹]
-    - bm_dv_init  : Initial biomass of DV [kg DM ha⁻¹]
-    - bm_dr_init  : Initial biomass of DR [kg DM ha⁻¹]
-    - age_gv_init : Initial GV age [°C d]
-    - age_gr_init : Initial GR age [°C d]
-    - age_dv_init : Initial DV age [°C d]
-    - age_dr_init : Initial DR age [°C d]
+    - bm_gv       : Initial biomass of GV [kg DM ha⁻¹]
+    - bm_gr       : Initial biomass of GR [kg DM ha⁻¹]
+    - bm_dv       : Initial biomass of DV [kg DM ha⁻¹]
+    - bm_dr       : Initial biomass of DR [kg DM ha⁻¹]
+    - age_gv      : Initial GV age [°C d]
+    - age_gr      : Initial GR age [°C d]
+    - age_dv      : Initial DV age [°C d]
+    - age_dr      : Initial DR age [°C d]
     - livestock_units
     - grazing_area
 

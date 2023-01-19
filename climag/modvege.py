@@ -137,14 +137,14 @@ def modvege(params, tseries, endday=365):
 
     # nitrogen nutritional index (NI)
     # if NI is below 0.35, force it to 0.35 (Bélanger et al., 1994)
-    params["n_index"] = max(params["n_index"], 0.35)
+    params["ni"] = max(params["ni"], 0.35)
 
     # outputs
     outputs_dict = {
-        "biomass_gv": [],
-        "biomass_dv": [],
-        "biomass_gr": [],
-        "biomass_dr": [],
+        "bm_gv": [],
+        "bm_dv": [],
+        "bm_gr": [],
+        "bm_dr": [],
         "biomass_growth": [],
         "biomass_harvested": [],
         "biomass_ingested": [],
@@ -175,28 +175,29 @@ def modvege(params, tseries, endday=365):
                 ts_vals["bm_gv"], ts_vals["bm_gr"],
                 ts_vals["bm_dv"], ts_vals["bm_dr"]
             ) = (
-                params["bm_gv_init"], params["bm_gr_init"],
-                params["bm_dv_init"], params["bm_dr_init"]
+                params["bm_gv"], params["bm_gr"],
+                params["bm_dv"], params["bm_dr"]
             )
 
             (
                 ts_vals["age_gv"], ts_vals["age_gr"],
                 ts_vals["age_dv"], ts_vals["age_dr"]
             ) = (
-                params["age_gv_init"], params["age_gr_init"],
-                params["age_dv_init"], params["age_dr_init"]
+                params["age_gv"], params["age_gr"],
+                params["age_dv"], params["age_dr"]
             )
 
-            ts_vals["wr"] = params["wr_init"]
+            # assume that the initial value of WR = WHC
+            ts_vals["wr"] = params["whc"]
         else:
             (
                 ts_vals["bm_gv"], ts_vals["bm_gr"],
                 ts_vals["bm_dv"], ts_vals["bm_dr"]
             ) = (
-                outputs_dict["biomass_gv"][i - 1],
-                outputs_dict["biomass_gr"][i - 1],
-                outputs_dict["biomass_dv"][i - 1],
-                outputs_dict["biomass_dr"][i - 1]
+                outputs_dict["bm_gv"][i - 1],
+                outputs_dict["bm_gr"][i - 1],
+                outputs_dict["bm_dv"][i - 1],
+                outputs_dict["bm_dr"][i - 1]
             )
 
             (
@@ -289,7 +290,7 @@ def modvege(params, tseries, endday=365):
         env = lm.EnvironmentalLimitation(
             t_fn=temperature_fn,
             par_i=pari,
-            n_index=params["n_index"],
+            n_index=params["ni"],
             w_fn=waterstress_fn
         )()
         outputs_dict["env"].append(env)
@@ -307,7 +308,7 @@ def modvege(params, tseries, endday=365):
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
         rep_f = lm.ReproductiveFunction(
-            n_index=params["n_index"], t_sum=temperature_sum,
+            n_index=params["ni"], t_sum=temperature_sum,
             st_1=params["st_1"], st_2=params["st_2"],
             stocking_rate=params["stocking_rate"],
             cut_height=params["cut_height"]
@@ -417,6 +418,7 @@ def modvege(params, tseries, endday=365):
             )
 
             # update biomass compartments
+            # 10% of biomass is lost during ingestion
             ts_vals["bm_gv"] -= ingestion["gv"] / 0.9
             ts_vals["bm_gr"] -= ingestion["gr"] / 0.9
             ts_vals["bm_dv"] -= ingestion["dv"] / 0.9
@@ -459,16 +461,17 @@ def modvege(params, tseries, endday=365):
         )
 
         # update biomass compartments
+        # 10% of biomass is lost during harvest
         ts_vals["bm_gv"] -= harvested_biomass_part_gv / 0.9
         ts_vals["bm_gr"] -= harvested_biomass_part_gr / 0.9
         ts_vals["bm_dv"] -= harvested_biomass_part_dv / 0.9
         ts_vals["bm_dr"] -= harvested_biomass_part_dr / 0.9
 
         # recover output streams
-        outputs_dict["biomass_gv"].append(ts_vals["bm_gv"])
-        outputs_dict["biomass_dv"].append(ts_vals["bm_dv"])
-        outputs_dict["biomass_gr"].append(ts_vals["bm_gr"])
-        outputs_dict["biomass_dr"].append(ts_vals["bm_dr"])
+        outputs_dict["bm_gv"].append(ts_vals["bm_gv"])
+        outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
+        outputs_dict["bm_gr"].append(ts_vals["bm_gr"])
+        outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
         outputs_dict["biomass_harvested"].append(harvested_biomass_part)
         outputs_dict["biomass_ingested"].append(ingested_biomass_part)
         outputs_dict["biomass_growth"].append(gro)
@@ -481,10 +484,10 @@ def modvege(params, tseries, endday=365):
         outputs_dict["water_reserves"].append(ts_vals["wr"])
 
     return (
-        outputs_dict["biomass_gv"],
-        outputs_dict["biomass_dv"],
-        outputs_dict["biomass_gr"],
-        outputs_dict["biomass_dr"],
+        outputs_dict["bm_gv"],
+        outputs_dict["bm_dv"],
+        outputs_dict["bm_gr"],
+        outputs_dict["bm_dr"],
         outputs_dict["biomass_harvested"],
         outputs_dict["biomass_ingested"],
         outputs_dict["biomass_growth"],
