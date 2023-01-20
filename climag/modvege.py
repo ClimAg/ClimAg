@@ -4,18 +4,18 @@ This is a Python implementation of the ModVege pasture model, a modified
 version of the original Java to Python translation by Chemin (2022).
 The Java model was provided by Raphael Martin, INRAE UREP Clermont-Ferrand
 for the original Python implementation.
-The original ModVege pasture model was developed by Jouven et al. (2006).
+The original ModVege pasture model was developed by Jouven et al. (2006a).
 
 Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
 https://github.com/YannChemin/modvege (Accessed 6 September 2022).
 
 References
 ----------
-- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+- Jouven, M., Carrère, P. and Baumont, R. (2006a). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
   pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
-- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+- Jouven, M., Carrère, P. and Baumont, R. (2006b). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
@@ -57,7 +57,7 @@ Notes
 
 List of parameters (constants)
 ------------------------------
-See Tables 2 and 3 in Jouven et al. (2006).
+See Tables 2 and 3 in Jouven et al. (2006a).
 The functional groups and traits were parameterised for the Auvergne region in
 France, which has a temperate climate.
 Functional traits for Group A is used (species found in fertile sites, adapted
@@ -136,10 +136,9 @@ def modvege(params, tseries, endday=365):
     params["stocking_rate"] = cm.stocking_rate(params=params)
 
     # nitrogen nutritional index (NI)
-    # if NI is below 0.35, force it to 0.35 (Bélanger et al., 1994)
-    params["ni"] = max(params["ni"], 0.35)
+    params["ni"] = lm.nitrogen_index(params=params)
 
-    # outputs
+    # dictionary of outputs
     outputs_dict = {
         "bm_gv": [],
         "bm_dv": [],
@@ -164,6 +163,7 @@ def modvege(params, tseries, endday=365):
         "water_reserves": []
     }
 
+    # dictionary to store intermediate time series values
     ts_vals = {}
 
     # daily loop
@@ -215,12 +215,12 @@ def modvege(params, tseries, endday=365):
         # initialise ingested/harvested biomass and temperature sum
         if tseries["time"][i].dayofyear == 1:
             # reset to zero on the first day of the year
-            ingested_biomass_part = 0.0
-            harvested_biomass_part = 0.0
+            ts_vals["i_bm"] = 0.0
+            ts_vals["h_bm"] = 0.0
             t_sum = 0.0
         else:
-            ingested_biomass_part = outputs_dict["biomass_ingested"][i - 1]
-            harvested_biomass_part = outputs_dict["biomass_harvested"][i - 1]
+            ts_vals["i_bm"] = outputs_dict["biomass_ingested"][i - 1]
+            ts_vals["h_bm"] = outputs_dict["biomass_harvested"][i - 1]
             t_sum = outputs_dict["temperature_sum"][i - 1]
 
         # total standing biomass at the beginning of the day
@@ -311,7 +311,7 @@ def modvege(params, tseries, endday=365):
             n_index=params["ni"], t_sum=temperature_sum,
             st_1=params["st_1"], st_2=params["st_2"],
             stocking_rate=params["stocking_rate"],
-            cut_height=params["cut_height"]
+            cut_height=params["h_grass"]
         )()
         outputs_dict["reproductive_fn"].append(rep_f)
 
@@ -381,38 +381,39 @@ def modvege(params, tseries, endday=365):
             temperature=temperature
         )()
 
+        # organic matter digestibility (OMD)
+        ts_vals["omd_gv"] = cm.organic_matter_digestibility_gv(
+            age_gv=ts_vals["age_gv"], params=params
+        )
+        ts_vals["omd_gr"] = cm.organic_matter_digestibility_gr(
+            age_gr=ts_vals["age_gr"], params=params
+        )
+
         if (
             params["stocking_rate"] > 0.0 and
             params["st_2"] > temperature_sum > params["st_1"] + 50.0
         ):
-            # organic matter digestibility (OMD)
-            omd_gv = cm.organic_matter_digestibility_gv(
-                age_gv=ts_vals["age_gv"], params=params
-            )
-            omd_gr = cm.organic_matter_digestibility_gr(
-                age_gr=ts_vals["age_gr"], params=params
-            )
 
-            # available biomass per compartment
-            bm_max = cm.maximum_available_biomass(
+            # maximum available biomass per compartment
+            ts_vals["bm_max"] = cm.maximum_available_biomass(
                 ts_vals=ts_vals, params=params
             )
 
             # max ingestion based on stocking rate
-            bm_ing_max = cm.MaximumIngestedBiomass(
-                stocking_rate=params["stocking_rate"]
-            )()
+            ts_vals["i_bm_max"] = cm.maximum_ingested_biomass(params=params)
 
             # actual ingestion
             ingestion = cm.Ingestion(
-                bm_gv_av=bm_max["bm_gv"], bm_gr_av=bm_max["bm_gr"],
-                bm_dv_av=bm_max["bm_dv"], bm_dr_av=bm_max["bm_dr"],
-                max_ingested_biomass=bm_ing_max,
-                omd_gv=omd_gv, omd_gr=omd_gr
+                bm_gv_av=ts_vals["bm_max"]["bm_gv"],
+                bm_gr_av=ts_vals["bm_max"]["bm_gr"],
+                bm_dv_av=ts_vals["bm_max"]["bm_dv"],
+                bm_dr_av=ts_vals["bm_max"]["bm_dr"],
+                max_ingested_biomass=ts_vals["i_bm_max"],
+                omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
             )()
 
             # total ingestion
-            ingested_biomass_part += (
+            ts_vals["i_bm"] += (
                 ingestion["gv"] + ingestion["gr"] +
                 ingestion["dv"] + ingestion["dr"]
             )
@@ -428,34 +429,34 @@ def modvege(params, tseries, endday=365):
         harvested_biomass_part_gv = cm.HarvestedBiomass(
             bulk_density=params["bd_gv"],
             standing_biomass=ts_vals["bm_gv"],
-            cut_height=params["cut_height"],
+            cut_height=params["h_grass"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
             bulk_density=params["bd_gr"],
             standing_biomass=ts_vals["bm_gr"],
-            cut_height=params["cut_height"],
+            cut_height=params["h_grass"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
             bulk_density=params["bd_dv"],
             standing_biomass=ts_vals["bm_dv"],
-            cut_height=params["cut_height"],
+            cut_height=params["h_grass"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
             bulk_density=params["bd_dr"],
             standing_biomass=ts_vals["bm_dr"],
-            cut_height=params["cut_height"],
+            cut_height=params["h_grass"],
             t_sum=temperature_sum,
             st_2=params["st_2"]
         )()
 
         # total harvested biomass
-        harvested_biomass_part += (
+        ts_vals["h_bm"] += (
             harvested_biomass_part_gv + harvested_biomass_part_gr +
             harvested_biomass_part_dv + harvested_biomass_part_dr
         )
@@ -472,8 +473,8 @@ def modvege(params, tseries, endday=365):
         outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
         outputs_dict["bm_gr"].append(ts_vals["bm_gr"])
         outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
-        outputs_dict["biomass_harvested"].append(harvested_biomass_part)
-        outputs_dict["biomass_ingested"].append(ingested_biomass_part)
+        outputs_dict["biomass_harvested"].append(ts_vals["h_bm"])
+        outputs_dict["biomass_ingested"].append(ts_vals["i_bm"])
         outputs_dict["biomass_growth"].append(gro)
         outputs_dict["biomass_available"].append(biomass_available)
         outputs_dict["temperature_sum"].append(temperature_sum)

@@ -14,7 +14,7 @@ def organic_matter_digestibility_gv(
 ) -> float:
     """
     Organic matter digestibility of the green vegetative (GV) compartment.
-    See Equation (9) in Jouven et al. (2006)
+    See Equation (9) in Jouven et al. (2006a)
 
     - Digestibility varies among plant parts, with leaves usually being more
       digestible than stems
@@ -51,7 +51,7 @@ def organic_matter_digestibility_gr(
 ) -> float:
     """
     Organic matter digestibility of the green reproductive (GR) compartment.
-    See Equation (9) in Jouven et al. (2006)
+    See Equation (9) in Jouven et al. (2006a)
 
     - Digestibility varies among plant parts, with leaves usually being more
       digestible than stems
@@ -97,14 +97,14 @@ def maximum_available_biomass(
     cut height. The bulk density is used to convert this height to the
     equivalent biomass amount.
 
-    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+    See Jouven et al. (2006a), sec. "Harvested biomass", Equation (19).
 
     Assumption: when grazed/harvested, 10% of the available biomass in each
     structural component is lost.
 
     Parameters
     ----------
-    cut_height : Average height after the cut [m]
+    cut_height : Average height of the residual grass after the cut [m]
     bulk_density : Bulk density [g DM m⁻³]
     standing_biomass : Biomass available [kg DM ha⁻¹]
 
@@ -115,7 +115,7 @@ def maximum_available_biomass(
 
     available_biomass = {}
     for key in ["gv", "gr", "dv", "dr"]:
-        residual_biomass = params["cut_height"] * params[f"bd_{key}"] * 10
+        residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10
         if residual_biomass < ts_vals[f"bm_{key}"]:
             available_biomass[f"bm_{key}"] = (
                 (ts_vals[f"bm_{key}"] - residual_biomass) * .9
@@ -141,14 +141,13 @@ def stocking_rate(params: dict[str, float]) -> float:
     """
 
     try:
-        val = params["livestock_units"] / params["grazing_area"]
+        val = params["lu"] / params["area"]
     except ZeroDivisionError:
         val = 0.0
     return val
 
 
-@dataclass
-class MaximumIngestedBiomass:
+def maximum_ingested_biomass(params: dict[str, float]) -> float:
     """
     The maximum amount of biomass that can be ingested by all livestock units
     based on the stocking rate
@@ -184,11 +183,73 @@ class MaximumIngestedBiomass:
       https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
-    stocking_rate: float
-    max_ingestion_per_lu: float = 13.0
+    return params["stocking_rate"] * params["i_bm_lu"]
 
-    def __call__(self) -> float:
-        return self.stocking_rate * self.max_ingestion_per_lu
+
+# def ingested_biomass(
+#     ts_vals: dict[str, float], params: dict[str, float]
+# ) -> dict[str, float]:
+#     """
+#     Calculate the amount of biomass ingested in total for each structural
+#     compartment. This is weighted according to the organic matter
+#     digestibility.
+
+#     - Digestibility varies among plant parts, with leaves usually being more
+#       digestible than stems
+#     - The differing digestibility of plant parts may explain why they are
+#       grazed selectively
+
+#     Parameters
+#     ----------
+#     max_ingested_biomass : Maximum amount of biomass that can be ingested by
+#         all livestock units [kg DM ha⁻¹]
+#     omd_gv : OMD of GV [dimensionless]
+#     omd_gr : OMD of GR [dimensionless]
+#     omd_dv : OMD of DV; default is 0.45 [dimensionless]
+#     omd_dr : OMD of DR; default is 0.40 [dimensionless]
+#     bm_gv_av : Available GV biomass [kg DM ha⁻¹]
+#     bm_gr_av : Available GR biomass [kg DM ha⁻¹]
+#     bm_dv_av : Available DV biomass [kg DM ha⁻¹]
+#     bm_dr_av : Available DR biomass [kg DM ha⁻¹]
+
+#     Returns
+#     -------
+#     - Biomass ingested by biomass compartment, returned as a dict
+#     """
+
+#     weights = {}
+#     ingested = {}
+#     available = {}
+
+#     weights_total = (
+#         ts_vals["omd_gv"] + ts_vals["omd_gr"] +
+#         params["omd_dv"] + params["omd_dr"]
+#     )
+#     weights["gv"] = ts_vals["omd_gv"] / weights_total
+#     weights["gr"] = ts_vals["omd_gr"] / weights_total
+#     weights["dv"] = params["omd_dv"] / weights_total
+#     weights["dr"] = params["omd_dr"] / weights_total
+#     # sort by weight
+#     weights = dict(sorted(weights.items(), key=lambda item: item[1]))
+
+#     ingested["gv"] = self.max_ingested_biomass * weights["gv"]
+#     ingested["gr"] = self.max_ingested_biomass * weights["gr"]
+#     ingested["dv"] = self.max_ingested_biomass * weights["dv"]
+#     ingested["dr"] = self.max_ingested_biomass * weights["dr"]
+
+#     available["gv"] = self.bm_gv_av
+#     available["gr"] = self.bm_gr_av
+#     available["dv"] = self.bm_dv_av
+#     available["dr"] = self.bm_dr_av
+
+#     needed = 0.0
+
+#     for key in weights:
+#         ingested[key] += needed
+#         if available[key] < ingested[key]:
+#             needed = ingested[key] - available[key]
+#             ingested[key] = available[key]
+#     return ingested
 
 
 @dataclass
@@ -273,7 +334,7 @@ class HarvestedBiomass:
     cut height.
     This height is calculated by using the bulk density.
 
-    See Jouven et al. (2006), sec. "Harvested biomass", Equation (19).
+    See Jouven et al. (2006a), sec. "Harvested biomass", Equation (19).
 
     Assumption: during harvest, 10% of the harvestable biomass in each
     structural component is lost.
