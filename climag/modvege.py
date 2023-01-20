@@ -392,9 +392,10 @@ def modvege(params, tseries, endday=365):
             )
         )
 
-        # cm.ingested_biomass(ts_vals, params)
+        # ingested biomass
         cm.biomass_ingestion(ts_vals=ts_vals, params=params)
 
+        # harvested biomass
         cm.biomass_harvest(ts_vals=ts_vals, params=params)
 
         # if (
@@ -438,49 +439,6 @@ def modvege(params, tseries, endday=365):
         #     ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
         #     ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
         #     ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
-
-        # # biomass harvested per compartment
-        # harvested_biomass_part_gv = cm.HarvestedBiomass(
-        #     bulk_density=params["bd_gv"],
-        #     standing_biomass=ts_vals["bm_gv"],
-        #     cut_height=params["h_grass"],
-        #     t_sum=ts_vals["temperature_sum"],
-        #     st_2=params["st_2"]
-        # )()
-        # harvested_biomass_part_gr = cm.HarvestedBiomass(
-        #     bulk_density=params["bd_gr"],
-        #     standing_biomass=ts_vals["bm_gr"],
-        #     cut_height=params["h_grass"],
-        #     t_sum=ts_vals["temperature_sum"],
-        #     st_2=params["st_2"]
-        # )()
-        # harvested_biomass_part_dv = cm.HarvestedBiomass(
-        #     bulk_density=params["bd_dv"],
-        #     standing_biomass=ts_vals["bm_dv"],
-        #     cut_height=params["h_grass"],
-        #     t_sum=ts_vals["temperature_sum"],
-        #     st_2=params["st_2"]
-        # )()
-        # harvested_biomass_part_dr = cm.HarvestedBiomass(
-        #     bulk_density=params["bd_dr"],
-        #     standing_biomass=ts_vals["bm_dr"],
-        #     cut_height=params["h_grass"],
-        #     t_sum=ts_vals["temperature_sum"],
-        #     st_2=params["st_2"]
-        # )()
-
-        # # total harvested biomass
-        # ts_vals["h_bm"] += (
-        #     harvested_biomass_part_gv + harvested_biomass_part_gr +
-        #     harvested_biomass_part_dv + harvested_biomass_part_dr
-        # )
-
-        # # update biomass compartments
-        # # 10% of biomass is lost during harvest
-        # ts_vals["bm_gv"] -= harvested_biomass_part_gv / 0.9
-        # ts_vals["bm_gr"] -= harvested_biomass_part_gr / 0.9
-        # ts_vals["bm_dv"] -= harvested_biomass_part_dv / 0.9
-        # ts_vals["bm_dr"] -= harvested_biomass_part_dr / 0.9
 
         # recover output streams
         outputs_dict["bm_gv"].append(ts_vals["bm_gv"])

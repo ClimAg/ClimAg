@@ -3,7 +3,6 @@
 Functions for harvested and ingested biomass.
 """
 
-# from dataclasses import dataclass
 import numpy as np
 
 np.seterr("raise")
@@ -120,6 +119,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           biomass amount. See Jouven et al. (2006a), sec. "Harvested biomass",
           Equation (19).
     - The maximum amount of biomass ingestible based on the stocking rate
+        - Ingestion takes precedence over harvesting
     - Assumption: when grazed/harvested, 10% of the available biomass in each
       structural component is lost.
 
@@ -230,17 +230,19 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
 
     Parameters
     ----------
-    cut_height : minimum residual grass height to be maintained; default
-        is 0.05 [m]
-    bulk_density : Bulk density of the biomass compartment [g DM m⁻³]
-    standing_biomass : Standing biomass [kg DM ha⁻¹]
-    t_sum : Sum of temperatures [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period; default
-        is 1200 (ST₂) [°C d]
+    ts_vals : A dictionary with intermediate time series values for:
+        - sum of temperatures [°C d]
+        - standing biomass of each compartment [kg DM ha⁻¹]
+    params : A dictionary containing these model parameters:
+        - sum of temperatures at the end of the reproductive period [°C d]
+        - minimum residual grass height [m]
+        - bulk densities of the biomass compartments [g DM m⁻³]
 
     Returns
     -------
-    - Harvested biomass [kg DM ha⁻¹]
+    - An updated `ts_vals` dictionary with:
+        - the total harvested biomass amount [kg DM ha⁻¹]
+        - updated standing biomass of each compartment [kg DM ha⁻¹]
     """
 
     if (
@@ -498,52 +500,3 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
 #         ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
 #         ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
 #         ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
-
-
-# @dataclass
-# class HarvestedBiomass:
-#     """
-#     Harvest biomass through cuts.
-
-#     Maintain the height of the residual biomass after harvest to the minimum
-#     cut height.
-#     This height is calculated by using the bulk density.
-
-#     See Jouven et al. (2006a), sec. "Harvested biomass", Equation (19).
-
-#     Assumption: during harvest, 10% of the harvestable biomass in each
-#     structural component is lost.
-
-#     Parameters
-#     ----------
-#     cut_height : minimum residual grass height to be maintained; default
-#         is 0.05 [m]
-#     bulk_density : Bulk density of the biomass compartment [g DM m⁻³]
-#     standing_biomass : Standing biomass [kg DM ha⁻¹]
-#     t_sum : Sum of temperatures [°C d]
-#     st_2 : Sum of temperatures at the end of the reproductive period; default
-#         is 1200 (ST₂) [°C d]
-
-#     Returns
-#     -------
-#     - Harvested biomass [kg DM ha⁻¹]
-#     """
-
-#     bulk_density: float
-#     standing_biomass: float
-#     t_sum: float
-#     cut_height: float = 0.05
-#     st_2: float = 1200.0
-
-#     def __call__(self) -> float:
-#         harvested_biomass = 0.0
-#         if (
-#             self.cut_height > 0 and
-#             self.st_2 + 50.0 >= self.t_sum >= self.st_2
-#         ):
-#             residual_biomass = self.cut_height * self.bulk_density * 10
-#             if residual_biomass < self.standing_biomass:
-#                 harvested_biomass += (
-#                     (self.standing_biomass - residual_biomass) * .9
-#                 )
-#         return harvested_biomass
