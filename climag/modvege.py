@@ -398,48 +398,6 @@ def modvege(params, tseries, endday=365):
         # harvested biomass
         cm.biomass_harvest(ts_vals=ts_vals, params=params)
 
-        # if (
-        #     params["sr"] > 0.0 and
-        #     params["st_2"] > ts_vals["temperature_sum"]
-        #     > params["st_1"] + 50.0
-        # ):
-
-        #     # maximum available biomass per compartment
-        #     ts_vals["bm_max"] = cm.max_available_compartmental_biomass(
-        #         ts_vals=ts_vals, params=params
-        #     )
-
-        #     # max ingestion based on stocking rate
-        #     ts_vals["i_bm_max"] = cm.max_ingested_biomass(params=params)
-
-        #     # actual ingestion
-        #     # ingestion = cm.Ingestion(
-        #     #     bm_gv_av=ts_vals["bm_max"]["bm_gv"],
-        #     #     bm_gr_av=ts_vals["bm_max"]["bm_gr"],
-        #     #     bm_dv_av=ts_vals["bm_max"]["bm_dv"],
-        #     #     bm_dr_av=ts_vals["bm_max"]["bm_dr"],
-        #     #     max_ingested_biomass=ts_vals["i_bm_max"],
-        #     #     omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
-        #     # )()
-        #     ts_vals["ingestion"] = cm.ingested_compartmental_biomass(
-        #         ts_vals=ts_vals, params=params
-        #     )
-
-        #     # total ingestion
-        #     ts_vals["i_bm"] += (
-        #         ts_vals["ingestion"]["bm_gv"] +
-        #         ts_vals["ingestion"]["bm_gr"] +
-        #         ts_vals["ingestion"]["bm_dv"] +
-        #         ts_vals["ingestion"]["bm_dr"]
-        #     )
-
-        #     # update biomass compartments
-        #     # 10% of biomass is lost during ingestion
-        #     ts_vals["bm_gv"] -= ts_vals["ingestion"]["bm_gv"] / 0.9
-        #     ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
-        #     ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
-        #     ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
-
         # recover output streams
         outputs_dict["bm_gv"].append(ts_vals["bm_gv"])
         outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
