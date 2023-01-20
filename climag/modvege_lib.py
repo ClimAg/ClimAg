@@ -2,15 +2,15 @@
 
 References
 ----------
-- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+- Jouven, M., Carrère, P., and Baumont, R. (2006a). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
   pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
-- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+- Jouven, M., Carrère, P., and Baumont, R. (2006b). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
-- Bélanger, G., Gastal, F. and Warembourg, F. R. (1994). 'Carbon Balance of
+- Bélanger, G., Gastal, F., and Warembourg, F. R. (1994). 'Carbon Balance of
   Tall Fescue (Festuca arundinacea Schreb.): Effects of Nitrogen Fertilization
   and the Growing Season', Annals of Botany, vol. 74, no. 6, pp. 653-659.
   DOI: 10.1006/anbo.1994.1167.
@@ -20,7 +20,7 @@ References
 - McCall, D. G. and Bishop-Hurley, G. J. (2003). 'A pasture growth model for
   use in a whole-farm dairy production model', Agricultural Systems, vol. 76,
   no. 3, pp. 1183-1205. DOI: 10.1016/S0308-521X(02)00104-X.
-- Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G. and Bouman,
+- Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G., and Bouman,
   B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
   productivity in Europe', European Journal of Agronomy, vol. 9, no. 2, pp.
   87-100. DOI: 10.1016/S1161-0301(98)00027-6.
@@ -37,7 +37,7 @@ class LeafAreaIndex:
     """
     Calculate the leaf area index (LAI)
 
-    Equation (12) in Jouven et al. (2006)
+    Equation (12) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -72,7 +72,7 @@ class ActualEvapotranspiration:
     AET is proportional to LAI when the proportion of intercepted radiation
     is lower than 0.95, i.e. LAI < 3.
 
-    See Equation (14) in Jouven et al. (2006)
+    See Equation (14) in Jouven et al. (2006a)
 
     pet : Potential evapotranspiration (PET) [mm]
     lai : Leaf area index (LAI) [dimensionless]
@@ -94,7 +94,7 @@ class PotentialGrowth:
     """
     Calculate potential growth (PGRO)
 
-    See Equation (12) in Jouven et al. (2006)
+    See Equation (12) in Jouven et al. (2006a)
 
     Based on Schapendonk et al. (1998).
 
@@ -138,7 +138,7 @@ class PARFunction:
     at light intensities higher than 5 MJ m⁻².
 
     See Figure 2(a), Equation (13), and the section on "Growth functions" in
-    Jouven et al. (2006).
+    Jouven et al. (2006a).
 
     Parameters
     ----------
@@ -221,7 +221,7 @@ class TenDayMovingAverageTemperature:
     Calculate the 10-d moving average temperature.
 
     See sec. "Growth functions", par. above Equation (13) in Jouven et al.
-    (2006).
+    (2006a).
 
     Parameters
     ----------
@@ -254,7 +254,7 @@ class TemperatureFunction:
     """
     Temperature function, *f*(*T*)
 
-    See Figure 2(b) of Jouven et al. (2006) and the accompanying text for more
+    See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for more
     info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
 
     Assume no growth takes place after a maximum temperature
@@ -312,7 +312,7 @@ class SeasonalEffect:
     conditions suitable for nitrogen application to grass swards
     (Collins and Cummins, 1998).
 
-    See Figure 3 of Jouven et al. (2006) and the accompanying paragraphs for
+    See Figure 3 of Jouven et al. (2006a) and the accompanying paragraphs for
     more info
 
     minSEA and maxSEA are functional traits arranged symmetrically around 1:
@@ -379,7 +379,7 @@ class WaterReserves:
     Precipitation (PP) fill the WHC, increasing WR, while actual
     evapotranspiration (AET) empties it.
 
-    See Equation (14) in Jouven et al. (2006).
+    See Equation (14) in Jouven et al. (2006a).
 
     Parameters
     ----------
@@ -410,7 +410,7 @@ class WaterStress:
     """
     Calculate the water stress (*W*).
 
-    See Equation (14) in Jouven et al. (2006)
+    See Equation (14) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -434,7 +434,7 @@ class WaterStressFunction:
     """
     Water stress function (*f*(*W*)).
 
-    See Figure 2(c) and Equation (14) of Jouven et al. (2006).
+    See Figure 2(c) and Equation (14) of Jouven et al. (2006a).
 
     Based on McCall and Bishop-Hurley (2003).
 
@@ -490,6 +490,14 @@ class WaterStressFunction:
         return val
 
 
+def nitrogen_index(params: dict[str, float]) -> float:
+    """
+    If NI is below 0.35, force it to 0.35 (Bélanger et al., 1994)
+    """
+
+    return max(params["ni"], 0.35)
+
+
 @dataclass
 class ReproductiveFunction:
     """
@@ -497,7 +505,7 @@ class ReproductiveFunction:
     REP is zero when there is a cut due to grazing or harvesting.
     REP is also zero before and after the period of reproductive growth.
 
-    See Equation (15) in Jouven et al. (2006)
+    See Equation (15) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -544,7 +552,7 @@ class EnvironmentalLimitation:
     """
     Environmental limitation of growth (ENV).
 
-    See Equation (13) of Jouven et al. (2006).
+    See Equation (13) of Jouven et al. (2006a).
 
     Parameters
     ----------
@@ -575,7 +583,7 @@ class TotalGrowth:
     """
     Calculate the total biomass growth (GRO)
 
-    See Equation (11) in Jouven et al. (2006)
+    See Equation (11) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -600,7 +608,7 @@ class TotalGrowth:
 class AbscissionDV:
     """
     Compute abscission biomass for the dead vegetative (DV) compartment.
-    See Equation (18) and Figure 4(c) in in Jouven et al. (2006).
+    See Equation (18) and Figure 4(c) in in Jouven et al. (2006a).
 
     Note that abscission only occurs when T > 0.
 
@@ -642,7 +650,7 @@ class AbscissionDV:
 class AbscissionDR:
     """
     Compute abscission biomass for the dead reproductive (DR) compartment.
-    See Equation (18) and Figure 4(d) in Jouven et al. (2006).
+    See Equation (18) and Figure 4(d) in Jouven et al. (2006a).
 
     Note that abscission only occurs when T > 0.
 
@@ -688,7 +696,7 @@ class AbscissionDR:
 class SenescenceGV:
     """
     Senescent biomass for GV compartment.
-    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006).
+    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006a).
 
     No senescence occurs when *T* is between zero and *T*₀.
     When T drops below zero, senescence is driven by freezing effects and is
@@ -738,7 +746,7 @@ class SenescenceGV:
 @dataclass
 class SenescenceGR:
     """
-    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006).
+    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006a).
 
     Parameters
     ----------
@@ -791,7 +799,7 @@ class SenescenceGR:
 class BiomassDV:
     """
     Update dead vegetative compartment.
-    See Equations (3) and (7) in Jouven et al. (2006).
+    See Equations (3) and (7) in Jouven et al. (2006a).
 
     The age of the residual biomass is increased daily by the mean daily
     temperature, if this temperature is positive
@@ -838,7 +846,7 @@ class BiomassDV:
 class BiomassDR:
     """
     Update dead reproductive compartment.
-    See Equations (4) and (8) in Jouven et al. (2006).
+    See Equations (4) and (8) in Jouven et al. (2006a).
 
     The age of the residual biomass is increased daily by the mean daily
     temperature, if this temperature is positive
@@ -885,7 +893,7 @@ class BiomassDR:
 class GrowthGV:
     """
     Calculate the growth proportion of the GV compartment.
-    See Equation (1) in Jouven et al. (2006)
+    See Equation (1) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -904,7 +912,7 @@ class GrowthGV:
 class BiomassGV:
     """
     Update green vegetative compartment.
-    See Equations (1) and (5) in Jouven et al. (2006).
+    See Equations (1) and (5) in Jouven et al. (2006a).
 
     The age of the residual biomass is increased daily by the mean daily
     temperature, if this temperature is positive
@@ -945,7 +953,7 @@ class BiomassGV:
 @dataclass
 class GrowthGR:
     """
-    See Equation (2) in Jouven et al. (2006)
+    See Equation (2) in Jouven et al. (2006a)
 
     Parameters
     ----------
@@ -964,7 +972,7 @@ class GrowthGR:
 class BiomassGR:
     """
     Update green reproductive compartment.
-    See Equations (2) and (6) in Jouven et al. (2006).
+    See Equations (2) and (6) in Jouven et al. (2006a).
 
     The age of the residual biomass is increased daily by the mean daily
     temperature, if this temperature is positive
