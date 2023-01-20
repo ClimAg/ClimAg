@@ -14,13 +14,14 @@ def stocking_rate(params: dict[str, float]) -> float:
 
     Parameters
     ----------
-    livestock_units : Total number of livestock units [LU]
-    grazing_area : Total grazing area (i.e. grassland available for grazing)
-        [ha]
+    params : A dictionary containing these model parameters:
+        - lu : Total number of livestock units [LU]
+        - area : Total grassland area available for grazing [ha]
 
     Returns
     -------
-    - Stocking rate [LU ha⁻¹]
+    - An updated `params` dictionary with:
+        - sr: Stocking rate [LU ha⁻¹]
     """
 
     try:
@@ -30,11 +31,12 @@ def stocking_rate(params: dict[str, float]) -> float:
     return val
 
 
-def organic_matter_digestibility_gv(
-    age_gv: float, params: dict[str, float]
-) -> float:
+def organic_matter_digestibility(
+    ts_vals: dict[str, float], params: dict[str, float]
+):
     """
-    Organic matter digestibility of the green vegetative (GV) compartment.
+    Organic matter digestibility of the green vegetative (GV) and green
+    reproductive (GR) compartments.
     See Equation (9) in Jouven et al. (2006a)
 
     - Digestibility varies among plant parts, with leaves usually being more
@@ -46,45 +48,16 @@ def organic_matter_digestibility_gv(
 
     Parameters
     ----------
-    age_gv : Age of the GV compartment [°C d]
-    params : A dictionary of parameters with the following entries
+
+    ts_vals : A dictionary with intermediate time series values for:
+        - age_gv: Age of the GV compartment [°C d]
+        - age_gr: Age of the GR compartment [°C d]
+    params : A dictionary containing these model parameters:
         - min_omd_gv: Minimum OMD of the GV compartment; default is 0.75
             [dimensionless]
         - max_omd_gv: Maximum OMD of the GV compartment; default is 0.9
             [dimensionless]
         - lls: Leaf lifespan; default is 500 [°C d]
-
-    Returns
-    -------
-    - Organic matter digestibility of the GV compartment [dimensionless]
-    """
-
-    return max(
-        params["max_omd_gv"] -
-        (age_gv * (params["max_omd_gv"] - params["min_omd_gv"])) /
-        params["lls"],
-        params["min_omd_gv"]
-    )
-
-
-def organic_matter_digestibility_gr(
-    age_gr: float, params: dict[str, float]
-) -> float:
-    """
-    Organic matter digestibility of the green reproductive (GR) compartment.
-    See Equation (9) in Jouven et al. (2006a)
-
-    - Digestibility varies among plant parts, with leaves usually being more
-      digestible than stems
-    - The differing digestibility of plant parts may explain why they are
-      grazed selectively
-    - Digestibility of green compartments decreases linearly with compartment
-      age
-
-    Parameters
-    ----------
-    age_gr : Age of the GR compartment [°C d]
-    params : A dictionary of parameters with the following entries
         - min_omd_gr: Minimum OMD of the GR compartment; default is 0.65
             [dimensionless]
         - max_omd_gr: Maximum OMD of the GR compartment; default is 0.9
@@ -96,12 +69,23 @@ def organic_matter_digestibility_gr(
 
     Returns
     -------
-    - Organic matter digestibility of the GR compartment [dimensionless]
+    - An updated `ts_vals` dictionary with:
+        - omd_gv: Organic matter digestibility of the GV compartment
+          [dimensionless]
+        - omd_gr: Organic matter digestibility of the GR compartment
+          [dimensionless]
     """
 
-    return max(
+    ts_vals["omd_gv"] = max(
+        params["max_omd_gv"] -
+        (ts_vals["age_gv"] * (params["max_omd_gv"] - params["min_omd_gv"])) /
+        params["lls"],
+        params["min_omd_gv"]
+    )
+
+    ts_vals["omd_gr"] = max(
         params["max_omd_gr"] -
-        (age_gr * (params["max_omd_gr"] - params["min_omd_gr"])) /
+        (ts_vals["age_gr"] * (params["max_omd_gr"] - params["min_omd_gr"])) /
         (params["st_2"] - params["st_1"]),
         params["min_omd_gr"]
     )
@@ -138,25 +122,53 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - sum of temperatures [°C d]
-        - standing biomass of each compartment [kg DM ha⁻¹]
-        - organic matter digestibility of the green compartments
-          [dimensionless]
+        - temperature_sum: Sum of temperatures [°C d]
+        - bm_gv: Standing biomass of the green vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_gr: Standing biomass of the green reproductive compartment
+          [kg DM ha⁻¹]
+        - bm_dv: Standing biomass of the dead vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_dr: Standing biomass of the dead reproductive compartment
+          [kg DM ha⁻¹]
+        - omd_gv: Organic matter digestibility of the green vegetative
+          compartment [dimensionless]
+        - omd_gr: Organic matter digestibility of the green reproductive
+          compartment [dimensionless]
     params : A dictionary containing these model parameters:
-        - stocking rate [LU ha⁻¹]
-        - sum of temperatures at the beginning and end of the reproductive
-          period [°C d]
-        - minimum residual grass height [m]
-        - bulk densities of the biomass compartments [g DM m⁻³]
-        - amount of biomass ingested per livestock unit [kg DM LU⁻¹]
-        - organic matter digestibility of the dead compartments
-          [dimensionless]
+        - sr: Stocking rate [LU ha⁻¹]
+        - st_1: Sum of temperatures at the beginning of the reproductive
+          period; default is 600 [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period;
+          default is 1200 [°C d]
+        - h_grass: Minimum residual grass height; default is 0.05 [m]
+        - bd_gv: Bulk density of the green vegetative compartment; default is
+          850 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default is
+          300 [g DM m⁻³]
+        - bd_dv: Bulk density of the dead vegetative compartment; default is
+          500 [g DM m⁻³]
+        - bd_dr: Bulk density of the dead reproductive compartment; default is
+          150 [g DM m⁻³]
+        - i_bm_lu: Amount of biomass ingested per livestock unit; default is
+          13 [kg DM LU⁻¹]
+        - omd_dv: Organic matter digestibility of the dead vegetative
+          compartment; default is 0.45 [dimensionless]
+        - omd_dr: Organic matter digestibility of the dead reproductive
+          compartment; default is 0.4 [dimensionless]
 
     Returns
     -------
     - An updated `ts_vals` dictionary with:
-        - the total ingested biomass amount [kg DM ha⁻¹]
-        - updated standing biomass of each compartment [kg DM ha⁻¹]
+        - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
+        - bm_gv: Updated standing biomass of the green vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_gr: Updated standing biomass of the green reproductive compartment
+          [kg DM ha⁻¹]
+        - bm_dv: Updated standing biomass of the dead vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_dr: Updated standing biomass of the dead reproductive compartment
+          [kg DM ha⁻¹]
     """
 
     if (
@@ -243,18 +255,40 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - sum of temperatures [°C d]
-        - standing biomass of each compartment [kg DM ha⁻¹]
+        - temperature_sum: Sum of temperatures [°C d]
+        - bm_gv: Standing biomass of the green vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_gr: Standing biomass of the green reproductive compartment
+          [kg DM ha⁻¹]
+        - bm_dv: Standing biomass of the dead vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_dr: Standing biomass of the dead reproductive compartment
+          [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
-        - sum of temperatures at the end of the reproductive period [°C d]
-        - minimum residual grass height [m]
-        - bulk densities of the biomass compartments [g DM m⁻³]
+        - st_2: Sum of temperatures at the end of the reproductive period;
+          default is 1200 [°C d]
+        - h_grass: Minimum residual grass height; default is 0.05 [m]
+        - bd_gv: Bulk density of the green vegetative compartment; default is
+          850 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default is
+          300 [g DM m⁻³]
+        - bd_dv: Bulk density of the dead vegetative compartment; default is
+          500 [g DM m⁻³]
+        - bd_dr: Bulk density of the dead reproductive compartment; default is
+          150 [g DM m⁻³]
 
     Returns
     -------
     - An updated `ts_vals` dictionary with:
-        - the total harvested biomass amount [kg DM ha⁻¹]
-        - updated standing biomass of each compartment [kg DM ha⁻¹]
+        - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
+        - bm_gv: Updated standing biomass of the green vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_gr: Updated standing biomass of the green reproductive compartment
+          [kg DM ha⁻¹]
+        - bm_dv: Updated standing biomass of the dead vegetative compartment
+          [kg DM ha⁻¹]
+        - bm_dr: Updated standing biomass of the dead reproductive compartment
+          [kg DM ha⁻¹]
     """
 
     if (
