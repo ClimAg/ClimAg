@@ -133,7 +133,7 @@ def modvege(params, tseries, endday=365):
     - Available biomass for [kg DM ha⁻¹]
     """
 
-    params["stocking_rate"] = cm.stocking_rate(params=params)
+    params["sr"] = cm.stocking_rate(params=params)
 
     # # nitrogen nutritional index (NI)
     # params["ni"] = lm.nitrogen_index(params=params)
@@ -217,11 +217,11 @@ def modvege(params, tseries, endday=365):
             # reset to zero on the first day of the year
             ts_vals["i_bm"] = 0.0
             ts_vals["h_bm"] = 0.0
-            t_sum = 0.0
+            ts_vals["t_sum"] = 0.0
         else:
             ts_vals["i_bm"] = outputs_dict["biomass_ingested"][i - 1]
             ts_vals["h_bm"] = outputs_dict["biomass_harvested"][i - 1]
-            t_sum = outputs_dict["temperature_sum"][i - 1]
+            ts_vals["t_sum"] = outputs_dict["temperature_sum"][i - 1]
 
         # total standing biomass at the beginning of the day
         biomass_available = (
@@ -238,8 +238,8 @@ def modvege(params, tseries, endday=365):
         )()
 
         # sum of temperatures (ST)
-        temperature_sum = lm.SumOfTemperatures(
-            t_ts=tseries["T"], day=(i + 1), t_sum=t_sum
+        ts_vals["temperature_sum"] = lm.SumOfTemperatures(
+            t_ts=tseries["T"], day=(i + 1), t_sum=ts_vals["t_sum"]
         )()
 
         # temperature function (f(T))
@@ -248,7 +248,8 @@ def modvege(params, tseries, endday=365):
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=t_sum, st_1=params["st_1"], st_2=params["st_2"],
+            t_sum=ts_vals["temperature_sum"],
+            st_1=params["st_1"], st_2=params["st_2"],
             min_sea=params["min_sea"], max_sea=params["max_sea"]
         )()
         outputs_dict["seasonality"].append(seasonality)
@@ -308,9 +309,9 @@ def modvege(params, tseries, endday=365):
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
         rep_f = lm.ReproductiveFunction(
-            n_index=params["ni"], t_sum=temperature_sum,
+            n_index=params["ni"], t_sum=ts_vals["temperature_sum"],
             st_1=params["st_1"], st_2=params["st_2"],
-            stocking_rate=params["stocking_rate"],
+            stocking_rate=params["sr"],
             cut_height=params["h_grass"]
         )()
         outputs_dict["reproductive_fn"].append(rep_f)
@@ -389,72 +390,77 @@ def modvege(params, tseries, endday=365):
             age_gr=ts_vals["age_gr"], params=params
         )
 
-        if (
-            params["stocking_rate"] > 0.0 and
-            params["st_2"] > temperature_sum > params["st_1"] + 50.0
-        ):
+        cm.ingested_biomass(ts_vals, params)
 
-            # maximum available biomass per compartment
-            ts_vals["bm_max"] = cm.maximum_available_biomass(
-                ts_vals=ts_vals, params=params
-            )
+        # if (
+        #     params["sr"] > 0.0 and
+        #     params["st_2"] > ts_vals["temperature_sum"]
+        #     > params["st_1"] + 50.0
+        # ):
 
-            # max ingestion based on stocking rate
-            ts_vals["i_bm_max"] = cm.maximum_ingested_biomass(params=params)
+        #     # maximum available biomass per compartment
+        #     ts_vals["bm_max"] = cm.max_available_compartmental_biomass(
+        #         ts_vals=ts_vals, params=params
+        #     )
 
-            # actual ingestion
-            # ingestion = cm.Ingestion(
-            #     bm_gv_av=ts_vals["bm_max"]["bm_gv"],
-            #     bm_gr_av=ts_vals["bm_max"]["bm_gr"],
-            #     bm_dv_av=ts_vals["bm_max"]["bm_dv"],
-            #     bm_dr_av=ts_vals["bm_max"]["bm_dr"],
-            #     max_ingested_biomass=ts_vals["i_bm_max"],
-            #     omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
-            # )()
-            ts_vals["ingestion"] = cm.ingested_biomass(
-                ts_vals=ts_vals, params=params
-            )
+        #     # max ingestion based on stocking rate
+        #     ts_vals["i_bm_max"] = cm.max_ingested_biomass(params=params)
 
-            # total ingestion
-            ts_vals["i_bm"] += (
-                ts_vals["ingestion"]["bm_gv"] + ts_vals["ingestion"]["bm_gr"] +
-                ts_vals["ingestion"]["bm_dv"] + ts_vals["ingestion"]["bm_dr"]
-            )
+        #     # actual ingestion
+        #     # ingestion = cm.Ingestion(
+        #     #     bm_gv_av=ts_vals["bm_max"]["bm_gv"],
+        #     #     bm_gr_av=ts_vals["bm_max"]["bm_gr"],
+        #     #     bm_dv_av=ts_vals["bm_max"]["bm_dv"],
+        #     #     bm_dr_av=ts_vals["bm_max"]["bm_dr"],
+        #     #     max_ingested_biomass=ts_vals["i_bm_max"],
+        #     #     omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
+        #     # )()
+        #     ts_vals["ingestion"] = cm.ingested_compartmental_biomass(
+        #         ts_vals=ts_vals, params=params
+        #     )
 
-            # update biomass compartments
-            # 10% of biomass is lost during ingestion
-            ts_vals["bm_gv"] -= ts_vals["ingestion"]["bm_gv"] / 0.9
-            ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
-            ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
-            ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
+        #     # total ingestion
+        #     ts_vals["i_bm"] += (
+        #         ts_vals["ingestion"]["bm_gv"] +
+        #         ts_vals["ingestion"]["bm_gr"] +
+        #         ts_vals["ingestion"]["bm_dv"] +
+        #         ts_vals["ingestion"]["bm_dr"]
+        #     )
+
+        #     # update biomass compartments
+        #     # 10% of biomass is lost during ingestion
+        #     ts_vals["bm_gv"] -= ts_vals["ingestion"]["bm_gv"] / 0.9
+        #     ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
+        #     ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
+        #     ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
 
         # biomass harvested per compartment
         harvested_biomass_part_gv = cm.HarvestedBiomass(
             bulk_density=params["bd_gv"],
             standing_biomass=ts_vals["bm_gv"],
             cut_height=params["h_grass"],
-            t_sum=temperature_sum,
+            t_sum=ts_vals["temperature_sum"],
             st_2=params["st_2"]
         )()
         harvested_biomass_part_gr = cm.HarvestedBiomass(
             bulk_density=params["bd_gr"],
             standing_biomass=ts_vals["bm_gr"],
             cut_height=params["h_grass"],
-            t_sum=temperature_sum,
+            t_sum=ts_vals["temperature_sum"],
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dv = cm.HarvestedBiomass(
             bulk_density=params["bd_dv"],
             standing_biomass=ts_vals["bm_dv"],
             cut_height=params["h_grass"],
-            t_sum=temperature_sum,
+            t_sum=ts_vals["temperature_sum"],
             st_2=params["st_2"]
         )()
         harvested_biomass_part_dr = cm.HarvestedBiomass(
             bulk_density=params["bd_dr"],
             standing_biomass=ts_vals["bm_dr"],
             cut_height=params["h_grass"],
-            t_sum=temperature_sum,
+            t_sum=ts_vals["temperature_sum"],
             st_2=params["st_2"]
         )()
 
@@ -480,7 +486,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_ingested"].append(ts_vals["i_bm"])
         outputs_dict["biomass_growth"].append(gro)
         outputs_dict["biomass_available"].append(biomass_available)
-        outputs_dict["temperature_sum"].append(temperature_sum)
+        outputs_dict["temperature_sum"].append(ts_vals["temperature_sum"])
         outputs_dict["age_gv"].append(ts_vals["age_gv"])
         outputs_dict["age_gr"].append(ts_vals["age_gr"])
         outputs_dict["age_dv"].append(ts_vals["age_dv"])

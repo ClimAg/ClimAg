@@ -9,7 +9,6 @@ Dead vegetative           (DV)
 Dead reproductive         (DR)
 """
 
-# import numpy as np
 import pandas as pd
 
 
@@ -66,7 +65,7 @@ def read_params(filename):
     - kl_dr       : Basic abscission rate for the dead reproductive
                     compartment (Kl_DR) [0.0005]
     - h_grass     : Minimum residual grass height after cutting; see sec.
-        "Harvested biomass" in Jouven et al. (2005)  [0.05 m]
+                    "Harvested biomass" in Jouven et al. (2005)  [0.05 m]
     - rue_max     : Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
     - max_omd_gv  : Maximum organic matter digestibility of the green
                     vegetative compartment (maxOMD_GV) [0.90]

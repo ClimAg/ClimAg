@@ -86,7 +86,7 @@ def organic_matter_digestibility_gr(
     )
 
 
-def maximum_available_biomass(
+def max_available_compartmental_biomass(
     ts_vals: dict[str, float], params: dict[str, float]
 ) -> dict[str, float]:
     """
@@ -147,7 +147,7 @@ def stocking_rate(params: dict[str, float]) -> float:
     return val
 
 
-def maximum_ingested_biomass(params: dict[str, float]) -> float:
+def max_ingested_biomass(params: dict[str, float]) -> float:
     """
     The maximum amount of biomass that can be ingested by all livestock units
     based on the stocking rate
@@ -183,10 +183,10 @@ def maximum_ingested_biomass(params: dict[str, float]) -> float:
       https://cap-calculators.apps.rhos.agriculture.gov.ie/stocking-rate
     """
 
-    return params["stocking_rate"] * params["i_bm_lu"]
+    return params["sr"] * params["i_bm_lu"]
 
 
-def ingested_biomass(
+def ingested_compartmental_biomass(
     ts_vals: dict[str, float], params: dict[str, float]
 ) -> dict[str, float]:
     """
@@ -296,6 +296,44 @@ def ingested_biomass(
 #                 needed = ingested[key] - available[key]
 #                 ingested[key] = available[key]
 #         return ingested
+
+
+def ingested_biomass(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> dict[str, float]:
+    """
+    Total ingested biomass and remaining compartmental biomass
+    """
+
+    if (
+        params["sr"] > 0.0 and
+        params["st_2"] > ts_vals["temperature_sum"] > params["st_1"] + 50.0
+    ):
+
+        # maximum available biomass per compartment
+        ts_vals["bm_max"] = max_available_compartmental_biomass(
+            ts_vals=ts_vals, params=params
+        )
+
+        # max ingestion based on stocking rate
+        ts_vals["i_bm_max"] = max_ingested_biomass(params=params)
+
+        ts_vals["ingestion"] = ingested_compartmental_biomass(
+            ts_vals=ts_vals, params=params
+        )
+
+        # total ingestion
+        ts_vals["i_bm"] += (
+            ts_vals["ingestion"]["bm_gv"] + ts_vals["ingestion"]["bm_gr"] +
+            ts_vals["ingestion"]["bm_dv"] + ts_vals["ingestion"]["bm_dr"]
+        )
+
+        # update biomass compartments
+        # 10% of biomass is lost during ingestion
+        ts_vals["bm_gv"] -= ts_vals["ingestion"]["bm_gv"] / 0.9
+        ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
+        ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
+        ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
 
 
 @dataclass
