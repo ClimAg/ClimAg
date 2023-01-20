@@ -383,14 +383,17 @@ def modvege(params, tseries, endday=365):
         )()
 
         # organic matter digestibility (OMD)
-        ts_vals["omd_gv"] = cm.organic_matter_digestibility_gv(
-            age_gv=ts_vals["age_gv"], params=params
-        )
-        ts_vals["omd_gr"] = cm.organic_matter_digestibility_gr(
-            age_gr=ts_vals["age_gr"], params=params
+        ts_vals["omd_gv"], ts_vals["omd_gr"] = (
+            cm.organic_matter_digestibility_gv(
+                age_gv=ts_vals["age_gv"], params=params
+            ),
+            cm.organic_matter_digestibility_gr(
+                age_gr=ts_vals["age_gr"], params=params
+            )
         )
 
-        cm.ingested_biomass(ts_vals, params)
+        # cm.ingested_biomass(ts_vals, params)
+        cm.ingestion(ts_vals=ts_vals, params=params)
 
         # if (
         #     params["sr"] > 0.0 and
