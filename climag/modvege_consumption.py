@@ -186,74 +186,9 @@ def maximum_ingested_biomass(params: dict[str, float]) -> float:
     return params["stocking_rate"] * params["i_bm_lu"]
 
 
-# def ingested_biomass(
-#     ts_vals: dict[str, float], params: dict[str, float]
-# ) -> dict[str, float]:
-#     """
-#     Calculate the amount of biomass ingested in total for each structural
-#     compartment. This is weighted according to the organic matter
-#     digestibility.
-
-#     - Digestibility varies among plant parts, with leaves usually being more
-#       digestible than stems
-#     - The differing digestibility of plant parts may explain why they are
-#       grazed selectively
-
-#     Parameters
-#     ----------
-#     max_ingested_biomass : Maximum amount of biomass that can be ingested by
-#         all livestock units [kg DM ha⁻¹]
-#     omd_gv : OMD of GV [dimensionless]
-#     omd_gr : OMD of GR [dimensionless]
-#     omd_dv : OMD of DV; default is 0.45 [dimensionless]
-#     omd_dr : OMD of DR; default is 0.40 [dimensionless]
-#     bm_gv_av : Available GV biomass [kg DM ha⁻¹]
-#     bm_gr_av : Available GR biomass [kg DM ha⁻¹]
-#     bm_dv_av : Available DV biomass [kg DM ha⁻¹]
-#     bm_dr_av : Available DR biomass [kg DM ha⁻¹]
-
-#     Returns
-#     -------
-#     - Biomass ingested by biomass compartment, returned as a dict
-#     """
-
-#     weights = {}
-#     ingested = {}
-#     available = {}
-
-#     weights_total = (
-#         ts_vals["omd_gv"] + ts_vals["omd_gr"] +
-#         params["omd_dv"] + params["omd_dr"]
-#     )
-#     weights["gv"] = ts_vals["omd_gv"] / weights_total
-#     weights["gr"] = ts_vals["omd_gr"] / weights_total
-#     weights["dv"] = params["omd_dv"] / weights_total
-#     weights["dr"] = params["omd_dr"] / weights_total
-#     # sort by weight
-#     weights = dict(sorted(weights.items(), key=lambda item: item[1]))
-
-#     ingested["gv"] = self.max_ingested_biomass * weights["gv"]
-#     ingested["gr"] = self.max_ingested_biomass * weights["gr"]
-#     ingested["dv"] = self.max_ingested_biomass * weights["dv"]
-#     ingested["dr"] = self.max_ingested_biomass * weights["dr"]
-
-#     available["gv"] = self.bm_gv_av
-#     available["gr"] = self.bm_gr_av
-#     available["dv"] = self.bm_dv_av
-#     available["dr"] = self.bm_dr_av
-
-#     needed = 0.0
-
-#     for key in weights:
-#         ingested[key] += needed
-#         if available[key] < ingested[key]:
-#             needed = ingested[key] - available[key]
-#             ingested[key] = available[key]
-#     return ingested
-
-
-@dataclass
-class Ingestion:
+def ingested_biomass(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> dict[str, float]:
     """
     Calculate the amount of biomass ingested in total for each structural
     compartment. This is weighted according to the organic matter
@@ -282,47 +217,85 @@ class Ingestion:
     - Biomass ingested by biomass compartment, returned as a dict
     """
 
-    bm_gv_av: float
-    bm_gr_av: float
-    bm_dv_av: float
-    bm_dr_av: float
-    max_ingested_biomass: float
-    omd_gv: float
-    omd_gr: float
-    omd_dv: float = 0.45
-    omd_dr: float = 0.40
+    weights = {}
+    ingested = {}
+    available = {}
 
-    def __call__(self) -> dict[str, float]:
-        weights = {}
-        ingested = {}
-        available = {}
+    weights_total = (
+        ts_vals["omd_gv"] + ts_vals["omd_gr"] +
+        params["omd_dv"] + params["omd_dr"]
+    )
+    weights["bm_gv"] = ts_vals["omd_gv"] / weights_total
+    weights["bm_gr"] = ts_vals["omd_gr"] / weights_total
+    weights["bm_dv"] = params["omd_dv"] / weights_total
+    weights["bm_dr"] = params["omd_dr"] / weights_total
+    # sort by weight
+    weights = dict(sorted(weights.items(), key=lambda item: item[1]))
 
-        weights_total = self.omd_gv + self.omd_gr + self.omd_dv + self.omd_dr
-        weights["gv"] = self.omd_gv / weights_total
-        weights["gr"] = self.omd_gr / weights_total
-        weights["dv"] = self.omd_dv / weights_total
-        weights["dr"] = self.omd_dr / weights_total
-        # sort by weight
-        weights = dict(sorted(weights.items(), key=lambda item: item[1]))
+    ingested["bm_gv"] = ts_vals["i_bm_max"] * weights["bm_gv"]
+    ingested["bm_gr"] = ts_vals["i_bm_max"] * weights["bm_gr"]
+    ingested["bm_dv"] = ts_vals["i_bm_max"] * weights["bm_dv"]
+    ingested["bm_dr"] = ts_vals["i_bm_max"] * weights["bm_dr"]
 
-        ingested["gv"] = self.max_ingested_biomass * weights["gv"]
-        ingested["gr"] = self.max_ingested_biomass * weights["gr"]
-        ingested["dv"] = self.max_ingested_biomass * weights["dv"]
-        ingested["dr"] = self.max_ingested_biomass * weights["dr"]
+    available["bm_gv"] = ts_vals["bm_max"]["bm_gv"]
+    available["bm_gr"] = ts_vals["bm_max"]["bm_gr"]
+    available["bm_dv"] = ts_vals["bm_max"]["bm_dv"]
+    available["bm_dr"] = ts_vals["bm_max"]["bm_dr"]
 
-        available["gv"] = self.bm_gv_av
-        available["gr"] = self.bm_gr_av
-        available["dv"] = self.bm_dv_av
-        available["dr"] = self.bm_dr_av
+    needed = 0.0
 
-        needed = 0.0
+    for key in weights:
+        ingested[key] += needed
+        if available[key] < ingested[key]:
+            needed = ingested[key] - available[key]
+            ingested[key] = available[key]
+    return ingested
 
-        for key in weights:
-            ingested[key] += needed
-            if available[key] < ingested[key]:
-                needed = ingested[key] - available[key]
-                ingested[key] = available[key]
-        return ingested
+
+# @dataclass
+# class Ingestion:
+
+#     bm_gv_av: float
+#     bm_gr_av: float
+#     bm_dv_av: float
+#     bm_dr_av: float
+#     max_ingested_biomass: float
+#     omd_gv: float
+#     omd_gr: float
+#     omd_dv: float = 0.45
+#     omd_dr: float = 0.40
+
+#     def __call__(self) -> dict[str, float]:
+#         weights = {}
+#         ingested = {}
+#         available = {}
+
+#         weights_total = self.omd_gv + self.omd_gr + self.omd_dv + self.omd_dr
+#         weights["gv"] = self.omd_gv / weights_total
+#         weights["gr"] = self.omd_gr / weights_total
+#         weights["dv"] = self.omd_dv / weights_total
+#         weights["dr"] = self.omd_dr / weights_total
+#         # sort by weight
+#         weights = dict(sorted(weights.items(), key=lambda item: item[1]))
+
+#         ingested["gv"] = self.max_ingested_biomass * weights["gv"]
+#         ingested["gr"] = self.max_ingested_biomass * weights["gr"]
+#         ingested["dv"] = self.max_ingested_biomass * weights["dv"]
+#         ingested["dr"] = self.max_ingested_biomass * weights["dr"]
+
+#         available["gv"] = self.bm_gv_av
+#         available["gr"] = self.bm_gr_av
+#         available["dv"] = self.bm_dv_av
+#         available["dr"] = self.bm_dr_av
+
+#         needed = 0.0
+
+#         for key in weights:
+#             ingested[key] += needed
+#             if available[key] < ingested[key]:
+#                 needed = ingested[key] - available[key]
+#                 ingested[key] = available[key]
+#         return ingested
 
 
 @dataclass

@@ -11,15 +11,15 @@ https://github.com/YannChemin/modvege (Accessed 6 September 2022).
 
 References
 ----------
-- Jouven, M., Carrère, P. and Baumont, R. (2006a). 'Model predicting dynamics
+- Jouven, M., Carrère, P., and Baumont, R. (2006a). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
   pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
-- Jouven, M., Carrère, P. and Baumont, R. (2006b). 'Model predicting dynamics
+- Jouven, M., Carrère, P., and Baumont, R. (2006b). 'Model predicting dynamics
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
-- Lardy, R., Bellocchi, G. G., Bachelet, B. and Hill, D. (2011). 'Climate
+- Lardy, R., Bellocchi, G. G., Bachelet, B., and Hill, D. (2011). 'Climate
   Change Vulnerability Assessment with Constrained Design of Experiments,
   Using a Model-Driven Engineering Approach', Guimaraes, Portugal, pp.
   354-362. [Online]. Available at
@@ -135,8 +135,8 @@ def modvege(params, tseries, endday=365):
 
     params["stocking_rate"] = cm.stocking_rate(params=params)
 
-    # nitrogen nutritional index (NI)
-    params["ni"] = lm.nitrogen_index(params=params)
+    # # nitrogen nutritional index (NI)
+    # params["ni"] = lm.nitrogen_index(params=params)
 
     # dictionary of outputs
     outputs_dict = {
@@ -403,27 +403,30 @@ def modvege(params, tseries, endday=365):
             ts_vals["i_bm_max"] = cm.maximum_ingested_biomass(params=params)
 
             # actual ingestion
-            ingestion = cm.Ingestion(
-                bm_gv_av=ts_vals["bm_max"]["bm_gv"],
-                bm_gr_av=ts_vals["bm_max"]["bm_gr"],
-                bm_dv_av=ts_vals["bm_max"]["bm_dv"],
-                bm_dr_av=ts_vals["bm_max"]["bm_dr"],
-                max_ingested_biomass=ts_vals["i_bm_max"],
-                omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
-            )()
+            # ingestion = cm.Ingestion(
+            #     bm_gv_av=ts_vals["bm_max"]["bm_gv"],
+            #     bm_gr_av=ts_vals["bm_max"]["bm_gr"],
+            #     bm_dv_av=ts_vals["bm_max"]["bm_dv"],
+            #     bm_dr_av=ts_vals["bm_max"]["bm_dr"],
+            #     max_ingested_biomass=ts_vals["i_bm_max"],
+            #     omd_gv=ts_vals["omd_gv"], omd_gr=ts_vals["omd_gr"]
+            # )()
+            ts_vals["ingestion"] = cm.ingested_biomass(
+                ts_vals=ts_vals, params=params
+            )
 
             # total ingestion
             ts_vals["i_bm"] += (
-                ingestion["gv"] + ingestion["gr"] +
-                ingestion["dv"] + ingestion["dr"]
+                ts_vals["ingestion"]["bm_gv"] + ts_vals["ingestion"]["bm_gr"] +
+                ts_vals["ingestion"]["bm_dv"] + ts_vals["ingestion"]["bm_dr"]
             )
 
             # update biomass compartments
             # 10% of biomass is lost during ingestion
-            ts_vals["bm_gv"] -= ingestion["gv"] / 0.9
-            ts_vals["bm_gr"] -= ingestion["gr"] / 0.9
-            ts_vals["bm_dv"] -= ingestion["dv"] / 0.9
-            ts_vals["bm_dr"] -= ingestion["dr"] / 0.9
+            ts_vals["bm_gv"] -= ts_vals["ingestion"]["bm_gv"] / 0.9
+            ts_vals["bm_gr"] -= ts_vals["ingestion"]["bm_gr"] / 0.9
+            ts_vals["bm_dv"] -= ts_vals["ingestion"]["bm_dv"] / 0.9
+            ts_vals["bm_dr"] -= ts_vals["ingestion"]["bm_dr"] / 0.9
 
         # biomass harvested per compartment
         harvested_biomass_part_gv = cm.HarvestedBiomass(
