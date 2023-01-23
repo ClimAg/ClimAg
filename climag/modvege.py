@@ -19,11 +19,9 @@ References
   of biomass, structure and digestibility of herbage in managed permanent
   pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
   pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
-- Lardy, R., Bellocchi, G. G., Bachelet, B., and Hill, D. (2011). 'Climate
-  Change Vulnerability Assessment with Constrained Design of Experiments,
-  Using a Model-Driven Engineering Approach', Guimaraes, Portugal, pp.
-  354-362. [Online]. Available at
-  https://hal.archives-ouvertes.fr/hal-02802688 (Accessed 4 November 2022).
+
+Full list of references are available here:
+https://www.zotero.org/groups/4706660/climag/collections/ZNH6N9Y8
 
 Model definition
 ----------------
@@ -44,16 +42,6 @@ List of time series variables
 - par: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
 - pr: Precipitation (PP) [mm]
 - evspsblpot: Potential evapotranspiration (PET) [mm]
-
-Notes
------
-- SEA > 1 indicates above-ground growth stimulation by mobilisation of
-  reserves; SEA is equal to minSEA when ST < 200 °C d, then increases and
-  reaches maxSEA when (ST₁ - 200) < ST < (ST₁ - 100) (ST = ST₁ at the
-  beginning of the reproductive period); during summer, SEA decreases,
-  returning to minSEA at ST₂ (ST = ST₂ at the end of the reproductive period);
-  minSEA and maxSEA are functional traits, arranged symmetrically around 1:
-  (minSEA + maxSEA)/2 = 1.
 
 List of parameters (constants)
 ------------------------------
@@ -255,23 +243,29 @@ def modvege(params, tseries, endday=365):
         outputs_dict["seasonality"].append(seasonality)
 
         # leaf area index (LAI)
-        lai = lm.LeafAreaIndex(bm_gv=ts_vals["bm_gv"])()
-        outputs_dict["leaf_area_index"].append(lai)
+        # lai = lm.LeafAreaIndex(bm_gv=ts_vals["bm_gv"])()
+        # outputs_dict["leaf_area_index"].append(lai)
+        ts_vals["lai"] = lm.leaf_area_index(ts_vals=ts_vals, params=params)
+        outputs_dict["leaf_area_index"].append(ts_vals["lai"])
 
         # potential evapotranspiration (PET)
-        pet = tseries["PET"][i]
+        # pet = tseries["PET"][i]
 
         # actual evapotranspiration (AET)
-        eta = lm.ActualEvapotranspiration(pet=pet, lai=lai)()
-        outputs_dict["actual_evapotranspiration"].append(eta)
+        # eta = lm.ActualEvapotranspiration(pet=pet, lai=ts_vals["lai"])()
+        # outputs_dict["actual_evapotranspiration"].append(eta)
+        ts_vals["eta"] = lm.actual_evapotranspiration(
+            pet=tseries["PET"][i], ts_vals=ts_vals
+        )
+        outputs_dict["actual_evapotranspiration"].append(ts_vals["eta"])
 
         # precipitation (PP)
-        precipitation = tseries["PP"][i]
+        # precipitation = tseries["PP"][i]
 
         # water reserves (WR)
         ts_vals["wr"] = lm.WaterReserves(
-            precipitation=precipitation, w_reserves=ts_vals["wr"],
-            aet=eta, whc=params["whc"]
+            precipitation=tseries["PP"][i], w_reserves=ts_vals["wr"],
+            aet=ts_vals["eta"], whc=params["whc"]
         )()
 
         # water stress (W)
@@ -281,7 +275,7 @@ def modvege(params, tseries, endday=365):
 
         # water stress function (f(W))
         waterstress_fn = lm.WaterStressFunction(
-            w_stress=waterstress, pet=pet
+            w_stress=waterstress, pet=tseries["PET"][i]
         )()
 
         # incident photosynthetically active radiation (PAR_i)
@@ -294,11 +288,11 @@ def modvege(params, tseries, endday=365):
             n_index=params["ni"],
             w_fn=waterstress_fn
         )()
-        outputs_dict["env"].append(env)
 
         # potential growth (PGRO)
-        biomass_growth_pot = lm.PotentialGrowth(par_i=pari, lai=lai)()
-        outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
+        biomass_growth_pot = lm.PotentialGrowth(
+            par_i=pari, lai=ts_vals["lai"]
+        )()
 
         # total biomass growth (GRO)
         gro = lm.TotalGrowth(
@@ -314,7 +308,6 @@ def modvege(params, tseries, endday=365):
             stocking_rate=params["sr"],
             cut_height=params["h_grass"]
         )()
-        outputs_dict["reproductive_fn"].append(rep_f)
 
         # allocation to reproductive
         # TO-DO: when to change NI, and by how much?
@@ -406,6 +399,9 @@ def modvege(params, tseries, endday=365):
         outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
+        outputs_dict["env"].append(env)
+        outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
+        outputs_dict["reproductive_fn"].append(rep_f)
 
     return (
         outputs_dict["bm_gv"],

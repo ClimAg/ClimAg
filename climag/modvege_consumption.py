@@ -179,10 +179,10 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         # max available compartmental biomass
         available_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:
-            residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10
+            residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10.0
             if residual_biomass < ts_vals[f"bm_{key}"]:
                 available_biomass[f"bm_{key}"] = (
-                    (ts_vals[f"bm_{key}"] - residual_biomass) * .9
+                    (ts_vals[f"bm_{key}"] - residual_biomass) * 0.9
                 )
             else:
                 available_biomass[f"bm_{key}"] = 0.0
@@ -292,17 +292,17 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["h_grass"] > 0 and
+        params["h_grass"] > 0.0 and
         params["st_2"] + 50.0 >= ts_vals["temperature_sum"] >= params["st_2"]
     ):
         harvested_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:
             # harvested biomass for each compartment
-            residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10
+            residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10.0
             harvested_biomass[f"bm_{key}"] = 0.0
             if residual_biomass < ts_vals[f"bm_{key}"]:
                 harvested_biomass[f"bm_{key}"] += (
-                    (ts_vals[f"bm_{key}"] - residual_biomass) * .9
+                    (ts_vals[f"bm_{key}"] - residual_biomass) * 0.9
                 )
 
         # total harvested biomass

@@ -1,29 +1,6 @@
 """modvege_lib.py
 
-References
-----------
-- Jouven, M., Carrère, P., and Baumont, R. (2006a). 'Model predicting dynamics
-  of biomass, structure and digestibility of herbage in managed permanent
-  pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
-  pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
-- Jouven, M., Carrère, P., and Baumont, R. (2006b). 'Model predicting dynamics
-  of biomass, structure and digestibility of herbage in managed permanent
-  pastures. 2. Model evaluation', Grass and Forage Science, vol. 61, no. 2,
-  pp. 125-133. DOI: 10.1111/j.1365-2494.2006.00517.x.
-- Bélanger, G., Gastal, F., and Warembourg, F. R. (1994). 'Carbon Balance of
-  Tall Fescue (Festuca arundinacea Schreb.): Effects of Nitrogen Fertilization
-  and the Growing Season', Annals of Botany, vol. 74, no. 6, pp. 653-659.
-  DOI: 10.1006/anbo.1994.1167.
-- Bonesmo, H. and Bélanger, G. (2002). 'Timothy Yield and Nutritive Value by
-  the CATIMO Model', Agronomy Journal, vol. 94, no. 2, pp. 337-345.
-  DOI: 10.2134/agronj2002.3370.
-- McCall, D. G. and Bishop-Hurley, G. J. (2003). 'A pasture growth model for
-  use in a whole-farm dairy production model', Agricultural Systems, vol. 76,
-  no. 3, pp. 1183-1205. DOI: 10.1016/S0308-521X(02)00104-X.
-- Schapendonk, A. H. C. M., Stol, W., van Kraalingen, D. W. G., and Bouman,
-  B. A. M. (1998). 'LINGRA, a sink/source model to simulate grassland
-  productivity in Europe', European Journal of Agronomy, vol. 9, no. 2, pp.
-  87-100. DOI: 10.1016/S1161-0301(98)00027-6.
+Main ModVege functions.
 """
 
 from dataclasses import dataclass
@@ -32,8 +9,9 @@ import numpy as np
 np.seterr("raise")
 
 
-@dataclass
-class LeafAreaIndex:
+def leaf_area_index(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> float:
     """
     Calculate the leaf area index (LAI)
 
@@ -52,16 +30,10 @@ class LeafAreaIndex:
     - Leaf area index (LAI) [dimensionless]
     """
 
-    bm_gv: float
-    pct_lam: float = 0.68
-    sla: float = 0.033
-
-    def __call__(self) -> float:
-        return self.sla * self.bm_gv / 10.0 * self.pct_lam
+    return params["sla"] * ts_vals["bm_gv"] / 10.0 * params["pct_lam"]
 
 
-@dataclass
-class ActualEvapotranspiration:
+def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
     """
     Calculate the actual evapotranspiration (AET)
 
@@ -82,11 +54,7 @@ class ActualEvapotranspiration:
     - Actual evapotranspiration (AET) [mm]
     """
 
-    pet: float
-    lai: float
-
-    def __call__(self) -> float:
-        return min(self.pet, self.pet * self.lai / 3.0)
+    return min(pet, pet * ts_vals["lai"] / 3.0)
 
 
 @dataclass
@@ -305,7 +273,11 @@ class SeasonalEffect:
     SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
     SEA < 1 indicates growth limitation by storage of reserves
 
-    SEA = minSEA when ST < 200°C d.
+    SEA = minSEA when ST < 200°C d, then increases and reaches maxSEA when
+    (ST₁ - 200) < ST < (ST₁ - 100) (ST = ST₁ at the beginning of the
+    reproductive period); during summer, SEA decreases, returning to minSEA at
+    ST₂ (ST = ST₂ at the end of the reproductive period)
+
     "T-sum 200 date" had its origins in the Netherlands and reflects the
     amount of heat absorbed and hence the amount of energy available to
     promote grass growth, and is used by farmers as an indication of
