@@ -123,9 +123,6 @@ def modvege(params, tseries, endday=365):
 
     params["sr"] = cm.stocking_rate(params=params)
 
-    # # nitrogen nutritional index (NI)
-    # params["ni"] = lm.nitrogen_index(params=params)
-
     # dictionary of outputs
     outputs_dict = {
         "bm_gv": [],
@@ -232,7 +229,6 @@ def modvege(params, tseries, endday=365):
 
         # temperature function (f(T))
         temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()
-        outputs_dict["temperature_fn"].append(temperature_fn)
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
@@ -240,27 +236,14 @@ def modvege(params, tseries, endday=365):
             st_1=params["st_1"], st_2=params["st_2"],
             min_sea=params["min_sea"], max_sea=params["max_sea"]
         )()
-        outputs_dict["seasonality"].append(seasonality)
 
         # leaf area index (LAI)
-        # lai = lm.LeafAreaIndex(bm_gv=ts_vals["bm_gv"])()
-        # outputs_dict["leaf_area_index"].append(lai)
         ts_vals["lai"] = lm.leaf_area_index(ts_vals=ts_vals, params=params)
-        outputs_dict["leaf_area_index"].append(ts_vals["lai"])
-
-        # potential evapotranspiration (PET)
-        # pet = tseries["PET"][i]
 
         # actual evapotranspiration (AET)
-        # eta = lm.ActualEvapotranspiration(pet=pet, lai=ts_vals["lai"])()
-        # outputs_dict["actual_evapotranspiration"].append(eta)
         ts_vals["eta"] = lm.actual_evapotranspiration(
             pet=tseries["PET"][i], ts_vals=ts_vals
         )
-        outputs_dict["actual_evapotranspiration"].append(ts_vals["eta"])
-
-        # precipitation (PP)
-        # precipitation = tseries["PP"][i]
 
         # water reserves (WR)
         ts_vals["wr"] = lm.WaterReserves(
@@ -278,25 +261,22 @@ def modvege(params, tseries, endday=365):
             w_stress=waterstress, pet=tseries["PET"][i]
         )()
 
-        # incident photosynthetically active radiation (PAR_i)
-        pari = tseries["PAR"][i]
-
         # environmental limitation of growth (ENV)
         env = lm.EnvironmentalLimitation(
             t_fn=temperature_fn,
-            par_i=pari,
+            par_i=tseries["PAR"][i],
             n_index=params["ni"],
             w_fn=waterstress_fn
         )()
 
         # potential growth (PGRO)
-        biomass_growth_pot = lm.PotentialGrowth(
-            par_i=pari, lai=ts_vals["lai"]
-        )()
+        ts_vals["pgro"] = lm.potential_growth(
+            par_i=tseries["PAR"][i], ts_vals=ts_vals, params=params
+        )
 
         # total biomass growth (GRO)
         gro = lm.TotalGrowth(
-            pgro=biomass_growth_pot, env=env, sea=seasonality
+            pgro=ts_vals["pgro"], env=env, sea=seasonality
         )()
 
         # reproductive function (REP)
@@ -398,9 +378,13 @@ def modvege(params, tseries, endday=365):
         outputs_dict["age_gr"].append(ts_vals["age_gr"])
         outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
+        outputs_dict["temperature_fn"].append(temperature_fn)
+        outputs_dict["seasonality"].append(seasonality)
+        outputs_dict["leaf_area_index"].append(ts_vals["lai"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
+        outputs_dict["actual_evapotranspiration"].append(ts_vals["eta"])
         outputs_dict["env"].append(env)
-        outputs_dict["biomass_growth_pot"].append(biomass_growth_pot)
+        outputs_dict["biomass_growth_pot"].append(ts_vals["pgro"])
         outputs_dict["reproductive_fn"].append(rep_f)
 
     return (

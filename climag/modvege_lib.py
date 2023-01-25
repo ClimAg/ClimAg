@@ -57,8 +57,9 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
     return min(pet, pet * ts_vals["lai"] / 3.0)
 
 
-@dataclass
-class PotentialGrowth:
+def potential_growth(
+    par_i: float, ts_vals: dict[str, float], params: dict[str, float]
+) -> float:
     """
     Calculate potential growth (PGRO)
 
@@ -84,18 +85,13 @@ class PotentialGrowth:
     - Potential growth (PGRO) [kg DM ha⁻¹]
     """
 
-    par_i: float
-    lai: float
-    rue_max: float = 3.0
-
-    def __call__(self) -> float:
-        return (
-            self.par_i * self.rue_max * (1.0 - np.exp(-0.6 * self.lai)) * 10.0
-        )
+    return (
+        par_i * params["rue_max"] *
+        (1.0 - np.exp(-0.6 * ts_vals["lai"])) * 10.0
+    )
 
 
-@dataclass
-class PARFunction:
+def par_function(par_i: float) -> float:
     """
     Incident photosynthetically active radiation (PAR_*i*) function
     (*f*(PAR_*i*)) needed to calculate the environmental limitation of growth
@@ -116,6 +112,19 @@ class PARFunction:
     -------
     - PAR_i function (*f*(PAR_*i*)) [dimensionless]
     """
+
+    if par_i < 5.0:
+        val = 1.0
+    else:
+        # linear gradient
+        gradient = 1.0 / (5.0 - (25.0 + 30.0) / 2.0)
+        intercept = 1.0 - gradient * 5.0
+        val = max(gradient * par_i + intercept, 0.0)
+    return val
+
+
+@dataclass
+class PARFunction:
 
     par_i: float
 
@@ -462,14 +471,6 @@ class WaterStressFunction:
         return val
 
 
-def nitrogen_index(params: dict[str, float]) -> float:
-    """
-    If NI is below 0.35, force it to 0.35 (Bélanger et al., 1994)
-    """
-
-    return max(params["ni"], 0.35)
-
-
 @dataclass
 class ReproductiveFunction:
     """
@@ -517,6 +518,32 @@ class ReproductiveFunction:
         else:
             val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
         return val
+
+
+# def environmental_limitation(
+#     ts_vals: dict[str, float], params: dict[str, float]
+# ) -> float:
+#     """
+#     Environmental limitation of growth (ENV).
+
+#     See Equation (13) of Jouven et al. (2006a).
+
+#     Parameters
+#     ----------
+#     t_fn : temperature function (*f*(*T*)) [dimensionless]
+#     n_index : Nutritional index of pixel (NI) [dimensionless]
+#     par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+#     w_fn : Water stress function (*f*(*W*)) [dimensionless]
+
+#     Returns
+#     -------
+#     - Environmental limitation of growth (ENV) [dimensionless]
+#     """
+
+#     return (
+#         ts_vals["t_fn"] * params["ni"] *
+#         PARFunction(par_i=self.par_i)() * ts_vals["w_fn"]
+#     )
 
 
 @dataclass
