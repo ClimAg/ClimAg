@@ -95,7 +95,7 @@ import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
 
-def modvege(params, tseries, endday=365):
+def modvege(params, tseries, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
@@ -127,18 +127,18 @@ def modvege(params, tseries, endday=365):
     # dictionary of outputs
     outputs_dict = {
         "bm_gv": [],
-        "bm_dv": [],
         "bm_gr": [],
+        "bm_dv": [],
         "bm_dr": [],
+        "age_gv": [],
+        "age_gr": [],
+        "age_dv": [],
+        "age_dr": [],
         "biomass_growth": [],
         "biomass_harvested": [],
         "biomass_ingested": [],
         "biomass_available": [],
         "temperature_sum": [],
-        "age_gv": [],
-        "age_gr": [],
-        "age_dv": [],
-        "age_dr": [],
         "seasonality": [],
         "temperature_fn": [],
         "env": [],
@@ -367,26 +367,28 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_growth_pot"].append(ts_vals["pgro"])
         outputs_dict["reproductive_fn"].append(ts_vals["rep"])
 
-    return (
-        outputs_dict["bm_gv"],
-        outputs_dict["bm_dv"],
-        outputs_dict["bm_gr"],
-        outputs_dict["bm_dr"],
-        outputs_dict["biomass_harvested"],
-        outputs_dict["biomass_ingested"],
-        outputs_dict["biomass_growth"],
-        outputs_dict["biomass_available"],
-        outputs_dict["temperature_sum"],
-        outputs_dict["age_gv"],
-        outputs_dict["age_dv"],
-        outputs_dict["age_gr"],
-        outputs_dict["age_dr"],
-        outputs_dict["seasonality"],
-        outputs_dict["temperature_fn"],
-        outputs_dict["env"],
-        outputs_dict["biomass_growth_pot"],
-        outputs_dict["reproductive_fn"],
-        outputs_dict["leaf_area_index"],
-        outputs_dict["actual_evapotranspiration"],
-        outputs_dict["water_reserves"]
-    )
+    return outputs_dict
+
+    # return (
+    #     outputs_dict["bm_gv"],
+    #     outputs_dict["bm_dv"],
+    #     outputs_dict["bm_gr"],
+    #     outputs_dict["bm_dr"],
+    #     outputs_dict["biomass_harvested"],
+    #     outputs_dict["biomass_ingested"],
+    #     outputs_dict["biomass_growth"],
+    #     outputs_dict["biomass_available"],
+    #     outputs_dict["temperature_sum"],
+    #     outputs_dict["age_gv"],
+    #     outputs_dict["age_dv"],
+    #     outputs_dict["age_gr"],
+    #     outputs_dict["age_dr"],
+    #     outputs_dict["seasonality"],
+    #     outputs_dict["temperature_fn"],
+    #     outputs_dict["env"],
+    #     outputs_dict["biomass_growth_pot"],
+    #     outputs_dict["reproductive_fn"],
+    #     outputs_dict["leaf_area_index"],
+    #     outputs_dict["actual_evapotranspiration"],
+    #     outputs_dict["water_reserves"]
+    # )

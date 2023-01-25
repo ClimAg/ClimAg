@@ -15,24 +15,24 @@ from climag.modvege_read_files import read_params, read_timeseries
 from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
 output_vars = {
-    "gv_b": ["Green vegetative biomass", "kg DM ha⁻¹"],
-    "dv_b": ["Dead vegetative biomass", "kg DM ha⁻¹"],
-    "gr_b": ["Green reproductive biomass", "kg DM ha⁻¹"],
-    "dr_b": ["Dead reproductive biomass", "kg DM ha⁻¹"],
-    "h_b": ["Harvested biomass", "kg DM ha⁻¹"],
-    "i_b": ["Ingested biomass", "kg DM ha⁻¹"],
+    "bm_gv": ["Green vegetative biomass", "kg DM ha⁻¹"],
+    "bm_gr": ["Green reproductive biomass", "kg DM ha⁻¹"],
+    "bm_dv": ["Dead vegetative biomass", "kg DM ha⁻¹"],
+    "bm_dr": ["Dead reproductive biomass", "kg DM ha⁻¹"],
+    "age_gv": ["Green vegetative biomass age", "°C d"],
+    "age_gr": ["Green reproductive biomass age", "°C d"],
+    "age_dv": ["Dead vegetative biomass age", "°C d"],
+    "age_dr": ["Dead reproductive biomass age", "°C d"],#
     "gro": ["Biomass growth", "kg DM ha⁻¹"],
+    "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
+    "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
     "abc": ["Starting available biomass", "kg DM ha⁻¹"],
-    "sumT": ["Sum of temperatures", "°C d"],
-    "gva": ["Green vegetative biomass age", "°C d"],
-    "dva": ["Dead vegetative biomass age", "°C d"],
-    "gra": ["Green reproductive biomass age", "°C d"],
-    "dra": ["Dead reproductive biomass age", "°C d"],
+    "st": ["Sum of temperatures", "°C d"],
     "sea": ["Seasonal effect", "dimensionless"],
-    "ftm": ["Temperature function", "dimensionless"],
+    "f_t": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
-    "pgr": ["Potential growth", "kg DM ha⁻¹"],
-    "atr": ["Reproductive function", "dimensionless"],
+    "pgro": ["Potential growth", "kg DM ha⁻¹"],
+    "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
     "aet": ["Actual evapotranspiration", "mm"],
     "wr": ["Water reserves", "mm"]
@@ -54,11 +54,16 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     data_df = modvege(params=params, tseries=tseries, endday=endday)
 
     # convert output to dataframe and save as CSV
-    data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
+    # data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
-    data_df = pd.DataFrame(
-        zip(*data_df), columns=(["day"] + list(output_vars.keys()))
-    )
+    # data_df = pd.DataFrame(
+    #     zip(*data_df), columns=(["day"] + list(output_vars.keys()))
+    # )
+
+    data_df = pd.DataFrame(data_df)
+
+    # day number
+    data_df["day"] = list(range(1, len(data_df) + 1))
 
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
