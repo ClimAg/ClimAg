@@ -173,7 +173,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["sr"] > 0.0 and
-        params["st_2"] > ts_vals["t_sum"] > params["st_1"] + 50.0
+        params["st_2"] > ts_vals["st"] > params["st_1"] + 50.0
     ):
 
         # max available compartmental biomass
@@ -283,7 +283,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["h_grass"] > 0.0 and
-        params["st_2"] + 50.0 >= ts_vals["t_sum"] >= params["st_2"]
+        params["st_2"] + 50.0 >= ts_vals["st"] >= params["st_2"]
     ):
         harvested_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:

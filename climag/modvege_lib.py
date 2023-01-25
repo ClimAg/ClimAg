@@ -3,7 +3,6 @@
 Main ModVege functions.
 """
 
-from dataclasses import dataclass
 import numpy as np
 
 np.seterr("raise")
@@ -176,7 +175,7 @@ def sum_of_temperatures(
 
     for i in range(day):
         if t_ts[i] > params["t_0"]:
-            val = ts_vals["t_sum"] + t_ts[i] - params["t_0"]
+            val = ts_vals["st"] + t_ts[i] - params["t_0"]
     return val
 
 
@@ -306,15 +305,15 @@ def seasonal_effect(
         # beginning of the reproductive period is lower than the sum of
         # temperatures at the onset of reproductive growth
         val = np.mean([params["max_sea"], params["min_sea"]])
-    elif ts_vals["t_sum"] <= 200.0 or ts_vals["t_sum"] >= params["t_2"]:
+    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["t_2"]:
         val = params["min_sea"]
     elif (
         (params["st_1"] - 200.0) <=
-        ts_vals["t_sum"] <=
+        ts_vals["st"] <=
         (params["st_1"] - 100.0)
     ):
         val = params["max_sea"]
-    elif 200.0 < ts_vals["t_sum"] < (params["st_1"] - 200.0):
+    elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
         # assume SEA increases linearly from minSEA at the onset of
         # growth to maxSEA
         gradient = (
@@ -322,15 +321,15 @@ def seasonal_effect(
             ((params["st_1"] - 200.0) - 200.0)
         )
         intercept = params["min_sea"] - gradient * 200.0
-        val = max(gradient * ts_vals["t_sum"] + intercept, params["min_sea"])
-    elif (params["st_1"] - 100.0) < ts_vals["t_sum"] < params["st_2"]:
+        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
+    elif (params["st_1"] - 100.0) < ts_vals["st"] < params["st_2"]:
         # SEA decreases linearly from maxSEA to minSEA at ST_2
         gradient = (
             (params["max_sea"] - params["min_sea"]) /
             ((params["st_1"] - 100.0) - params["st_2"])
         )
         intercept = params["min_sea"] - gradient * params["st_2"]
-        val = max(gradient * ts_vals["t_sum"] + intercept, params["min_sea"])
+        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
     return val
 
 
@@ -476,16 +475,16 @@ def reproductive_function(
 
     if (
         params["sr"] > 0.0 and
-        params["st_1"] + 50.0 <= ts_vals["t_sum"] <= params["st_2"]
+        params["st_1"] + 50.0 <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     elif (
         params["h_grass"] > 0.0 and
-        params["st_2"] >= ts_vals["t_sum"] >= params["st_2"] - 50.0
+        params["st_2"] >= ts_vals["st"] >= params["st_2"] - 50.0
     ):
         val = 0.0
     elif (
-        ts_vals["t_sum"] < params["st_1"] or ts_vals["t_sum"] > params["st_2"]
+        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
     ):
         val = 0.0
     else:
@@ -859,218 +858,3 @@ def biomass_age(
             ) *
             (ts_vals["age_dr"] + temperature)
         )
-
-
-@dataclass
-class BiomassDV:
-    """
-    Update dead vegetative compartment.
-    See Equations (3) and (7) in Jouven et al. (2006a).
-
-    The age of the residual biomass is increased daily by the mean daily
-    temperature, if this temperature is positive
-
-    Parameters
-    ----------
-    sigma_gv : Respiratory C loss during senescence of GV [dimensionless]
-    sen_gv : Senescence of GV compartment (SEN_GV)
-    abs_dv : Abscission of the DV compartment (ABS_DV)
-    temperature : Mean daily temperature (*T*) [°C]
-    bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
-    age_dv : Average DV age (AGE_DV) [°C d]
-
-    Returns
-    -------
-    - Dead vegetative biomass
-    - Average DV age [°C d]
-    """
-
-    bm_dv: float
-    abs_dv: float
-    sen_gv: float
-    age_dv: float
-    temperature: float
-    sigma_gv: float = 0.4
-
-    def __call__(self) -> float:
-        bm_dv = self.bm_dv + (1.0 - self.sigma_gv) * self.sen_gv - self.abs_dv
-        if self.temperature > 0.0 and self.bm_dv > 0.0:
-            age_dv = (
-                (self.bm_dv - self.abs_dv) /
-                (
-                    self.bm_dv - self.abs_dv +
-                    (1.0 - self.sigma_gv) * self.sen_gv
-                ) *
-                (self.age_dv + self.temperature)
-            )
-        else:
-            age_dv = self.age_dv
-        return bm_dv, age_dv
-
-
-@dataclass
-class BiomassDR:
-    """
-    Update dead reproductive compartment.
-    See Equations (4) and (8) in Jouven et al. (2006a).
-
-    The age of the residual biomass is increased daily by the mean daily
-    temperature, if this temperature is positive
-
-    Parameters
-    ----------
-    sigma_gr : Respiratory C loss during senescence for GR
-    sen_gr : Senescence of GR compartment
-    abs_dr : Abscission of the DR compartment
-    temperature : Mean daily temperature (*T*) [°C]
-    bm_dr : DR biomass (BM_DR) [kg DM ha⁻¹]
-    age_dr : Average DR age (AGE_DR) [°C d]
-
-    Returns
-    -------
-    - Dead reproductive biomass
-    - Average DR age
-    """
-
-    bm_dr: float
-    abs_dr: float
-    sen_gr: float
-    age_dr: float
-    temperature: float
-    sigma_gr: float = 0.2
-
-    def __call__(self) -> float:
-        bm_dr = self.bm_dr + (1.0 - self.sigma_gr) * self.sen_gr - self.abs_dr
-        if self.temperature > 0.0 and self.bm_dr > 0.0:
-            age_dr = (
-                (self.bm_dr - self.abs_dr) /
-                (
-                    self.bm_dr - self.abs_dr +
-                    (1.0 - self.sigma_gr) * self.sen_gr
-                ) *
-                (self.age_dr + self.temperature)
-            )
-        else:
-            age_dr = self.age_dr
-        return bm_dr, age_dr
-
-
-@dataclass
-class GrowthGV:
-    """
-    Calculate the growth proportion of the GV compartment.
-    See Equation (1) in Jouven et al. (2006a)
-
-    Parameters
-    ----------
-    gro : Growth
-    rep : Reproductive function
-    """
-
-    gro: float
-    rep: float
-
-    def __call__(self) -> float:
-        return self.gro * (1.0 - self.rep)
-
-
-@dataclass
-class BiomassGV:
-    """
-    Update green vegetative compartment.
-    See Equations (1) and (5) in Jouven et al. (2006a).
-
-    The age of the residual biomass is increased daily by the mean daily
-    temperature, if this temperature is positive
-
-    Parameters
-    ----------
-    gro_gv : Growth GV
-    sen_gv : Senescence GV
-    bm_gv : GV biomass
-    age_gv : GV age
-    temperature : Mean daily temperature (*T*) [°C]
-
-    Returns
-    -------
-    - Green vegetative biomass
-    - Average GV age
-    """
-
-    gro_gv: float
-    sen_gv: float
-    bm_gv: float
-    age_gv: float
-    temperature: float
-
-    def __call__(self) -> float:
-        bm_gv = self.bm_gv + self.gro_gv - self.sen_gv
-        if self.temperature > 0.0 and self.bm_gv > 0.0:
-            age_gv = (
-                (self.bm_gv - self.sen_gv) /
-                (self.bm_gv - self.sen_gv + self.gro_gv) *
-                (self.age_gv + self.temperature)
-            )
-        else:
-            age_gv = self.age_gv
-        return bm_gv, age_gv
-
-
-@dataclass
-class GrowthGR:
-    """
-    See Equation (2) in Jouven et al. (2006a)
-
-    Parameters
-    ----------
-    gro : Growth
-    rep : Reproductive function
-    """
-
-    gro: float
-    rep: float
-
-    def __call__(self) -> float:
-        return self.gro * self.rep
-
-
-@dataclass
-class BiomassGR:
-    """
-    Update green reproductive compartment.
-    See Equations (2) and (6) in Jouven et al. (2006a).
-
-    The age of the residual biomass is increased daily by the mean daily
-    temperature, if this temperature is positive
-
-    Parameters
-    ----------
-    gro_gr : Growth GV
-    sen_gr : Senescence GV
-    bm_gr : GV biomass
-    age_gr : GV age
-    temperature : Mean daily temperature (*T*) [°C]
-
-    Returns
-    -------
-    - Green reproductive biomass
-    - Average GR age
-    """
-
-    gro_gr: float
-    sen_gr: float
-    bm_gr: float
-    age_gr: float
-    temperature: float
-
-    def __call__(self) -> float:
-        bm_gr = self.bm_gr + self.gro_gr - self.sen_gr
-        if self.temperature > 0.0 and self.bm_gr > 0.0:
-            age_gr = (
-                (self.bm_gr - self.sen_gr) /
-                (self.bm_gr - self.sen_gr + self.gro_gr) *
-                (self.age_gr + self.temperature)
-            )
-        else:
-            age_gr = self.age_gr
-        return bm_gr, age_gr
