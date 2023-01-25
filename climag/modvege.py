@@ -215,7 +215,7 @@ def modvege(params, tseries, endday=365):
         )
 
         # temperature (T)
-        temperature = tseries["T"][i]
+        # temperature = tseries["T"][i]
 
         # 10-d moving average temperature (T_m10)
         temperature_m10 = lm.TenDayMovingAverageTemperature(
@@ -304,20 +304,20 @@ def modvege(params, tseries, endday=365):
 
         # senescence (SEN) and abscission (ABS)
         gv_senescent_biomass = lm.SenescenceGV(
-            temperature=temperature, age_gv=ts_vals["age_gv"],
+            temperature=tseries["T"][i], age_gv=ts_vals["age_gv"],
             bm_gv=ts_vals["bm_gv"]
         )()
         gr_senescent_biomass = lm.SenescenceGR(
-            temperature=temperature, age_gr=ts_vals["age_gr"],
+            temperature=tseries["T"][i], age_gr=ts_vals["age_gr"],
             bm_gr=ts_vals["bm_gr"],
             st_1=params["st_1"], st_2=params["st_2"]
         )()
         dv_abscission_biomass = lm.AbscissionDV(
-            temperature=temperature, bm_dv=ts_vals["bm_dv"],
+            temperature=tseries["T"][i], bm_dv=ts_vals["bm_dv"],
             age_dv=ts_vals["age_dv"]
         )()
         dr_abscission_biomass = lm.AbscissionDR(
-            temperature=temperature, bm_dr=ts_vals["bm_dr"],
+            temperature=tseries["T"][i], bm_dr=ts_vals["bm_dr"],
             age_dr=ts_vals["age_dr"],
             st_1=params["st_1"], st_2=params["st_2"]
         )()
@@ -328,7 +328,7 @@ def modvege(params, tseries, endday=365):
             sen_gv=gv_senescent_biomass,
             bm_gv=ts_vals["bm_gv"],
             age_gv=ts_vals["age_gv"],
-            temperature=temperature
+            temperature=tseries["T"][i]
         )()
 
         ts_vals["bm_gr"], ts_vals["age_gr"] = lm.BiomassGR(
@@ -336,7 +336,7 @@ def modvege(params, tseries, endday=365):
             sen_gr=gr_senescent_biomass,
             bm_gr=ts_vals["bm_gr"],
             age_gr=ts_vals["age_gr"],
-            temperature=temperature
+            temperature=tseries["T"][i]
         )()
 
         ts_vals["bm_dv"], ts_vals["age_dv"] = lm.BiomassDV(
@@ -344,7 +344,7 @@ def modvege(params, tseries, endday=365):
             abs_dv=dv_abscission_biomass,
             sen_gv=gv_senescent_biomass,
             age_dv=ts_vals["age_dv"],
-            temperature=temperature
+            temperature=tseries["T"][i]
         )()
 
         ts_vals["bm_dr"], ts_vals["age_dr"] = lm.BiomassDR(
@@ -352,7 +352,7 @@ def modvege(params, tseries, endday=365):
             abs_dr=dr_abscission_biomass,
             sen_gr=gr_senescent_biomass,
             age_dr=ts_vals["age_dr"],
-            temperature=temperature
+            temperature=tseries["T"][i]
         )()
 
         # organic matter digestibility (OMD)

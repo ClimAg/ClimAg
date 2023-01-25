@@ -199,43 +199,33 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
             ts_vals["omd_gv"] + ts_vals["omd_gr"] +
             params["omd_dv"] + params["omd_dr"]
         )
+
         weights["bm_gv"] = ts_vals["omd_gv"] / weights_total
         weights["bm_gr"] = ts_vals["omd_gr"] / weights_total
         weights["bm_dv"] = params["omd_dv"] / weights_total
         weights["bm_dr"] = params["omd_dr"] / weights_total
+
         # sort by weight
         weights = dict(sorted(weights.items(), key=lambda item: item[1]))
-
-        ingested["bm_gv"] = max_ingested_biomass * weights["bm_gv"]
-        ingested["bm_gr"] = max_ingested_biomass * weights["bm_gr"]
-        ingested["bm_dv"] = max_ingested_biomass * weights["bm_dv"]
-        ingested["bm_dr"] = max_ingested_biomass * weights["bm_dr"]
-
-        available["bm_gv"] = available_biomass["bm_gv"]
-        available["bm_gr"] = available_biomass["bm_gr"]
-        available["bm_dv"] = available_biomass["bm_dv"]
-        available["bm_dr"] = available_biomass["bm_dr"]
 
         needed = 0.0
 
         for key in weights:
+            ingested[key] = max_ingested_biomass * weights[key]
+            available[key] = available_biomass[key]
             ingested[key] += needed
             if available[key] < ingested[key]:
                 needed = ingested[key] - available[key]
                 ingested[key] = available[key]
+            # update biomass compartments
+            # 10% of biomass is lost during ingestion
+            ts_vals[key] -= ingested[key] / 0.9
 
         # total ingestion
         ts_vals["i_bm"] += (
             ingested["bm_gv"] + ingested["bm_gr"] +
             ingested["bm_dv"] + ingested["bm_dr"]
         )
-
-        # update biomass compartments
-        # 10% of biomass is lost during ingestion
-        ts_vals["bm_gv"] -= ingested["bm_gv"] / 0.9
-        ts_vals["bm_gr"] -= ingested["bm_gr"] / 0.9
-        ts_vals["bm_dv"] -= ingested["bm_dv"] / 0.9
-        ts_vals["bm_dr"] -= ingested["bm_dr"] / 0.9
 
 
 def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
@@ -304,16 +294,12 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
                 harvested_biomass[f"bm_{key}"] += (
                     (ts_vals[f"bm_{key}"] - residual_biomass) * 0.9
                 )
+            # update biomass compartments
+            # 10% of biomass is lost during harvest
+            ts_vals[f"bm_{key}"] -= harvested_biomass[f"bm_{key}"] / 0.9
 
         # total harvested biomass
         ts_vals["h_bm"] += (
             harvested_biomass["bm_gv"] + harvested_biomass["bm_gr"] +
             harvested_biomass["bm_dv"] + harvested_biomass["bm_dr"]
         )
-
-        # update biomass compartments
-        # 10% of biomass is lost during harvest
-        ts_vals["bm_gv"] -= harvested_biomass["bm_gv"] / 0.9
-        ts_vals["bm_gr"] -= harvested_biomass["bm_gr"] / 0.9
-        ts_vals["bm_dv"] -= harvested_biomass["bm_dv"] / 0.9
-        ts_vals["bm_dr"] -= harvested_biomass["bm_dr"] / 0.9
