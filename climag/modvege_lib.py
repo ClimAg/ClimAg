@@ -692,6 +692,175 @@ def senescence(
         ts_vals["sen_gr"] = 0.0
 
 
+def biomass_growth(ts_vals: dict[str, float]) -> float:
+    """
+    Calculate the growth of the GV and GR biomass compartments.
+    See Equations (1) and (2) in Jouven et al. (2006a)
+
+    Parameters
+    ----------
+    ts_vals : A dictionary with intermediate time series values for:
+        - gro: Total growth (GRO) [kg DM ha⁻¹]
+        - rep: Reproductive function (REP) [dimensionless]
+
+    Returns
+    -------
+    - Growth of the GV compartment (GRO_GV) [kg DM ha⁻¹]
+    - Growth of the GR compartment (GRO_GR) [kg DM ha⁻¹]
+    """
+
+    return (
+        ts_vals["gro"] * (1.0 - ts_vals["rep"]),
+        ts_vals["gro"] * ts_vals["rep"]
+    )
+
+
+def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
+    """
+    Update the standing biomass for each compartment.
+    See Equations (1), (2), (3), and (4) in Jouven et al. (2006a).
+
+    Parameters
+    ----------
+    params : A dictionary containing model parameters:
+        - sigma_gv: Rate of biomass loss with respiration for GV
+            [dimensionless]
+        - sigma_gr: Rate of biomass loss with respiration for GR
+            [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
+        - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
+        - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
+        - sen_gr: Senescence of GR compartment (SEN_GR) [kg DM ha⁻¹]
+        - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
+        - abs_dv: Abscission of the DV compartment (ABS_DV) [kg DM ha⁻¹]
+        - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
+        - abs_dr: Abscission of the DR compartment (ABS_DR) [kg DM ha⁻¹]
+        - gro: Total growth (GRO) [kg DM ha⁻¹]
+        - rep: Reproductive function (REP) [dimensionless]
+
+    Returns
+    -------
+    - An updated `ts_vals` dictionary with:
+        - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
+        - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
+        - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
+        - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
+    """
+
+    # GV compartment
+    ts_vals["bm_gv"] = (
+        ts_vals["bm_gv"] +
+        biomass_growth(ts_vals=ts_vals)[0] - ts_vals["sen_gv"]
+    )
+
+    # GR compartment
+    ts_vals["bm_gr"] = (
+        ts_vals["bm_gr"] +
+        biomass_growth(ts_vals=ts_vals)[1] - ts_vals["sen_gr"]
+    )
+
+    # DV compartment
+    ts_vals["bm_dv"] = (
+        ts_vals["bm_dv"] +
+        (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"] - ts_vals["abs_dv"]
+    )
+
+    # DR compartment
+    ts_vals["bm_dr"] = (
+        ts_vals["bm_dr"] +
+        (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"] - ts_vals["abs_dr"]
+    )
+
+
+def biomass_age(
+    temperature: float, params: dict[str, float], ts_vals: dict[str, float]
+):
+    """
+    Update the age of each biomass compartment.
+    See Equations (5), (6), (7), and (8) in Jouven et al. (2006a).
+
+    The age of the residual biomass is increased daily by the mean daily
+    temperature, if this temperature is positive.
+
+    Parameters
+    ----------
+    params : A dictionary containing model parameters:
+        - sigma_gv: Rate of biomass loss with respiration for GV
+            [dimensionless]
+        - sigma_gr: Rate of biomass loss with respiration for GR
+            [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
+        - age_gv: Age of the GV compartment (AGE_GV) [°C d]
+        - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
+        - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
+        - age_gr: Age of the GR compartment (AGE_GR) [°C d]
+        - sen_gr: Senescence of GR compartment (SEN_GR) [kg DM ha⁻¹]
+        - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
+        - age_dv: Age of the DV compartment (AGE_DV) [°C d]
+        - abs_dv: Abscission of the DV compartment (ABS_DV) [kg DM ha⁻¹]
+        - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
+        - age_dr: Age of the DR compartment (AGE_DR) [°C d]
+        - abs_dr: Abscission of the DR compartment (ABS_DR) [kg DM ha⁻¹]
+        - gro: Total growth (GRO) [kg DM ha⁻¹]
+        - rep: Reproductive function (REP) [dimensionless]
+    temperature : Mean daily temperature (*T*) [°C]
+
+    Returns
+    -------
+    - An updated `ts_vals` dictionary with:
+        - age_gv: Age of the GV compartment (AGE_GV) [°C d]
+        - age_gr: Age of the GR compartment (AGE_GR) [°C d]
+        - age_dv: Age of the DV compartment (AGE_DV) [°C d]
+        - age_dr: Age of the DR compartment (AGE_DR) [°C d]
+    """
+
+    # GV compartment
+    if temperature > 0.0 and ts_vals["bm_gv"] > 0.0:
+        ts_vals["age_gv"] = (
+            (ts_vals["bm_gv"] - ts_vals["sen_gv"]) /
+            (
+                ts_vals["bm_gv"] - ts_vals["sen_gv"] +
+                biomass_growth(ts_vals=ts_vals)[0]
+            ) *
+            (ts_vals["age_gv"] + temperature)
+        )
+
+    # GR compartment
+    if temperature > 0.0 and ts_vals["bm_gr"] > 0.0:
+        ts_vals["age_gr"] = (
+            (ts_vals["bm_gr"] - ts_vals["sen_gr"]) /
+            (
+                ts_vals["bm_gr"] - ts_vals["sen_gr"] +
+                biomass_growth(ts_vals=ts_vals)[1]
+            ) *
+            (ts_vals["age_gr"] + temperature)
+        )
+
+    # DV compartment
+    if temperature > 0.0 and ts_vals["bm_dv"] > 0.0:
+        ts_vals["age_dv"] = (
+            (ts_vals["bm_dv"] - ts_vals["abs_dv"]) /
+            (
+                ts_vals["bm_dv"] - ts_vals["abs_dv"] +
+                (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"]
+            ) *
+            (ts_vals["age_dv"] + temperature)
+        )
+
+    # DR compartment
+    if temperature > 0.0 and ts_vals["bm_dr"] > 0.0:
+        ts_vals["age_dr"] = (
+            (ts_vals["bm_dr"] - ts_vals["abs_dr"]) /
+            (
+                ts_vals["bm_dr"] - ts_vals["abs_dr"] +
+                (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"]
+            ) *
+            (ts_vals["age_dr"] + temperature)
+        )
+
+
 @dataclass
 class BiomassDV:
     """

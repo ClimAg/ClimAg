@@ -299,37 +299,41 @@ def modvege(params, tseries, endday=365):
         )
 
         # standing biomass (BM) and biomass age (AGE)
-        ts_vals["bm_gv"], ts_vals["age_gv"] = lm.BiomassGV(
-            gro_gv=lm.GrowthGV(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
-            sen_gv=ts_vals["sen_gv"],
-            bm_gv=ts_vals["bm_gv"],
-            age_gv=ts_vals["age_gv"],
-            temperature=tseries["T"][i]
-        )()
+        lm.standing_biomass(ts_vals=ts_vals, params=params)
+        lm.biomass_age(
+            temperature=tseries["T"][i], params=params, ts_vals=ts_vals
+        )
+        # ts_vals["bm_gv"], ts_vals["age_gv"] = lm.BiomassGV(
+        #     gro_gv=lm.GrowthGV(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
+        #     sen_gv=ts_vals["sen_gv"],
+        #     bm_gv=ts_vals["bm_gv"],
+        #     age_gv=ts_vals["age_gv"],
+        #     temperature=tseries["T"][i]
+        # )()
 
-        ts_vals["bm_gr"], ts_vals["age_gr"] = lm.BiomassGR(
-            gro_gr=lm.GrowthGR(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
-            sen_gr=ts_vals["sen_gr"],
-            bm_gr=ts_vals["bm_gr"],
-            age_gr=ts_vals["age_gr"],
-            temperature=tseries["T"][i]
-        )()
+        # ts_vals["bm_gr"], ts_vals["age_gr"] = lm.BiomassGR(
+        #     gro_gr=lm.GrowthGR(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
+        #     sen_gr=ts_vals["sen_gr"],
+        #     bm_gr=ts_vals["bm_gr"],
+        #     age_gr=ts_vals["age_gr"],
+        #     temperature=tseries["T"][i]
+        # )()
 
-        ts_vals["bm_dv"], ts_vals["age_dv"] = lm.BiomassDV(
-            bm_dv=ts_vals["bm_dv"],
-            abs_dv=ts_vals["abs_dv"],
-            sen_gv=ts_vals["sen_gv"],
-            age_dv=ts_vals["age_dv"],
-            temperature=tseries["T"][i]
-        )()
+        # ts_vals["bm_dv"], ts_vals["age_dv"] = lm.BiomassDV(
+        #     bm_dv=ts_vals["bm_dv"],
+        #     abs_dv=ts_vals["abs_dv"],
+        #     sen_gv=ts_vals["sen_gv"],
+        #     age_dv=ts_vals["age_dv"],
+        #     temperature=tseries["T"][i]
+        # )()
 
-        ts_vals["bm_dr"], ts_vals["age_dr"] = lm.BiomassDR(
-            bm_dr=ts_vals["bm_dr"],
-            abs_dr=ts_vals["abs_dr"],
-            sen_gr=ts_vals["sen_gr"],
-            age_dr=ts_vals["age_dr"],
-            temperature=tseries["T"][i]
-        )()
+        # ts_vals["bm_dr"], ts_vals["age_dr"] = lm.BiomassDR(
+        #     bm_dr=ts_vals["bm_dr"],
+        #     abs_dr=ts_vals["abs_dr"],
+        #     sen_gr=ts_vals["sen_gr"],
+        #     age_dr=ts_vals["age_dr"],
+        #     temperature=tseries["T"][i]
+        # )()
 
         # organic matter digestibility (OMD)
         cm.organic_matter_digestibility(ts_vals=ts_vals, params=params)
