@@ -241,32 +241,29 @@ def modvege(params, tseries, endday=365):
         ts_vals["lai"] = lm.leaf_area_index(ts_vals=ts_vals, params=params)
 
         # actual evapotranspiration (AET)
-        ts_vals["eta"] = lm.actual_evapotranspiration(
+        ts_vals["aet"] = lm.actual_evapotranspiration(
             pet=tseries["PET"][i], ts_vals=ts_vals
         )
 
         # water reserves (WR)
-        ts_vals["wr"] = lm.WaterReserves(
-            precipitation=tseries["PP"][i], w_reserves=ts_vals["wr"],
-            aet=ts_vals["eta"], whc=params["whc"]
-        )()
+        ts_vals["wr"] = lm.water_reserves(
+            ts_vals=ts_vals, params=params, precipitation=tseries["PP"][i]
+        )
 
         # water stress (W)
-        waterstress = lm.WaterStress(
-            w_reserves=ts_vals["wr"], whc=params["whc"]
-        )()
+        ts_vals["w"] = lm.water_stress(ts_vals=ts_vals, params=params)
 
         # water stress function (f(W))
-        waterstress_fn = lm.WaterStressFunction(
-            w_stress=waterstress, pet=tseries["PET"][i]
-        )()
+        ts_vals["f_w"] = lm.water_stress_function(
+            ts_vals=ts_vals, pet=tseries["PET"][i]
+        )
 
         # environmental limitation of growth (ENV)
         env = lm.EnvironmentalLimitation(
             t_fn=ts_vals["f_t"],
             par_i=tseries["PAR"][i],
             n_index=params["ni"],
-            w_fn=waterstress_fn
+            w_fn=ts_vals["f_w"]
         )()
 
         # potential growth (PGRO)
@@ -382,7 +379,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["seasonality"].append(seasonality)
         outputs_dict["leaf_area_index"].append(ts_vals["lai"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
-        outputs_dict["actual_evapotranspiration"].append(ts_vals["eta"])
+        outputs_dict["actual_evapotranspiration"].append(ts_vals["aet"])
         outputs_dict["env"].append(env)
         outputs_dict["biomass_growth_pot"].append(ts_vals["pgro"])
         outputs_dict["reproductive_fn"].append(rep_f)

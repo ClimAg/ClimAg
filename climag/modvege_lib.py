@@ -79,7 +79,7 @@ def potential_growth(
     Parameters
     ----------
     par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
-    params : A dictionary containing these model parameters:
+    params : A dictionary containing model parameters:
         - rue_max: Maximum radiation use efficiency (RUE_max); default is 3
             [g DM MJ⁻¹]
     ts_vals : A dictionary with intermediate time series values for:
@@ -157,7 +157,7 @@ def sum_of_temperatures(
     t_ts : Temperature (*T*) field of the input time series data (temperature
         should be in °C)
     day : Day number
-    params : A dictionary containing these model parameters:
+    params : A dictionary containing model parameters:
         - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
     ts_vals : A dictionary with intermediate time series values for:
         - t_sum: Sum of temperatures value for the previous data row (ST)
@@ -349,8 +349,10 @@ class SeasonalEffect:
         return val
 
 
-@dataclass
-class WaterReserves:
+def water_reserves(
+    ts_vals: dict[str, float], params: dict[str, float],
+    precipitation: float
+) -> float:
     """
     Calculate the water reserves (WR).
 
@@ -363,29 +365,26 @@ class WaterReserves:
     Parameters
     ----------
     precipitation : Precipitation (PP) [mm]
-    w_reserves : Water reserves (WR) [mm]
-    aet : Actual evapotranspiration (AET) [mm]
-    whc : Soil water-holding capacity (WHC) [mm]
+    ts_vals : A dictionary with intermediate time series values for:
+        - wr: Water reserves (WR) [mm]
+        - aet: Actual evapotranspiration (AET) [mm]
+    params : A dictionary containing model parameters:
+        - whc: Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
     - Water reserves (WR) [mm]
     """
 
-    precipitation: float
-    w_reserves: float
-    aet: float
-    whc: float
-
-    def __call__(self) -> float:
-        return min(
-            max(0.0, self.w_reserves + self.precipitation - self.aet),
-            self.whc
-        )
+    return min(
+        max(0.0, ts_vals["wr"] + precipitation - ts_vals["aet"]),
+        params["whc"]
+    )
 
 
-@dataclass
-class WaterStress:
+def water_stress(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> float:
     """
     Calculate the water stress (*W*).
 
@@ -393,23 +392,20 @@ class WaterStress:
 
     Parameters
     ----------
-    w_reserves : Water reserves (WR) [mm]
-    whc : Soil water-holding capacity (WHC) [mm]
+    ts_vals : A dictionary with intermediate time series values for:
+        - wr: Water reserves (WR) [mm]
+    params : A dictionary containing model parameters:
+        - whc: Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
     - Water stress (*W*) [dimensionless]
     """
 
-    w_reserves: float
-    whc: float
-
-    def __call__(self) -> float:
-        return min(self.w_reserves / self.whc, 1.0)
+    return min(ts_vals["wr"] / params["whc"], 1.0)
 
 
-@dataclass
-class WaterStressFunction:
+def water_stress_function(ts_vals: dict[str, float], pet) -> float:
     """
     Water stress function (*f*(*W*)).
 
@@ -419,7 +415,8 @@ class WaterStressFunction:
 
     Parameters
     ----------
-    w_stress : Water stress (*W*) [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - w: Water stress (*W*) [dimensionless]
     pet : Potential evapotranspiration (PET) [mm]
 
     Returns
@@ -427,46 +424,42 @@ class WaterStressFunction:
     - Water stress function (*f*(*W*)) [dimensionless]
     """
 
-    w_stress: float
-    pet: float
-
-    def __call__(self) -> float:
-        if self.pet < 3.8:
-            # linear gradients
-            if self.w_stress < 0.2:
-                gradient = 0.8 / 0.2
-                val = gradient * self.w_stress
-            elif self.w_stress < 0.4:
-                gradient = (0.95 - 0.8) / (0.4 - 0.2)
-                intercept = 0.8 - gradient * 0.2
-                val = gradient * self.w_stress + intercept
-            elif self.w_stress < 0.6:
-                gradient = (1.0 - 0.95) / (0.6 - 0.4)
-                intercept = 1.0 - gradient * 0.6
-                val = gradient * self.w_stress + intercept
-            else:
-                val = 1.0
-        elif self.pet <= 6.5:
-            if self.w_stress < 0.2:
-                gradient = 0.4 / 0.2
-                val = gradient * self.w_stress
-            elif self.w_stress < 0.4:
-                gradient = (0.7 - 0.4) / (0.4 - 0.2)
-                intercept = 0.4 - gradient * 0.2
-                val = gradient * self.w_stress + intercept
-            elif self.w_stress < 0.6:
-                gradient = (0.9 - 0.7) / (0.6 - 0.4)
-                intercept = 0.9 - gradient * 0.6
-                val = gradient * self.w_stress + intercept
-            elif self.w_stress < 0.8:
-                gradient = (1.0 - 0.9) / (0.8 - 0.6)
-                intercept = 1.0 - gradient * 0.8
-                val = 0.5 * self.w_stress + 0.6
-            else:
-                val = 1.0
+    if pet < 3.8:
+        # linear gradients
+        if ts_vals["w"] < 0.2:
+            gradient = 0.8 / 0.2
+            val = gradient * ts_vals["w"]
+        elif ts_vals["w"] < 0.4:
+            gradient = (0.95 - 0.8) / (0.4 - 0.2)
+            intercept = 0.8 - gradient * 0.2
+            val = gradient * ts_vals["w"] + intercept
+        elif ts_vals["w"] < 0.6:
+            gradient = (1.0 - 0.95) / (0.6 - 0.4)
+            intercept = 1.0 - gradient * 0.6
+            val = gradient * ts_vals["w"] + intercept
         else:
-            val = self.w_stress
-        return val
+            val = 1.0
+    elif pet <= 6.5:
+        if ts_vals["w"] < 0.2:
+            gradient = 0.4 / 0.2
+            val = gradient * ts_vals["w"]
+        elif ts_vals["w"] < 0.4:
+            gradient = (0.7 - 0.4) / (0.4 - 0.2)
+            intercept = 0.4 - gradient * 0.2
+            val = gradient * ts_vals["w"] + intercept
+        elif ts_vals["w"] < 0.6:
+            gradient = (0.9 - 0.7) / (0.6 - 0.4)
+            intercept = 0.9 - gradient * 0.6
+            val = gradient * ts_vals["w"] + intercept
+        elif ts_vals["w"] < 0.8:
+            gradient = (1.0 - 0.9) / (0.8 - 0.6)
+            intercept = 1.0 - gradient * 0.8
+            val = 0.5 * ts_vals["w"] + 0.6
+        else:
+            val = 1.0
+    else:
+        val = ts_vals["w"]
+    return val
 
 
 @dataclass
