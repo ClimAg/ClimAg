@@ -19,11 +19,13 @@ def leaf_area_index(
 
     Parameters
     ----------
-    pct_lam : Percentage of laminae in the green vegetative (GV) biomass
-        compartment; default is 0.68 (%LAM) [dimensionless]
-    sla : Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
-    bm_gv : Standing biomass of the green vegetative (GV) compartment (BM_GV)
-        [kg DM ha⁻¹]
+    params : A dictionary containing these model parameters:
+        - pct_lam: Percentage of laminae in the green vegetative (GV) biomass
+            compartment; default is 0.68 (%LAM) [dimensionless]
+        - sla: Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
+    ts_vals : A dictionary with intermediate time series values for:
+        - bm_gv: Standing biomass of the green vegetative (GV) compartment
+            (BM_GV) [kg DM ha⁻¹]
 
     Returns
     -------
@@ -47,7 +49,8 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
     See Equation (14) in Jouven et al. (2006a)
 
     pet : Potential evapotranspiration (PET) [mm]
-    lai : Leaf area index (LAI) [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - lai: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -76,9 +79,11 @@ def potential_growth(
     Parameters
     ----------
     par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
-    rue_max : Maximum radiation use efficiency (RUE_max); default is 3
-        [g DM MJ⁻¹]
-    lai : Leaf area index (LAI) [dimensionless]
+    params : A dictionary containing these model parameters:
+        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3
+            [g DM MJ⁻¹]
+    ts_vals : A dictionary with intermediate time series values for:
+        - lai: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -139,8 +144,10 @@ class PARFunction:
         return val
 
 
-@dataclass
-class SumOfTemperatures:
+def sum_of_temperatures(
+    params: dict[str, float], ts_vals: dict[str, float],
+    t_ts: list[float], day: int
+) -> float:
     """
     Return the sum of temperatures for each day of the year above the minimum
     temperature for growth (ST)
@@ -150,8 +157,11 @@ class SumOfTemperatures:
     t_ts : Temperature (*T*) field of the input time series data (temperature
         should be in °C)
     day : Day number
-    t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
-    t_sum : Sum of temperatures value for the previous data row (ST) [°C d]
+    params : A dictionary containing these model parameters:
+        - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
+    ts_vals : A dictionary with intermediate time series values for:
+        - t_sum: Sum of temperatures value for the previous data row (ST)
+            [°C d]
 
     Returns
     -------
@@ -180,20 +190,13 @@ class SumOfTemperatures:
     - https://www.eia.gov/energyexplained/units-and-calculators/degree-days.php
     """
 
-    t_ts: list
-    day: int
-    t_sum: float
-    t_0: float = 4.0
-
-    def __call__(self) -> float:
-        for i in range(self.day):
-            if self.t_ts[i] > self.t_0:
-                val = self.t_sum + self.t_ts[i] - self.t_0
-        return val
+    for i in range(day):
+        if t_ts[i] > params["t_0"]:
+            val = ts_vals["t_sum"] + t_ts[i] - params["t_0"]
+    return val
 
 
-@dataclass
-class TenDayMovingAverageTemperature:
+def ten_day_moving_avg_temperature(day: int, t_ts: list[float]) -> float:
     """
     Calculate the 10-d moving average temperature.
 
@@ -211,23 +214,19 @@ class TenDayMovingAverageTemperature:
     - 10-d moving average temperature [°C]
     """
 
-    t_ts: list
-    day: int
-
-    def __call__(self) -> float:
-        if (self.day - 1) < (10 - 1):
-            # ** USING THE TEMP, NOT 10-d MOVING AVG!
-            val = self.t_ts[self.day - 1]
-        else:
-            val = np.mean([
-                self.t_ts[(self.day - 1) - j]
-                for j in range(10 - 1, 0 - 1, -1)
-            ])
-        return val
+    if (day - 1) < (10 - 1):
+        # ** USING THE TEMP, NOT 10-d MOVING AVG!
+        val = t_ts[day - 1]
+    else:
+        val = np.mean([
+            t_ts[(day - 1) - j] for j in range(10 - 1, 0 - 1, -1)
+        ])
+    return val
 
 
-@dataclass
-class TemperatureFunction:
+def temperature_function(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> float:
     """
     Temperature function, *f*(*T*)
 
@@ -238,39 +237,38 @@ class TemperatureFunction:
 
     Parameters
     ----------
-    t_m10 : 10-d moving average temperature [°C]
-    t_0 : Minimum temperature for growth (*T*₀); default is 4 [°C]
-    t_1 : Minimum temperature for optimal growth; default is 10 [°C]
-    t_2 : Maximum temperature for optimal growth; default is 20 [°C]
-    t_max : Maximum temperature for growth; default is 40 [°C]
+    ts_vals : A dictionary with intermediate time series values for:
+        - t_m10: 10-d moving average temperature [°C]
+    params : A dictionary containing these model parameters:
+        - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
+        - t_1: Minimum temperature for optimal growth; default is 10 [°C]
+        - t_2: Maximum temperature for optimal growth; default is 20 [°C]
+        - t_max: Maximum temperature for growth; default is 40 [°C]
 
     Returns
     -------
     - Temperature function (*f*(*T*)) [dimensionless]
     """
 
-    t_m10: float
-    t_0: float = 4.0
-    t_1: float = 10.0
-    t_2: float = 20.0
-    t_max: float = 40.0
-
-    def __call__(self) -> float:
-        if self.t_m10 <= self.t_0 or self.t_m10 >= self.t_max:
-            val = 0.0
-        elif self.t_0 < self.t_m10 < self.t_1:
-            # linear relationship
-            gradient = 1.0 / (self.t_1 - self.t_0)
-            intercept = 1.0 - gradient * self.t_1
-            val = gradient * self.t_m10 + intercept
-        elif self.t_1 <= self.t_m10 <= self.t_2:
-            val = 1.0
-        elif self.t_2 < self.t_m10 < self.t_max:
-            # linear relationship
-            gradient = 1.0 / (self.t_2 - self.t_max)
-            intercept = 1.0 - gradient * self.t_2
-            val = gradient * self.t_m10 + intercept
-        return val
+    if (
+        ts_vals["t_m10"] <=
+        params["t_0"] or ts_vals["t_m10"] >=
+        params["t_max"]
+    ):
+        val = 0.0
+    elif params["t_0"] < ts_vals["t_m10"] < params["t_1"]:
+        # linear relationship
+        gradient = 1.0 / (params["t_1"] - params["t_0"])
+        intercept = 1.0 - gradient * params["t_1"]
+        val = gradient * ts_vals["t_m10"] + intercept
+    elif params["t_1"] <= ts_vals["t_m10"] <= params["t_2"]:
+        val = 1.0
+    elif params["t_2"] < ts_vals["t_m10"] < params["t_max"]:
+        # linear relationship
+        gradient = 1.0 / (params["t_2"] - params["t_max"])
+        intercept = 1.0 - gradient * params["t_2"]
+        val = gradient * ts_vals["t_m10"] + intercept
+    return val
 
 
 @dataclass

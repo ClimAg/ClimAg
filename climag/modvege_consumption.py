@@ -122,7 +122,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - temperature_sum: Sum of temperatures [°C d]
+        - t_sum: Sum of temperatures [°C d]
         - bm_gv: Standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
         - bm_gr: Standing biomass of the green reproductive compartment
@@ -173,7 +173,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["sr"] > 0.0 and
-        params["st_2"] > ts_vals["temperature_sum"] > params["st_1"] + 50.0
+        params["st_2"] > ts_vals["t_sum"] > params["st_1"] + 50.0
     ):
 
         # max available compartmental biomass
@@ -245,7 +245,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - temperature_sum: Sum of temperatures [°C d]
+        - t_sum: Sum of temperatures [°C d]
         - bm_gv: Standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
         - bm_gr: Standing biomass of the green reproductive compartment
@@ -283,7 +283,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["h_grass"] > 0.0 and
-        params["st_2"] + 50.0 >= ts_vals["temperature_sum"] >= params["st_2"]
+        params["st_2"] + 50.0 >= ts_vals["t_sum"] >= params["st_2"]
     ):
         harvested_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:

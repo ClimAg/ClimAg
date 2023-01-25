@@ -214,25 +214,25 @@ def modvege(params, tseries, endday=365):
             ts_vals["bm_dv"] + ts_vals["bm_dr"]
         )
 
-        # temperature (T)
-        # temperature = tseries["T"][i]
-
         # 10-d moving average temperature (T_m10)
-        temperature_m10 = lm.TenDayMovingAverageTemperature(
-            t_ts=tseries["T"], day=(i + 1)
-        )()
+        ts_vals["t_m10"] = lm.ten_day_moving_avg_temperature(
+            day=(i + 1), t_ts=tseries["T"]
+        )
 
         # sum of temperatures (ST)
-        ts_vals["temperature_sum"] = lm.SumOfTemperatures(
-            t_ts=tseries["T"], day=(i + 1), t_sum=ts_vals["t_sum"]
-        )()
+        ts_vals["t_sum"] = lm.sum_of_temperatures(
+            params=params, ts_vals=ts_vals,
+            t_ts=tseries["T"], day=(i + 1)
+        )
 
         # temperature function (f(T))
-        temperature_fn = lm.TemperatureFunction(t_m10=temperature_m10)()
+        ts_vals["f_t"] = lm.temperature_function(
+            ts_vals=ts_vals, params=params
+        )
 
         # seasonal effect (SEA)
         seasonality = lm.SeasonalEffect(
-            t_sum=ts_vals["temperature_sum"],
+            t_sum=ts_vals["t_sum"],
             st_1=params["st_1"], st_2=params["st_2"],
             min_sea=params["min_sea"], max_sea=params["max_sea"]
         )()
@@ -263,7 +263,7 @@ def modvege(params, tseries, endday=365):
 
         # environmental limitation of growth (ENV)
         env = lm.EnvironmentalLimitation(
-            t_fn=temperature_fn,
+            t_fn=ts_vals["f_t"],
             par_i=tseries["PAR"][i],
             n_index=params["ni"],
             w_fn=waterstress_fn
@@ -283,7 +283,7 @@ def modvege(params, tseries, endday=365):
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
         rep_f = lm.ReproductiveFunction(
-            n_index=params["ni"], t_sum=ts_vals["temperature_sum"],
+            n_index=params["ni"], t_sum=ts_vals["t_sum"],
             st_1=params["st_1"], st_2=params["st_2"],
             stocking_rate=params["sr"],
             cut_height=params["h_grass"]
@@ -373,12 +373,12 @@ def modvege(params, tseries, endday=365):
         outputs_dict["biomass_ingested"].append(ts_vals["i_bm"])
         outputs_dict["biomass_growth"].append(gro)
         outputs_dict["biomass_available"].append(biomass_available)
-        outputs_dict["temperature_sum"].append(ts_vals["temperature_sum"])
+        outputs_dict["temperature_sum"].append(ts_vals["t_sum"])
         outputs_dict["age_gv"].append(ts_vals["age_gv"])
         outputs_dict["age_gr"].append(ts_vals["age_gr"])
         outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
-        outputs_dict["temperature_fn"].append(temperature_fn)
+        outputs_dict["temperature_fn"].append(ts_vals["f_t"])
         outputs_dict["seasonality"].append(seasonality)
         outputs_dict["leaf_area_index"].append(ts_vals["lai"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
