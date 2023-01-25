@@ -231,11 +231,7 @@ def modvege(params, tseries, endday=365):
         )
 
         # seasonal effect (SEA)
-        seasonality = lm.SeasonalEffect(
-            t_sum=ts_vals["t_sum"],
-            st_1=params["st_1"], st_2=params["st_2"],
-            min_sea=params["min_sea"], max_sea=params["max_sea"]
-        )()
+        ts_vals["sea"] = lm.seasonal_effect(ts_vals=ts_vals, params=params)
 
         # leaf area index (LAI)
         ts_vals["lai"] = lm.leaf_area_index(ts_vals=ts_vals, params=params)
@@ -259,12 +255,9 @@ def modvege(params, tseries, endday=365):
         )
 
         # environmental limitation of growth (ENV)
-        env = lm.EnvironmentalLimitation(
-            t_fn=ts_vals["f_t"],
-            par_i=tseries["PAR"][i],
-            n_index=params["ni"],
-            w_fn=ts_vals["f_w"]
-        )()
+        ts_vals["env"] = lm.environmental_limitation(
+            ts_vals=ts_vals, params=params, par_i=tseries["PAR"][i]
+        )
 
         # potential growth (PGRO)
         ts_vals["pgro"] = lm.potential_growth(
@@ -272,19 +265,14 @@ def modvege(params, tseries, endday=365):
         )
 
         # total biomass growth (GRO)
-        gro = lm.TotalGrowth(
-            pgro=ts_vals["pgro"], env=env, sea=seasonality
-        )()
+        ts_vals["gro"] = lm.total_growth(ts_vals=ts_vals)
 
         # reproductive function (REP)
         # grazing always takes place during the grazing season if the
         # stocking rate is > 0
-        rep_f = lm.ReproductiveFunction(
-            n_index=params["ni"], t_sum=ts_vals["t_sum"],
-            st_1=params["st_1"], st_2=params["st_2"],
-            stocking_rate=params["sr"],
-            cut_height=params["h_grass"]
-        )()
+        ts_vals["rep"] = lm.reproductive_function(
+            params=params, ts_vals=ts_vals
+        )
 
         # allocation to reproductive
         # TO-DO: when to change NI, and by how much?
@@ -321,7 +309,7 @@ def modvege(params, tseries, endday=365):
 
         # standing biomass (BM) and biomass age (AGE)
         ts_vals["bm_gv"], ts_vals["age_gv"] = lm.BiomassGV(
-            gro_gv=lm.GrowthGV(gro=gro, rep=rep_f)(),
+            gro_gv=lm.GrowthGV(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
             sen_gv=gv_senescent_biomass,
             bm_gv=ts_vals["bm_gv"],
             age_gv=ts_vals["age_gv"],
@@ -329,7 +317,7 @@ def modvege(params, tseries, endday=365):
         )()
 
         ts_vals["bm_gr"], ts_vals["age_gr"] = lm.BiomassGR(
-            gro_gr=lm.GrowthGR(gro=gro, rep=rep_f)(),
+            gro_gr=lm.GrowthGR(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
             sen_gr=gr_senescent_biomass,
             bm_gr=ts_vals["bm_gr"],
             age_gr=ts_vals["age_gr"],
@@ -368,7 +356,7 @@ def modvege(params, tseries, endday=365):
         outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
         outputs_dict["biomass_harvested"].append(ts_vals["h_bm"])
         outputs_dict["biomass_ingested"].append(ts_vals["i_bm"])
-        outputs_dict["biomass_growth"].append(gro)
+        outputs_dict["biomass_growth"].append(ts_vals["gro"])
         outputs_dict["biomass_available"].append(biomass_available)
         outputs_dict["temperature_sum"].append(ts_vals["t_sum"])
         outputs_dict["age_gv"].append(ts_vals["age_gv"])
@@ -376,13 +364,13 @@ def modvege(params, tseries, endday=365):
         outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["temperature_fn"].append(ts_vals["f_t"])
-        outputs_dict["seasonality"].append(seasonality)
+        outputs_dict["seasonality"].append(ts_vals["sea"])
         outputs_dict["leaf_area_index"].append(ts_vals["lai"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
         outputs_dict["actual_evapotranspiration"].append(ts_vals["aet"])
-        outputs_dict["env"].append(env)
+        outputs_dict["env"].append(ts_vals["env"])
         outputs_dict["biomass_growth_pot"].append(ts_vals["pgro"])
-        outputs_dict["reproductive_fn"].append(rep_f)
+        outputs_dict["reproductive_fn"].append(ts_vals["rep"])
 
     return (
         outputs_dict["bm_gv"],

@@ -128,22 +128,6 @@ def par_function(par_i: float) -> float:
     return val
 
 
-@dataclass
-class PARFunction:
-
-    par_i: float
-
-    def __call__(self) -> float:
-        if self.par_i < 5.0:
-            val = 1.0
-        else:
-            # linear gradient
-            gradient = 1.0 / (5.0 - (25.0 + 30.0) / 2.0)
-            intercept = 1.0 - gradient * 5.0
-            val = max(gradient * self.par_i + intercept, 0.0)
-        return val
-
-
 def sum_of_temperatures(
     params: dict[str, float], ts_vals: dict[str, float],
     t_ts: list[float], day: int
@@ -271,8 +255,9 @@ def temperature_function(
     return val
 
 
-@dataclass
-class SeasonalEffect:
+def seasonal_effect(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> float:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
     temperatures
@@ -299,54 +284,54 @@ class SeasonalEffect:
 
     Parameters
     ----------
-    max_sea : Maximum seasonal effect (maxSEA); default is 1.2 [dimensionless]
-    min_sea : Minimum seasonal effect (minSEA); default is 0.8 [dimensionless]
-    t_sum : Sum of temperatures (ST) [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period
-        (ST₁); default is 600 [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period
-        (ST₂); default is 1200 [°C d]
+    params : A dictionary containing these model parameters:
+        - max_sea: Maximum seasonal effect (maxSEA); default is 1.2
+            [dimensionless]
+        - min_sea: Minimum seasonal effect (minSEA); default is 0.8
+            [dimensionless]
+        - st_1: Sum of temperatures at the beginning of the reproductive
+            period (ST₁); default is 600 [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+            (ST₂); default is 1200 [°C d]
+    ts_vals : A dictionary with intermediate time series values for:
+        - t_sum: Sum of temperatures (ST) [°C d]
 
     Returns
     -------
     - Seasonal effect [dimensionless]
     """
 
-    t_sum: float
-    min_sea: float = 0.8
-    max_sea: float = 1.2
-    st_1: float = 600.0
-    st_2: float = 1200.0
-
-    def __call__(self) -> float:
-        if self.st_1 <= 200.0:
-            # use a constant value if the sum of temperatures at the
-            # beginning of the reproductive period is lower than the sum of
-            # temperatures at the onset of reproductive growth
-            val = np.mean([self.max_sea, self.min_sea])
-        elif self.t_sum <= 200.0 or self.t_sum >= self.st_2:
-            val = self.min_sea
-        elif (
-            (self.st_1 - 200.0) <= self.t_sum <= (self.st_1 - 100.0)
-        ):
-            val = self.max_sea
-        elif 200.0 < self.t_sum < (self.st_1 - 200.0):
-            # assume SEA increases linearly from minSEA at the onset of
-            # growth to maxSEA
-            gradient = (
-                (self.max_sea - self.min_sea) / ((self.st_1 - 200.0) - 200.0)
-            )
-            intercept = self.min_sea - gradient * 200.0
-            val = max(gradient * self.t_sum + intercept, self.min_sea)
-        elif (self.st_1 - 100.0) < self.t_sum < self.st_2:
-            # SEA decreases linearly from maxSEA to minSEA at ST_2
-            gradient = (
-                (self.max_sea - self.min_sea) /
-                ((self.st_1 - 100.0) - self.st_2)
-            )
-            intercept = self.min_sea - gradient * self.st_2
-            val = max(gradient * self.t_sum + intercept, self.min_sea)
-        return val
+    if params["st_1"] <= 200.0:
+        # use a constant value if the sum of temperatures at the
+        # beginning of the reproductive period is lower than the sum of
+        # temperatures at the onset of reproductive growth
+        val = np.mean([params["max_sea"], params["min_sea"]])
+    elif ts_vals["t_sum"] <= 200.0 or ts_vals["t_sum"] >= params["t_2"]:
+        val = params["min_sea"]
+    elif (
+        (params["st_1"] - 200.0) <=
+        ts_vals["t_sum"] <=
+        (params["st_1"] - 100.0)
+    ):
+        val = params["max_sea"]
+    elif 200.0 < ts_vals["t_sum"] < (params["st_1"] - 200.0):
+        # assume SEA increases linearly from minSEA at the onset of
+        # growth to maxSEA
+        gradient = (
+            (params["max_sea"] - params["min_sea"]) /
+            ((params["st_1"] - 200.0) - 200.0)
+        )
+        intercept = params["min_sea"] - gradient * 200.0
+        val = max(gradient * ts_vals["t_sum"] + intercept, params["min_sea"])
+    elif (params["st_1"] - 100.0) < ts_vals["t_sum"] < params["st_2"]:
+        # SEA decreases linearly from maxSEA to minSEA at ST_2
+        gradient = (
+            (params["max_sea"] - params["min_sea"]) /
+            ((params["st_1"] - 100.0) - params["st_2"])
+        )
+        intercept = params["min_sea"] - gradient * params["st_2"]
+        val = max(gradient * ts_vals["t_sum"] + intercept, params["min_sea"])
+    return val
 
 
 def water_reserves(
@@ -462,8 +447,9 @@ def water_stress_function(ts_vals: dict[str, float], pet) -> float:
     return val
 
 
-@dataclass
-class ReproductiveFunction:
+def reproductive_function(
+    params: dict[str, float], ts_vals: dict[str, float]
+) -> float:
     """
     Reproductive function (REP).
     REP is zero when there is a cut due to grazing or harvesting.
@@ -486,59 +472,29 @@ class ReproductiveFunction:
     - Reproductive function [dimensionless]
     """
 
-    n_index: float
-    t_sum: float
-    stocking_rate: float
-    st_1: float = 600.0
-    st_2: float = 1200.0
-    cut_height: float = 0.05
-
-    def __call__(self) -> float:
-        if (
-            self.stocking_rate > 0.0 and
-            self.st_1 + 50.0 <= self.t_sum <= self.st_2
-        ):
-            val = 0.0
-        elif (
-            self.cut_height > 0.0 and
-            self.st_2 >= self.t_sum >= self.st_2 - 50.0
-        ):
-            val = 0.0
-        elif self.t_sum < self.st_1 or self.t_sum > self.st_2:
-            val = 0.0
-        else:
-            val = 0.25 + ((1.0 - 0.25) * (self.n_index - 0.35)) / (1.0 - 0.35)
-        return val
+    if (
+        params["sr"] > 0.0 and
+        params["st_1"] + 50.0 <= ts_vals["t_sum"] <= params["st_2"]
+    ):
+        val = 0.0
+    elif (
+        params["h_grass"] > 0.0 and
+        params["st_2"] >= ts_vals["t_sum"] >= params["st_2"] - 50.0
+    ):
+        val = 0.0
+    elif (
+        ts_vals["t_sum"] < params["st_1"] or ts_vals["t_sum"] > params["st_2"]
+    ):
+        val = 0.0
+    else:
+        val = 0.25 + ((1.0 - 0.25) * (params["ni"] - 0.35)) / (1.0 - 0.35)
+    return val
 
 
-# def environmental_limitation(
-#     ts_vals: dict[str, float], params: dict[str, float]
-# ) -> float:
-#     """
-#     Environmental limitation of growth (ENV).
-
-#     See Equation (13) of Jouven et al. (2006a).
-
-#     Parameters
-#     ----------
-#     t_fn : temperature function (*f*(*T*)) [dimensionless]
-#     n_index : Nutritional index of pixel (NI) [dimensionless]
-#     par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-#     w_fn : Water stress function (*f*(*W*)) [dimensionless]
-
-#     Returns
-#     -------
-#     - Environmental limitation of growth (ENV) [dimensionless]
-#     """
-
-#     return (
-#         ts_vals["t_fn"] * params["ni"] *
-#         PARFunction(par_i=self.par_i)() * ts_vals["w_fn"]
-#     )
-
-
-@dataclass
-class EnvironmentalLimitation:
+def environmental_limitation(
+    ts_vals: dict[str, float], params: dict[str, float],
+    par_i: float
+) -> float:
     """
     Environmental limitation of growth (ENV).
 
@@ -546,30 +502,25 @@ class EnvironmentalLimitation:
 
     Parameters
     ----------
-    t_fn : temperature function (*f*(*T*)) [dimensionless]
-    n_index : Nutritional index of pixel (NI) [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - f_t: temperature function (*f*(*T*)) [dimensionless]
+        - f_w: Water stress function (*f*(*W*)) [dimensionless]
+    params : A dictionary containing model parameters:
+        - ni: Nutritional index of pixel (NI) [dimensionless]
     par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    w_fn : Water stress function (*f*(*W*)) [dimensionless]
 
     Returns
     -------
     - Environmental limitation of growth (ENV) [dimensionless]
     """
 
-    t_fn: float
-    n_index: float
-    par_i: float
-    w_fn: float
-
-    def __call__(self) -> float:
-        return (
-            self.t_fn * self.n_index *
-            PARFunction(par_i=self.par_i)() * self.w_fn
-        )
+    return (
+        ts_vals["f_t"] * params["ni"] *
+        par_function(par_i=par_i) * ts_vals["f_w"]
+    )
 
 
-@dataclass
-class TotalGrowth:
+def total_growth(ts_vals: dict[str, float]) -> float:
     """
     Calculate the total biomass growth (GRO)
 
@@ -577,21 +528,17 @@ class TotalGrowth:
 
     Parameters
     ----------
-    - pgro : Potential growth (PGRO) [kg DM ha⁻¹]
-    - env : environmental limitation of growth (ENV) [dimensionless]
-    - sea : seasonal effect (SEA) [dimensionless]
+    ts_vals : A dictionary with intermediate time series values for:
+        - pgro: Potential growth (PGRO) [kg DM ha⁻¹]
+        - env: Environmental limitation of growth (ENV) [dimensionless]
+        - sea: Seasonal effect (SEA) [dimensionless]
 
     Returns
     -------
     - Total biomass growth (GRO) [kg DM ha⁻¹]
     """
 
-    pgro: float
-    env: float
-    sea: float
-
-    def __call__(self) -> float:
-        return self.pgro * self.env * self.sea
+    return ts_vals["pgro"] * ts_vals["env"] * ts_vals["sea"]
 
 
 @dataclass
