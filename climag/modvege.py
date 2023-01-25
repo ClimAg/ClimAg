@@ -96,7 +96,8 @@ import climag.modvege_consumption as cm
 
 
 def modvege(params, tseries, endday=365):
-    """**ModVege** model as a function
+    """
+    **ModVege** model as a function
 
     Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
     of biomass, structure and digestibility of herbage in managed permanent
@@ -287,30 +288,20 @@ def modvege(params, tseries, endday=365):
         # 1.1       1.11538
         # 1.2       1.23076
 
-        # senescence (SEN) and abscission (ABS)
-        gv_senescent_biomass = lm.SenescenceGV(
-            temperature=tseries["T"][i], age_gv=ts_vals["age_gv"],
-            bm_gv=ts_vals["bm_gv"]
-        )()
-        gr_senescent_biomass = lm.SenescenceGR(
-            temperature=tseries["T"][i], age_gr=ts_vals["age_gr"],
-            bm_gr=ts_vals["bm_gr"],
-            st_1=params["st_1"], st_2=params["st_2"]
-        )()
-        dv_abscission_biomass = lm.AbscissionDV(
-            temperature=tseries["T"][i], bm_dv=ts_vals["bm_dv"],
-            age_dv=ts_vals["age_dv"]
-        )()
-        dr_abscission_biomass = lm.AbscissionDR(
-            temperature=tseries["T"][i], bm_dr=ts_vals["bm_dr"],
-            age_dr=ts_vals["age_dr"],
-            st_1=params["st_1"], st_2=params["st_2"]
-        )()
+        # senescence (SEN)
+        lm.senescence(
+            ts_vals=ts_vals, params=params, temperature=tseries["T"][i]
+        )
+
+        # abscission (ABS)
+        lm.abscission(
+            ts_vals=ts_vals, params=params, temperature=tseries["T"][i]
+        )
 
         # standing biomass (BM) and biomass age (AGE)
         ts_vals["bm_gv"], ts_vals["age_gv"] = lm.BiomassGV(
             gro_gv=lm.GrowthGV(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
-            sen_gv=gv_senescent_biomass,
+            sen_gv=ts_vals["sen_gv"],
             bm_gv=ts_vals["bm_gv"],
             age_gv=ts_vals["age_gv"],
             temperature=tseries["T"][i]
@@ -318,7 +309,7 @@ def modvege(params, tseries, endday=365):
 
         ts_vals["bm_gr"], ts_vals["age_gr"] = lm.BiomassGR(
             gro_gr=lm.GrowthGR(gro=ts_vals["gro"], rep=ts_vals["rep"])(),
-            sen_gr=gr_senescent_biomass,
+            sen_gr=ts_vals["sen_gr"],
             bm_gr=ts_vals["bm_gr"],
             age_gr=ts_vals["age_gr"],
             temperature=tseries["T"][i]
@@ -326,16 +317,16 @@ def modvege(params, tseries, endday=365):
 
         ts_vals["bm_dv"], ts_vals["age_dv"] = lm.BiomassDV(
             bm_dv=ts_vals["bm_dv"],
-            abs_dv=dv_abscission_biomass,
-            sen_gv=gv_senescent_biomass,
+            abs_dv=ts_vals["abs_dv"],
+            sen_gv=ts_vals["sen_gv"],
             age_dv=ts_vals["age_dv"],
             temperature=tseries["T"][i]
         )()
 
         ts_vals["bm_dr"], ts_vals["age_dr"] = lm.BiomassDR(
             bm_dr=ts_vals["bm_dr"],
-            abs_dr=dr_abscission_biomass,
-            sen_gr=gr_senescent_biomass,
+            abs_dr=ts_vals["abs_dr"],
+            sen_gr=ts_vals["sen_gr"],
             age_dr=ts_vals["age_dr"],
             temperature=tseries["T"][i]
         )()

@@ -335,8 +335,7 @@ def seasonal_effect(
 
 
 def water_reserves(
-    ts_vals: dict[str, float], params: dict[str, float],
-    precipitation: float
+    ts_vals: dict[str, float], params: dict[str, float], precipitation: float
 ) -> float:
     """
     Calculate the water reserves (WR).
@@ -459,13 +458,16 @@ def reproductive_function(
 
     Parameters
     ----------
-    n_index : Nitrogen nutritional index (NI) [dimensionless]
-    t_sum : Sum of temperatures [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period
-        [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period [°C d]
-    stocking_rate : Stocking rate [LU ha⁻¹]
-    cut_height : Grass cut height [m]
+    ts_vals : A dictionary with intermediate time series values for:
+        - t_sum: Sum of temperatures [°C d]
+    params : A dictionary containing model parameters:
+        - ni: Nitrogen nutritional index (NI) [dimensionless]
+        - st_1: Sum of temperatures at the beginning of the reproductive
+            period [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+            [°C d]
+        - sr: Stocking rate [LU ha⁻¹]
+        - h_grass: Minimum residual grass height; default is 0.05 [m]
 
     Returns
     -------
@@ -492,8 +494,7 @@ def reproductive_function(
 
 
 def environmental_limitation(
-    ts_vals: dict[str, float], params: dict[str, float],
-    par_i: float
+    ts_vals: dict[str, float], params: dict[str, float], par_i: float
 ) -> float:
     """
     Environmental limitation of growth (ENV).
@@ -541,99 +542,78 @@ def total_growth(ts_vals: dict[str, float]) -> float:
     return ts_vals["pgro"] * ts_vals["env"] * ts_vals["sea"]
 
 
-@dataclass
-class AbscissionDV:
+def abscission(
+    ts_vals: dict[str, float], params: dict[str, float], temperature: float
+) -> float:
     """
-    Compute abscission biomass for the dead vegetative (DV) compartment.
-    See Equation (18) and Figure 4(c) in in Jouven et al. (2006a).
+    Compute abscission biomass for the dead vegetative (DV) and dead
+    reproductive (DR) compartments.
+    See Equation (18) and Figure 4(c) and (d) in in Jouven et al. (2006a).
 
     Note that abscission only occurs when T > 0.
 
     Parameters
     ----------
-    lls : Leaf lifespan (LLS) [500 °C d]
-    kl_dv : Basic abscission rate for the dead vegetative compartment; default
-        is 0.001 (Kl_DV) [dimensionless]
+    params : A dictionary containing model parameters:
+        - lls: Leaf lifespan (LLS) [500 °C d]
+        - kl_dv: Basic abscission rate for the dead vegetative compartment;
+            default is 0.001 (Kl_DV) [dimensionless]
+        - kl_dr: Basic abscission rate for the dead reproductive compartment;
+            default is 0.0005 (Kl_DR) [dimensionless]
+        - st_1: Sum of temperatures at the beginning of the reproductive
+            period; default is 600 (ST₁) [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period;
+            default is 1200 (ST₂) [°C d]
     temperature : Mean daily temperature (T) [°C]
-    bm_dv : DV biomass (BM_DV) [kg DM ha⁻¹]
-    age_dv : Average DV age (AGE_DV) [°C d]
+    ts_vals : A dictionary with intermediate time series values for:
+        - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
+        - age_dv: Age of the DV compartment (AGE_DV) [°C d]
+        - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
+        - age_dr: Age of the DR compartment (AGE_DR) [°C d]
 
     Returns
     -------
-    - Abscission biomass (ABS_DV) [kg DM ha⁻¹]
+    - An updated `ts_vals` dictionary with:
+        - abs_dv: Abscission of the DV biomass (ABS_DV) [kg DM ha⁻¹]
+        - abs_dr: Abscission of the DR biomass (ABS_DR) [kg DM ha⁻¹]
     """
 
-    temperature: float
-    bm_dv: float
-    age_dv: float
-    lls: float = 500.0
-    kl_dv: float = 0.001
+    # abscission of the DV biomass
+    if ts_vals["age_dv"] / params["lls"] < 1.0 / 3.0:
+        f_age = 1.0
+    elif ts_vals["age_dv"] / params["lls"] < 2.0 / 3.0:
+        f_age = 2.0
+    else:
+        f_age = 3.0
+    if temperature > 0.0:
+        ts_vals["abs_dv"] = (
+            params["kl_dv"] * ts_vals["bm_dv"] * temperature * f_age
+        )
+    else:
+        ts_vals["abs_dv"] = 0.0
 
-    def __call__(self) -> float:
-        if self.age_dv / self.lls < 1.0 / 3.0:
-            age_fn = 1.0
-        elif self.age_dv / self.lls < 2.0 / 3.0:
-            age_fn = 2.0
-        else:
-            age_fn = 3.0
-        if self.temperature > 0.0:
-            val = self.kl_dv * self.bm_dv * self.temperature * age_fn
-        else:
-            val = 0.0
-        return val
+    # abscission of the DR biomass
+    if ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
+        f_age = 1.0
+    elif ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 2.0 / 3.0:
+        f_age = 2.0
+    else:
+        f_age = 3.0
+    if temperature > 0.0:
+        ts_vals["abs_dr"] = (
+            params["kl_dr"] * ts_vals["bm_dr"] * temperature * f_age
+        )
+    else:
+        ts_vals["abs_dr"] = 0.0
 
 
-@dataclass
-class AbscissionDR:
+def senescence(
+    ts_vals: dict[str, float], params: dict[str, float], temperature: float
+) -> float:
     """
-    Compute abscission biomass for the dead reproductive (DR) compartment.
-    See Equation (18) and Figure 4(d) in Jouven et al. (2006a).
-
-    Note that abscission only occurs when T > 0.
-
-    Parameters
-    ----------
-    kl_dr : Basic abscission rate for the dead reproductive compartment;
-        default is 0.0005 (Kl_DR) [dimensionless]
-    bm_dr : DR biomass (BM_DR) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (*T*) [°C]
-    age_dr : Average DR age (AGE_DR) [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period;
-        default is 600 (ST₁) [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period; default
-        is 1200 (ST₂) [°C d]
-
-    Returns
-    -------
-    - Abscission biomass for DR (ABS_DR) [kg DM ha⁻¹]
-    """
-
-    bm_dr: float
-    temperature: float
-    age_dr: float
-    kl_dr: float = 0.0005
-    st_1: float = 600.0
-    st_2: float = 1200.0
-
-    def __call__(self) -> float:
-        if self.age_dr / (self.st_2 - self.st_1) < 1.0 / 3.0:
-            age_fn = 1.0
-        elif self.age_dr / (self.st_2 - self.st_1) < 2.0 / 3.0:
-            age_fn = 2.0
-        else:
-            age_fn = 3.0
-        if self.temperature > 0.0:
-            val = self.kl_dr * self.bm_dr * self.temperature * age_fn
-        else:
-            val = 0.0
-        return val
-
-
-@dataclass
-class SenescenceGV:
-    """
-    Senescent biomass for GV compartment.
-    See Equations (16) and (17) and Figure 4(a) in Jouven et al. (2006a).
+    Senescing biomass for the GV and GR compartments.
+    See Equations (16) and (17) and Figure 4(a) and (b) in Jouven et al.
+    (2006a).
 
     No senescence occurs when *T* is between zero and *T*₀.
     When T drops below zero, senescence is driven by freezing effects and is
@@ -641,95 +621,75 @@ class SenescenceGV:
 
     Parameters
     ----------
-    k_gv : Basic senescence rate for the green vegetative compartment; default
-        is 0.002 (K_GV) [dimensionless]
-    bm_gv : GV biomass (BM_GV) [kg DM ha⁻¹]
+    params : A dictionary containing model parameters:
+        - k_gv: Basic senescence rate for the green vegetative compartment;
+            default is 0.002 (K_GV) [dimensionless]
+        - k_gr: Basic senescence rate for the green reproductive compartment;
+            default is 0.001 (K_GR) [dimensionless]
+        - t_0: Minimum temperature for growth; default is 4 (*T*₀) [°C]
+        - lls: Leaf lifespan; default is 500 (LLS) [°C d]
+        - st_1 : Sum of temperatures at the beginning of the reproductive
+            period; default is 600 (ST₁) [°C d]
+        - st_2 : Sum of temperatures at the end of the reproductive period;
+            default is 1200 (ST₂) [°C d]
+    ts_vals : A dictionary with intermediate time series values for:
+        - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
+        - age_gv: Age of the GV compartment (AGE_GV) [°C d]
+        - bm_gr: Biomass available for GR (BM_GR) [kg DM ha⁻¹]
+        - age_gr: Age of the GR compartment (AGE_GR) [°C d]
     temperature : Mean daily temperature (*T*) [°C]
-    t_0 : Minimum temperature for growth; default is 4 (*T*₀) [°C]
-    lls : Leaf lifespan; default is 500 (LLS) [°C d]
-    age_gv : Average GV age (AGE_GV) [°C d]
 
     Returns
     -------
-    - Senescent biomass for GV (SEN_GV) [kg DM ha⁻¹]
+    - An updated `ts_vals` dictionary with:
+        - Senescing GV biomass (SEN_GV) [kg DM ha⁻¹]
+        - Senescing GR biomass (SEN_GR) [kg DM ha⁻¹]
     """
 
-    temperature: float
-    age_gv: float
-    bm_gv: float
-    k_gv: float = 0.002
-    t_0: float = 4.0
-    lls: float = 500.0
+    # senescing GV biomass
+    if ts_vals["age_gv"] / params["lls"] < 1.0 / 3.0:
+        f_age = 1.0
+    elif ts_vals["age_gv"] / params["lls"] < 1.0:
+        # linear gradient
+        gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
+        intercept = 3.0 - gradient * 1.0
+        f_age = gradient * ts_vals["age_gv"] / params["lls"] + intercept
+    else:
+        f_age = 3.0
+    if temperature > params["t_0"]:
+        ts_vals["sen_gv"] = (
+            params["k_gv"] * ts_vals["bm_gv"] * temperature * f_age
+        )
+    elif temperature < 0.0:
+        ts_vals["sen_gv"] = (
+            params["k_gv"] * ts_vals["bm_gv"] * abs(temperature)
+        )
+    else:
+        ts_vals["sen_gv"] = 0.0
 
-    def __call__(self) -> float:
-        if self.age_gv / self.lls < 1.0 / 3.0:
-            age_fn = 1.0
-        elif self.age_gv / self.lls < 1.0:
-            # linear gradient
-            gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
-            intercept = 3.0 - gradient * 1.0
-            age_fn = gradient * self.age_gv / self.lls + intercept
-        else:
-            age_fn = 3.0
-        if self.temperature > self.t_0:
-            val = self.k_gv * self.bm_gv * self.temperature * age_fn
-        elif self.temperature < 0.0:
-            val = self.k_gv * self.bm_gv * abs(self.temperature)
-        else:
-            val = 0.0
-        return val
-
-
-@dataclass
-class SenescenceGR:
-    """
-    See Equations (16) and (17) and Figure 4(b) in Jouven et al. (2006a).
-
-    Parameters
-    ----------
-    k_gr : Basic senescence rate for the green reproductive compartment;
-        default is 0.001 (K_GR) [dimensionless]
-    bm_gr : Biomass available for GR (BM_GR) [kg DM ha⁻¹]
-    temperature : Mean daily temperature (*T*) [°C]
-    t_0 : Minimum temperature for growth; default is 4 (*T*₀) [°C]
-    age_gr : Average GR age (AGE_GR) [°C d]
-    st_1 : Sum of temperatures at the beginning of the reproductive period;
-        default is 600 (ST₁) [°C d]
-    st_2 : Sum of temperatures at the end of the reproductive period; default
-        is 1200 (ST₂) [°C d]
-
-    Returns
-    -------
-    - Senescent biomass (SEN_GR) [kg DM ha⁻¹]
-    """
-
-    age_gr: float
-    temperature: float
-    bm_gr: float
-    k_gr: float = 0.001
-    t_0: float = 4.0
-    st_1: float = 600.0
-    st_2: float = 1200.0
-
-    def __call__(self) -> float:
-        if self.age_gr / (self.st_2 - self.st_1) < 1.0 / 3.0:
-            age_fn = 1.0
-        elif self.age_gr / (self.st_2 - self.st_1) < 1.0:
-            # linear gradient
-            gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
-            intercept = 3.0 - gradient * 1.0
-            age_fn = (
-                gradient * self.age_gr / (self.st_2 - self.st_1) + intercept
-            )
-        else:
-            age_fn = 3.0
-        if self.temperature > self.t_0:
-            val = self.k_gr * self.bm_gr * self.temperature * age_fn
-        elif self.temperature < 0.0:
-            val = self.k_gr * self.bm_gr * abs(self.temperature)
-        else:
-            val = 0.0
-        return val
+    # senescing GR biomass
+    if ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
+        f_age = 1.0
+    elif ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0:
+        # linear gradient
+        gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
+        intercept = 3.0 - gradient * 1.0
+        f_age = (
+            gradient * ts_vals["age_gr"] /
+            (params["st_2"] - params["st_1"]) + intercept
+        )
+    else:
+        f_age = 3.0
+    if temperature > params["t_0"]:
+        ts_vals["sen_gr"] = (
+            params["k_gr"] * ts_vals["bm_gr"] * temperature * f_age
+        )
+    elif temperature < 0.0:
+        ts_vals["sen_gr"] = (
+            params["k_gr"] * ts_vals["bm_gr"] * abs(temperature)
+        )
+    else:
+        ts_vals["sen_gr"] = 0.0
 
 
 @dataclass

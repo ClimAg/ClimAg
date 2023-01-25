@@ -37,7 +37,7 @@ def organic_matter_digestibility(
     """
     Organic matter digestibility of the green vegetative (GV) and green
     reproductive (GR) compartments.
-    See Equation (9) in Jouven et al. (2006a)
+    See Equations (9) and (10) in Jouven et al. (2006a)
 
     - Digestibility varies among plant parts, with leaves usually being more
       digestible than stems
