@@ -130,16 +130,16 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         "bm_gr": [],
         "bm_dv": [],
         "bm_dr": [],
-        "age_gv": [],
-        "age_gr": [],
-        "age_dv": [],
-        "age_dr": [],
+        # "age_gv": [],
+        # "age_gr": [],
+        # "age_dv": [],
+        # "age_dr": [],
         "biomass_growth": [],
         "biomass_harvested": [],
         "biomass_ingested": [],
         "biomass_available": [],
-        "temperature_sum": [],
-        "seasonality": [],
+        # "temperature_sum": [],
+        # "seasonality": [],
         "temperature_fn": [],
         "env": [],
         "biomass_growth_pot": [],
@@ -175,28 +175,28 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
 
             # assume that the initial value of WR = WHC
             ts_vals["wr"] = params["whc"]
-        else:
-            (
-                ts_vals["bm_gv"], ts_vals["bm_gr"],
-                ts_vals["bm_dv"], ts_vals["bm_dr"]
-            ) = (
-                outputs_dict["bm_gv"][i - 1],
-                outputs_dict["bm_gr"][i - 1],
-                outputs_dict["bm_dv"][i - 1],
-                outputs_dict["bm_dr"][i - 1]
-            )
+        # else:
+        #     (
+        #         ts_vals["bm_gv"], ts_vals["bm_gr"],
+        #         ts_vals["bm_dv"], ts_vals["bm_dr"]
+        #     ) = (
+        #         outputs_dict["bm_gv"][i - 1],
+        #         outputs_dict["bm_gr"][i - 1],
+        #         outputs_dict["bm_dv"][i - 1],
+        #         outputs_dict["bm_dr"][i - 1]
+        #     )
 
-            (
-                ts_vals["age_gv"], ts_vals["age_gr"],
-                ts_vals["age_dv"], ts_vals["age_dr"]
-            ) = (
-                outputs_dict["age_gv"][i - 1],
-                outputs_dict["age_gr"][i - 1],
-                outputs_dict["age_dv"][i - 1],
-                outputs_dict["age_dr"][i - 1]
-            )
+        #     (
+        #         ts_vals["age_gv"], ts_vals["age_gr"],
+        #         ts_vals["age_dv"], ts_vals["age_dr"]
+        #     ) = (
+        #         outputs_dict["age_gv"][i - 1],
+        #         outputs_dict["age_gr"][i - 1],
+        #         outputs_dict["age_dv"][i - 1],
+        #         outputs_dict["age_dr"][i - 1]
+        #     )
 
-            ts_vals["wr"] = outputs_dict["water_reserves"][i - 1]
+        #     ts_vals["wr"] = outputs_dict["water_reserves"][i - 1]
 
         # initialise ingested/harvested biomass and temperature sum
         if tseries["time"][i].dayofyear == 1:
@@ -204,10 +204,10 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
             ts_vals["i_bm"] = 0.0
             ts_vals["h_bm"] = 0.0
             ts_vals["t_sum"] = 0.0
-        else:
-            ts_vals["i_bm"] = outputs_dict["biomass_ingested"][i - 1]
-            ts_vals["h_bm"] = outputs_dict["biomass_harvested"][i - 1]
-            ts_vals["t_sum"] = outputs_dict["temperature_sum"][i - 1]
+        # else:
+        #     ts_vals["i_bm"] = outputs_dict["biomass_ingested"][i - 1]
+        #     ts_vals["h_bm"] = outputs_dict["biomass_harvested"][i - 1]
+        #     ts_vals["t_sum"] = outputs_dict["temperature_sum"][i - 1]
 
         # total standing biomass at the beginning of the day
         biomass_available = (
@@ -353,13 +353,13 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         outputs_dict["biomass_ingested"].append(ts_vals["i_bm"])
         outputs_dict["biomass_growth"].append(ts_vals["gro"])
         outputs_dict["biomass_available"].append(biomass_available)
-        outputs_dict["temperature_sum"].append(ts_vals["t_sum"])
-        outputs_dict["age_gv"].append(ts_vals["age_gv"])
-        outputs_dict["age_gr"].append(ts_vals["age_gr"])
-        outputs_dict["age_dv"].append(ts_vals["age_dv"])
-        outputs_dict["age_dr"].append(ts_vals["age_dr"])
+        # outputs_dict["temperature_sum"].append(ts_vals["t_sum"])
+        # outputs_dict["age_gv"].append(ts_vals["age_gv"])
+        # outputs_dict["age_gr"].append(ts_vals["age_gr"])
+        # outputs_dict["age_dv"].append(ts_vals["age_dv"])
+        # outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["temperature_fn"].append(ts_vals["f_t"])
-        outputs_dict["seasonality"].append(ts_vals["sea"])
+        # outputs_dict["seasonality"].append(ts_vals["sea"])
         outputs_dict["leaf_area_index"].append(ts_vals["lai"])
         outputs_dict["water_reserves"].append(ts_vals["wr"])
         outputs_dict["actual_evapotranspiration"].append(ts_vals["aet"])
