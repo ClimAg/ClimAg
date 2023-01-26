@@ -107,8 +107,8 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     Parameters
     ----------
     params : Parameters (constants)
-    tseries : Time series data (weather, grass cut, grazing)
-    endday : Number of days of the year (default 365)
+    tseries : Time series meteorological data
+    endday : Number of days of the year (default is 365)
 
     Returns
     -------

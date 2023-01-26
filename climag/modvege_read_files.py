@@ -12,7 +12,7 @@ Dead reproductive         (DR)
 import pandas as pd
 
 
-def read_params(filename):
+def read_params(filename: str) -> dict[str, float]:
     """
     Read the input parameters (constants) file
 
@@ -110,17 +110,17 @@ def read_params(filename):
     return params
 
 
-def read_timeseries(filename):
+def read_timeseries(filename: str):
     """
     Read the time series input data
 
     Definition of inputs
     --------------------
-    - day   : Day number
-    - T     : Temperature (*T*) [°C]
-    - PAR_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    - PP    : Precipitation (PP) [mm]
-    - PET   : (Potential or reference) evapotranspiration (ET) [mm]
+    - day    : Day number
+    - T      : Temperature (*T*) [°C]
+    - PAR_i  : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    - PP     : Precipitation (PP) [mm]
+    - PET    : (Potential or reference) evapotranspiration (ET) [mm]
 
     Parameters
     ----------
