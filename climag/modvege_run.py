@@ -63,12 +63,12 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     data_df = pd.DataFrame(data_df)
 
     # day number
-    data_df["day"] = list(range(1, len(data_df) + 1))
+    # data_df["day"] = list(range(1, len(data_df) + 1))
 
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
     # plot all columns
-    data_df.set_index("day", inplace=True)
+    data_df.set_index("time", inplace=True)
 
     plot_title = []
     for val in output_vars.values():
@@ -77,7 +77,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     data_df.plot(
         subplots=True, layout=(7, 3), figsize=(15, 14),
-        xlabel="Day", title=plot_title, legend=False
+        xlabel="", title=plot_title, legend=False
     )
 
     plt.tight_layout()

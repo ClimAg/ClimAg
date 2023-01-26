@@ -116,15 +116,11 @@ def read_timeseries(filename):
 
     Definition of inputs
     --------------------
-    - day        : Day number
-    - tas        : Temperature (*T*) [°C]
-    - par        : Incident photosynthetically active radiation
-                   (PAR_i) [MJ m⁻²]
-    - pr         : Precipitation (PP) [mm]
-    - evspsblpot : (Potential or reference) evapotranspiration (ET) [mm]
-    - gcut       : Grass cut height [m] (if cut, the default is 0.05)
-    - grazing    : Grazing animal count
-    - grazingw   : Grazing animal average weight [kg]
+    - day   : Day number
+    - T     : Temperature (*T*) [°C]
+    - PAR_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    - PP    : Precipitation (PP) [mm]
+    - PET   : (Potential or reference) evapotranspiration (ET) [mm]
 
     Parameters
     ----------

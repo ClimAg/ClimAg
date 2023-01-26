@@ -39,7 +39,7 @@ Compartment description:
 List of time series variables
 ----------------------------
 - T: Mean daily temperature (*T*) [°C]
-- PAR: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+- PAR_i: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
 - PP: Precipitation (PP) [mm]
 - PET: Potential evapotranspiration (PET) [mm]
 
@@ -99,7 +99,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
-    Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
+    Jouven, M., Carrère, P., and Baumont, R. (2006). 'Model predicting dynamics
     of biomass, structure and digestibility of herbage in managed permanent
     pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
     pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
@@ -127,6 +127,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
 
     # dictionary of outputs
     outputs_dict = {
+        "time": [],
         "bm_gv": [],
         "bm_gr": [],
         "bm_dv": [],
@@ -220,12 +221,12 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
 
         # environmental limitation of growth (ENV)
         ts_vals["env"] = lm.environmental_limitation(
-            ts_vals=ts_vals, params=params, par_i=tseries["PAR"][i]
+            ts_vals=ts_vals, params=params, par_i=tseries["PAR_i"][i]
         )
 
         # potential growth (PGRO)
         ts_vals["pgro"] = lm.potential_growth(
-            par_i=tseries["PAR"][i], ts_vals=ts_vals, params=params
+            par_i=tseries["PAR_i"][i], ts_vals=ts_vals, params=params
         )
 
         # total growth (GRO)
@@ -283,6 +284,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         )
 
         # recover output streams
+        outputs_dict["time"].append(tseries["time"][i])
         outputs_dict["bm_gv"].append(ts_vals["bm_gv"])
         outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
         outputs_dict["bm_gr"].append(ts_vals["bm_gr"])

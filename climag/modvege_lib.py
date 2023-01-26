@@ -47,6 +47,8 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
 
     See Equation (14) in Jouven et al. (2006a)
 
+    Parameters
+    ----------
     pet : Potential evapotranspiration (PET) [mm]
     ts_vals : A dictionary with intermediate time series values for:
         - lai: Leaf area index (LAI) [dimensionless]
@@ -543,7 +545,7 @@ def total_growth(ts_vals: dict[str, float]) -> float:
 
 def abscission(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
-) -> float:
+):
     """
     Compute abscission biomass for the dead vegetative (DV) and dead
     reproductive (DR) compartments.
@@ -608,7 +610,7 @@ def abscission(
 
 def senescence(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
-) -> float:
+):
     """
     Senescing biomass for the GV and GR compartments.
     See Equations (16) and (17) and Figure 4(a) and (b) in Jouven et al.
