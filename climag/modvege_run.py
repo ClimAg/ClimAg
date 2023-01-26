@@ -15,24 +15,24 @@ from climag.modvege_read_files import read_params, read_timeseries
 from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
 output_vars = {
-    "gv_b": ["Green vegetative biomass", "kg DM ha⁻¹"],
-    "dv_b": ["Dead vegetative biomass", "kg DM ha⁻¹"],
-    "gr_b": ["Green reproductive biomass", "kg DM ha⁻¹"],
-    "dr_b": ["Dead reproductive biomass", "kg DM ha⁻¹"],
-    "h_b": ["Harvested biomass", "kg DM ha⁻¹"],
-    "i_b": ["Ingested biomass", "kg DM ha⁻¹"],
-    "gro": ["Biomass growth", "kg DM ha⁻¹"],
-    "abc": ["Starting available biomass", "kg DM ha⁻¹"],
-    "sumT": ["Sum of temperatures", "°C d"],
-    "gva": ["Green vegetative biomass age", "°C d"],
-    "dva": ["Dead vegetative biomass age", "°C d"],
-    "gra": ["Green reproductive biomass age", "°C d"],
-    "dra": ["Dead reproductive biomass age", "°C d"],
-    "sea": ["Seasonal effect", "dimensionless"],
-    "ftm": ["Temperature function", "dimensionless"],
+    "bm_gv": ["Green vegetative biomass", "kg DM ha⁻¹"],
+    "bm_gr": ["Green reproductive biomass", "kg DM ha⁻¹"],
+    "bm_dv": ["Dead vegetative biomass", "kg DM ha⁻¹"],
+    "bm_dr": ["Dead reproductive biomass", "kg DM ha⁻¹"],
+    # "age_gv": ["Green vegetative biomass age", "°C d"],
+    # "age_gr": ["Green reproductive biomass age", "°C d"],
+    # "age_dv": ["Dead vegetative biomass age", "°C d"],
+    # "age_dr": ["Dead reproductive biomass age", "°C d"],
+    "bm": ["Total standing biomass", "kg DM ha⁻¹"],
+    "pgro": ["Potential growth", "kg DM ha⁻¹"],
+    "gro": ["Total growth", "kg DM ha⁻¹"],
+    "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
+    "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
+    # "st": ["Sum of temperatures", "°C d"],
+    # "sea": ["Seasonal effect", "dimensionless"],
+    "f_t": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
-    "pgr": ["Potential growth", "kg DM ha⁻¹"],
-    "atr": ["Reproductive function", "dimensionless"],
+    "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
     "aet": ["Actual evapotranspiration", "mm"],
     "wr": ["Water reserves", "mm"]
@@ -54,16 +54,21 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     data_df = modvege(params=params, tseries=tseries, endday=endday)
 
     # convert output to dataframe and save as CSV
-    data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
+    # data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
 
-    data_df = pd.DataFrame(
-        zip(*data_df), columns=(["day"] + list(output_vars.keys()))
-    )
+    # data_df = pd.DataFrame(
+    #     zip(*data_df), columns=(["day"] + list(output_vars.keys()))
+    # )
+
+    data_df = pd.DataFrame(data_df)
+
+    # day number
+    # data_df["day"] = list(range(1, len(data_df) + 1))
 
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
     # plot all columns
-    data_df.set_index("day", inplace=True)
+    data_df.set_index("time", inplace=True)
 
     plot_title = []
     for val in output_vars.values():
@@ -72,7 +77,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     data_df.plot(
         subplots=True, layout=(7, 3), figsize=(15, 14),
-        xlabel="Day", title=plot_title, legend=False
+        xlabel="", title=plot_title, legend=False
     )
 
     plt.tight_layout()
@@ -219,29 +224,6 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
-
-    Outputs
-    -------
-    - Day of the year                                       day
-    - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
-    - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
-    - Mean dead vegetative biomass          [kg DM ha⁻¹]    dv_b
-    - Mean dead reproductive biomass        [kg DM ha⁻¹]    dr_b
-    - Harvested biomass                     [kg DM ha⁻¹]    h_b
-    - Ingested biomass                      [kg DM ha⁻¹]    i_b
-    - Mean GRO biomass                      [kg DM ha⁻¹]    gro
-    - Mean available biomass for cut        [kg DM ha⁻¹]    abc
-      (gv_b + gr_b + dv_b + dr_b)
-    - Sum of temperatures                   [°C d]          sumT
-    - GV biomass age                        [°C d]          gva
-    - GR biomass age                        [°C d]          gra
-    - DV biomass age                        [°C d]          dva
-    - DR biomass age                        [°C d]          dra
-    - Seasonal effect                                       sea
-    - Temperature function*                                 ftm
-    - Environmental limitation of growth                    env
-    - Potential growth                      [kg DM ha⁻¹]    pgr
-    - Reproductive function*                                atr
 
     Parameters
     ----------
