@@ -116,10 +116,11 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     - Dead vegetative biomass [kg DM ha⁻¹]
     - Green reproductive biomass [kg DM ha⁻¹]
     - Dead reproductive biomass [kg DM ha⁻¹]
-    - Harvested biomass [kg DM ha⁻¹]
+    - Total standing biomass [kg DM ha⁻¹]
+    - Potential growth [kg DM ha⁻¹]
+    - Total growth [kg DM ha⁻¹]
     - Ingested biomass [kg DM ha⁻¹]
-    - GRO biomass [kg DM ha⁻¹]
-    - Available biomass for [kg DM ha⁻¹]
+    - Harvested biomass [kg DM ha⁻¹]
     """
 
     params["sr"] = cm.stocking_rate(params=params)
@@ -156,38 +157,26 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     for i in range(endday):
         # initialise starting parameters
         # standing biomass, biomass age, and water reserves
+        # assume that the initial value of WR = WHC
         if i == 0:
             (
                 ts_vals["bm_gv"], ts_vals["bm_gr"],
-                ts_vals["bm_dv"], ts_vals["bm_dr"]
+                ts_vals["bm_dv"], ts_vals["bm_dr"],
+                ts_vals["age_gv"], ts_vals["age_gr"],
+                ts_vals["age_dv"], ts_vals["age_dr"],
+                ts_vals["wr"]
             ) = (
                 params["bm_gv"], params["bm_gr"],
-                params["bm_dv"], params["bm_dr"]
-            )
-
-            (
-                ts_vals["age_gv"], ts_vals["age_gr"],
-                ts_vals["age_dv"], ts_vals["age_dr"]
-            ) = (
+                params["bm_dv"], params["bm_dr"],
                 params["age_gv"], params["age_gr"],
-                params["age_dv"], params["age_dr"]
+                params["age_dv"], params["age_dr"],
+                params["whc"]
             )
-
-            # assume that the initial value of WR = WHC
-            ts_vals["wr"] = params["whc"]
 
         # initialise ingested/harvested biomass and temperature sum
         if tseries["time"][i].dayofyear == 1:
             # reset to zero on the first day of the year
-            ts_vals["i_bm"] = 0.0
-            ts_vals["h_bm"] = 0.0
-            ts_vals["st"] = 0.0
-
-        # total standing biomass at the beginning of the day
-        ts_vals["bm"] = (
-            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
-            ts_vals["bm_dv"] + ts_vals["bm_dr"]
-        )
+            ts_vals["i_bm"], ts_vals["h_bm"], ts_vals["st"] = 0.0, 0.0, 0.0
 
         # 10-d moving average temperature (T_m10)
         ts_vals["t_m10"] = lm.ten_day_moving_avg_temperature(
@@ -239,7 +228,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
             par_i=tseries["PAR"][i], ts_vals=ts_vals, params=params
         )
 
-        # total biomass growth (GRO)
+        # total growth (GRO)
         ts_vals["gro"] = lm.total_growth(ts_vals=ts_vals)
 
         # reproductive function (REP)
@@ -286,6 +275,12 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
 
         # harvested biomass
         cm.biomass_harvest(ts_vals=ts_vals, params=params)
+
+        # total standing biomass
+        ts_vals["bm"] = (
+            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
+            ts_vals["bm_dv"] + ts_vals["bm_dr"]
+        )
 
         # recover output streams
         outputs_dict["bm_gv"].append(ts_vals["bm_gv"])

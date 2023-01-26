@@ -23,9 +23,9 @@ output_vars = {
     # "age_gr": ["Green reproductive biomass age", "°C d"],
     # "age_dv": ["Dead vegetative biomass age", "°C d"],
     # "age_dr": ["Dead reproductive biomass age", "°C d"],
-    "bm": ["Total biomass", "kg DM ha⁻¹"],
+    "bm": ["Total standing biomass", "kg DM ha⁻¹"],
     "pgro": ["Potential growth", "kg DM ha⁻¹"],
-    "gro": ["Biomass growth", "kg DM ha⁻¹"],
+    "gro": ["Total growth", "kg DM ha⁻¹"],
     "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
     "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
     # "st": ["Sum of temperatures", "°C d"],
@@ -224,29 +224,6 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
-
-    Outputs
-    -------
-    - Day of the year                                       day
-    - Mean green vegetative biomass         [kg DM ha⁻¹]    gv_b
-    - Mean green reproductive biomass       [kg DM ha⁻¹]    gr_b
-    - Mean dead vegetative biomass          [kg DM ha⁻¹]    dv_b
-    - Mean dead reproductive biomass        [kg DM ha⁻¹]    dr_b
-    - Harvested biomass                     [kg DM ha⁻¹]    h_b
-    - Ingested biomass                      [kg DM ha⁻¹]    i_b
-    - Mean GRO biomass                      [kg DM ha⁻¹]    gro
-    - Mean available biomass for cut        [kg DM ha⁻¹]    abc
-      (gv_b + gr_b + dv_b + dr_b)
-    - Sum of temperatures                   [°C d]          sumT
-    - GV biomass age                        [°C d]          gva
-    - GR biomass age                        [°C d]          gra
-    - DV biomass age                        [°C d]          dva
-    - DR biomass age                        [°C d]          dra
-    - Seasonal effect                                       sea
-    - Temperature function*                                 ftm
-    - Environmental limitation of growth                    env
-    - Potential growth                      [kg DM ha⁻¹]    pgr
-    - Reproductive function*                                atr
 
     Parameters
     ----------

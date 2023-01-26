@@ -143,7 +143,7 @@ def sum_of_temperatures(
     params : A dictionary containing model parameters:
         - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
     ts_vals : A dictionary with intermediate time series values for:
-        - t_sum: Sum of temperatures value for the previous data row (ST)
+        - st: Sum of temperatures value for the previous data row (ST)
             [°C d]
 
     Returns
@@ -293,7 +293,7 @@ def seasonal_effect(
         - st_2: Sum of temperatures at the end of the reproductive period
             (ST₂); default is 1200 [°C d]
     ts_vals : A dictionary with intermediate time series values for:
-        - t_sum: Sum of temperatures (ST) [°C d]
+        - st: Sum of temperatures (ST) [°C d]
 
     Returns
     -------
@@ -458,7 +458,7 @@ def reproductive_function(
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - t_sum: Sum of temperatures [°C d]
+        - st: Sum of temperatures [°C d]
     params : A dictionary containing model parameters:
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive

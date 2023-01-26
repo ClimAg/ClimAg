@@ -122,7 +122,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - t_sum: Sum of temperatures [°C d]
+        - st: Sum of temperatures [°C d]
         - bm_gv: Standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
         - bm_gr: Standing biomass of the green reproductive compartment
@@ -245,7 +245,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     Parameters
     ----------
     ts_vals : A dictionary with intermediate time series values for:
-        - t_sum: Sum of temperatures [°C d]
+        - st: Sum of temperatures [°C d]
         - bm_gv: Standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
         - bm_gr: Standing biomass of the green reproductive compartment
