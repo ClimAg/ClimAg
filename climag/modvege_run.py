@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from climag.modvege import modvege
+from climag.modvege import modvege, sum_of_temperature_thresholds
 from climag.modvege_read_files import read_params, read_timeseries
 from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
@@ -48,7 +48,11 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    tseries, endday, st_thresholds = read_timeseries(
+    tseries, endday = read_timeseries(
+        filename=input_timeseries_file
+    )
+
+    st_thresholds = sum_of_temperature_thresholds(
         filename=input_timeseries_file
     )
 

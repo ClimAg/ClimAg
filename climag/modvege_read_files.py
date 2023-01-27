@@ -33,10 +33,6 @@ def read_params(filename: str) -> dict[str, float]:
     - sla         : Specific leaf area (SLA) [0.033 m² g⁻¹]
     - pct_lam     : Percentage of laminae in the green vegetative compartment
                     (%LAM) [0.68]
-    - st_1        : Sum of temperatures at the beginning of the reproductive
-                    period (ST₁) [600 °C d]
-    - st_2        : Sum of temperatures at the end of the reproductive period
-                    (ST₂) [1200 °C d]
     - max_sea     : Maximum seasonal effect (maxSEA) [1.20]
     - min_sea     : Minimum seasonal effect (minSEA) [0.80]
     - lls         : Leaf lifespan (LLS) [500 °C d]
@@ -133,80 +129,7 @@ def read_timeseries(filename: str):
     """
 
     timeseries = pd.read_csv(filename, parse_dates=["time"])
-
     timeseries.sort_values(by=["time"], inplace=True)
-    timeseries.set_index("time", inplace=True)
-
-    # find the start and end of the growing season based on
-    # Nolan and Flanagan (2020)
-    st_thresholds = {}
-    # return only mean values above 4, and subtract by 4
-    timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
-
-    for year in timeseries.index.year.unique():
-        st_thresholds[year] = {}
-
-        # sum of temperatures at the start
-        try:
-            start = list(
-                timeseries.loc[str(year)]["T"].rolling(6).apply(
-                    lambda x: all(x > 5.0)
-                )
-            ).index(1.0)
-            if start < 6:
-                start = 0
-        except ValueError:
-            start = 0
-        # beginning of the reproductive period
-        st_thresholds[year]["st_1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[start]
-        )
-        # beginning of the grazing season; delay of 5-15 days after the start
-        # of the growing season based on Broad and Hough (1993)
-        st_thresholds[year]["st_g1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[start + 15]
-        )
-
-        # sum of temperature thresholds at the end
-        try:
-            end = list(
-                timeseries.loc[str(year)]["T"].rolling(6).apply(
-                    lambda x: all(x < 5.0)
-                )
-            ).index(1.0)
-            if start != 0 and end <= start:
-                end = -1
-        except ValueError:
-            end = -1
-        # end of the reproductive period
-        st_thresholds[year]["st_2"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[end]
-        )
-        # assume animals are fully housed starting 1st December
-        # (O'Riordan, 2016) if growing season continues through December
-        if (
-            end == -1 or
-            end >= timeseries.loc[str(year)].index[-1].dayofyear - 31
-        ):
-            # beginning of the harvesting season
-            # one day before the grazing season ends
-            # grazing costs less than indoor feeding (O'Riordan, 2016), so
-            # starting the harvest just a day before the end of the grazing
-            # season ensures grazing is maximised
-            st_thresholds[year]["st_h1"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[-32]
-            )
-            # end of the grazing and harvesting seasons
-            st_thresholds[year]["st_g2"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[-31]
-            )
-        else:
-            st_thresholds[year]["st_h1"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[end - 1]
-            )
-            st_thresholds[year]["st_g2"] = st_thresholds[year]["st_2"]
-
-    timeseries.drop(columns="Tg", inplace=True)
     timeseries.reset_index(inplace=True)
     endday = len(timeseries)
-    return timeseries, endday, st_thresholds
+    return timeseries, endday

@@ -63,9 +63,9 @@ def organic_matter_digestibility(
         - max_omd_gr: Maximum OMD of the GR compartment; default is 0.9
             [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period; default is 600 [°C d]
+            period [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            default is 1200 [°C d]
+            [°C d]
 
     Returns
     -------
@@ -138,9 +138,9 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
         - st_1: Sum of temperatures at the beginning of the reproductive
-          period; default is 600 [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period;
-          default is 1200 [°C d]
+          period [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+            [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]

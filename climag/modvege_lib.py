@@ -291,9 +291,9 @@ def seasonal_effect(
         - min_sea: Minimum seasonal effect (minSEA); default is 0.8
             [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period (ST₁); default is 600 [°C d]
+            period (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
-            (ST₂); default is 1200 [°C d]
+            (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - st: Sum of temperatures (ST) [°C d]
 
@@ -562,9 +562,9 @@ def abscission(
         - kl_dr: Basic abscission rate for the dead reproductive compartment;
             default is 0.0005 (Kl_DR) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period; default is 600 (ST₁) [°C d]
+            period; (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            default is 1200 (ST₂) [°C d]
+            (ST₂) [°C d]
     temperature : Mean daily temperature (T) [°C]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
@@ -630,9 +630,9 @@ def senescence(
         - t_0: Minimum temperature for growth; default is 4 (*T*₀) [°C]
         - lls: Leaf lifespan; default is 500 (LLS) [°C d]
         - st_1 : Sum of temperatures at the beginning of the reproductive
-            period; default is 600 (ST₁) [°C d]
+            period; (ST₁) [°C d]
         - st_2 : Sum of temperatures at the end of the reproductive period;
-            default is 1200 (ST₂) [°C d]
+            (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]
