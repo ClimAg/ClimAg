@@ -476,17 +476,17 @@ def reproductive_function(
     """
 
     if (
+        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
+    ):
+        val = 0.0
+    elif (
         params["sr"] > 0.0 and
-        params["st_1"] + 50.0 <= ts_vals["st"] <= params["st_2"]
+        params["st_g1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     elif (
         params["h_grass"] > 0.0 and
-        params["st_2"] >= ts_vals["st"] >= params["st_2"] - 50.0
-    ):
-        val = 0.0
-    elif (
-        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
+        params["st_h1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     else:

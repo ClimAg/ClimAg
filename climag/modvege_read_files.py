@@ -49,13 +49,13 @@ def read_params(filename: str) -> dict[str, float]:
     - bd_dr       : Bulk density of the dead reproductive compartment (BD_DR)
                     [150 g DM m⁻³]
     - sigma_gv    : Rate of biomass loss with respiration for the green
-                    vegetative compartment (σ_GV) [0.4]
+                    vegetative compartment (*σ*_GV) [0.4]
     - sigma_gr    : Rate of biomass loss with respiration for the green
-                    reproductive compartment (σ_GR) [0.2]
-    - t_0         : Minimum temperature for growth (T₀) [4 °C]
-    - t_1         : Minimum temperature for optimal growth (T₁) [10 °C]
-    - t_2         : Maximum temperature for optimal growth (T₂) [20 °C]
-    - t_max       : Maximum temperature for growth (T_max) [40 °C]
+                    reproductive compartment (*σ*_GR) [0.2]
+    - t_0         : Minimum temperature for growth (*T*₀) [4 °C]
+    - t_1         : Minimum temperature for optimal growth (*T*₁) [10 °C]
+    - t_2         : Maximum temperature for optimal growth (*T*₂) [20 °C]
+    - t_max       : Maximum temperature for growth (*T*_max) [40 °C]
     - k_gv        : Basic senescence rate for the green vegetative compartment
                     (K_GV) [0.002]
     - k_gr        : Basic senescence rate for the green reproductive
@@ -118,9 +118,9 @@ def read_timeseries(filename: str):
     --------------------
     - day    : Day number
     - T      : Temperature (*T*) [°C]
-    - PAR_i  : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    - PAR_i  : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     - PP     : Precipitation (PP) [mm]
-    - PET    : (Potential or reference) evapotranspiration (ET) [mm]
+    - PET    : (Potential or reference) evapotranspiration (PET) [mm]
 
     Parameters
     ----------
@@ -129,7 +129,7 @@ def read_timeseries(filename: str):
     Returns
     -------
     - A dataframe of the input time series data
-    - Length of the data (number of days)
+    - Length of the data (total number of days)
     """
 
     timeseries = pd.read_csv(filename, parse_dates=["time"])
@@ -137,7 +137,8 @@ def read_timeseries(filename: str):
     timeseries.sort_values(by=["time"], inplace=True)
     timeseries.set_index("time", inplace=True)
 
-    # find the start and end of the growing season
+    # find the start and end of the growing season based on
+    # Nolan and Flanagan (2020)
     st_thresholds = {}
     # return only mean values above 4, and subtract by 4
     timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
@@ -145,6 +146,7 @@ def read_timeseries(filename: str):
     for year in timeseries.index.year.unique():
         st_thresholds[year] = {}
 
+        # sum of temperatures at the start
         try:
             start = list(
                 timeseries.loc[str(year)]["T"].rolling(6).apply(
@@ -155,11 +157,17 @@ def read_timeseries(filename: str):
                 start = 0
         except ValueError:
             start = 0
-        # startdate = timeseries.loc[str(year)].index[start]
+        # beginning of the reproductive period
         st_thresholds[year]["st_1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[start]
         )
+        # beginning of the grazing season; delay of 5-15 days after the start
+        # of the growing season based on Broad and Hough (1993)
+        st_thresholds[year]["st_g1"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[start + 15]
+        )
 
+        # sum of temperature thresholds at the end
         try:
             end = list(
                 timeseries.loc[str(year)]["T"].rolling(6).apply(
@@ -170,10 +178,33 @@ def read_timeseries(filename: str):
                 end = -1
         except ValueError:
             end = -1
-        # enddate = timeseries.loc[str(year)].index[end]
+        # end of the reproductive period
         st_thresholds[year]["st_2"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[end]
         )
+        # assume animals are fully housed starting 1st December
+        # (O'Riordan, 2016) if growing season continues through December
+        if (
+            end == -1 or
+            end >= timeseries.loc[str(year)].index[-1].dayofyear - 31
+        ):
+            # beginning of the harvesting season
+            # one day before the grazing season ends
+            # grazing costs less than indoor feeding (O'Riordan, 2016), so
+            # starting the harvest just a day before the end of the grazing
+            # season ensures grazing is maximised
+            st_thresholds[year]["st_h1"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[-32]
+            )
+            # end of the grazing and harvesting seasons
+            st_thresholds[year]["st_g2"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[-31]
+            )
+        else:
+            st_thresholds[year]["st_h1"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[end - 1]
+            )
+            st_thresholds[year]["st_g2"] = st_thresholds[year]["st_2"]
 
     timeseries.drop(columns="Tg", inplace=True)
     timeseries.reset_index(inplace=True)
