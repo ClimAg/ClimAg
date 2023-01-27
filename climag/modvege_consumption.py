@@ -144,8 +144,8 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
-        - bd_gr: Bulk density of the green reproductive compartment; default is
-          300 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default
+          is 300 [g DM m⁻³]
         - bd_dv: Bulk density of the dead vegetative compartment; default is
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
@@ -255,13 +255,13 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
-        - st_2: Sum of temperatures at the end of the reproductive period;
-          default is 1200 [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+        [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
-        - bd_gr: Bulk density of the green reproductive compartment; default is
-          300 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default
+          is 300 [g DM m⁻³]
         - bd_dv: Bulk density of the dead vegetative compartment; default is
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is

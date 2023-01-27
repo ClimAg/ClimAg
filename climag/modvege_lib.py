@@ -215,8 +215,8 @@ def temperature_function(
     """
     Temperature function, *f*(*T*)
 
-    See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for more
-    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
+    See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for
+    more info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
 
     Assume no growth takes place after a maximum temperature
 
@@ -261,7 +261,12 @@ def seasonal_effect(
 ) -> float:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
-    temperatures
+    temperatures.
+
+    **Note:** A constant value (the average of minSEA and maxSEA) is used for
+    the SEA if the sum of temperatures at the beginning of the reproductive
+    period is lower than the sum of temperatures at the onset of reproductive
+    growth.
 
     SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
     SEA < 1 indicates growth limitation by storage of reserves
@@ -303,9 +308,7 @@ def seasonal_effect(
     """
 
     if params["st_1"] <= 200.0:
-        # use a constant value if the sum of temperatures at the
-        # beginning of the reproductive period is lower than the sum of
-        # temperatures at the onset of reproductive growth
+        # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
     elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["t_2"]:
         val = params["min_sea"]
