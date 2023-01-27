@@ -48,10 +48,15 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    tseries, endday = read_timeseries(filename=input_timeseries_file)
+    tseries, endday, st_thresholds = read_timeseries(
+        filename=input_timeseries_file
+    )
 
     # initialise the run
-    data_df = modvege(params=params, tseries=tseries, endday=endday)
+    data_df = modvege(
+        params=params, tseries=tseries,
+        st_thresholds=st_thresholds, endday=endday
+    )
 
     # convert output to dataframe
     data_df = pd.DataFrame(data_df)

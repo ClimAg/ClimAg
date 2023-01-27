@@ -133,7 +133,49 @@ def read_timeseries(filename: str):
     """
 
     timeseries = pd.read_csv(filename, parse_dates=["time"])
+
     timeseries.sort_values(by=["time"], inplace=True)
+    timeseries.set_index("time", inplace=True)
+
+    # find the start and end of the growing season
+    st_thresholds = {}
+    # return only mean values above 4, and subtract by 4
+    timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
+
+    for year in timeseries.index.year.unique():
+        st_thresholds[year] = {}
+
+        try:
+            start = list(
+                timeseries.loc[str(year)]["T"].rolling(6).apply(
+                    lambda x: all(x > 5.0)
+                )
+            ).index(1.0)
+            if start < 6:
+                start = 0
+        except ValueError:
+            start = 0
+        # startdate = timeseries.loc[str(year)].index[start]
+        st_thresholds[year]["st_1"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[start]
+        )
+
+        try:
+            end = list(
+                timeseries.loc[str(year)]["T"].rolling(6).apply(
+                    lambda x: all(x < 5.0)
+                )
+            ).index(1.0)
+            if start != 0 and end <= start:
+                end = -1
+        except ValueError:
+            end = -1
+        # enddate = timeseries.loc[str(year)].index[end]
+        st_thresholds[year]["st_2"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[end]
+        )
+
+    timeseries.drop(columns="Tg", inplace=True)
     timeseries.reset_index(inplace=True)
     endday = len(timeseries)
-    return timeseries, endday
+    return timeseries, endday, st_thresholds

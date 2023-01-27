@@ -95,7 +95,7 @@ import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
 
-def modvege(params, tseries, endday=365) -> dict[str, float]:
+def modvege(params, tseries, st_thresholds, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
@@ -178,6 +178,9 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         if tseries["time"][i].dayofyear == 1:
             # reset to zero on the first day of the year
             ts_vals["i_bm"], ts_vals["h_bm"], ts_vals["st"] = 0.0, 0.0, 0.0
+            # sum of temperature thresholds
+            params["st_1"] = st_thresholds[tseries["time"][i].year]["st_1"]
+            params["st_2"] = st_thresholds[tseries["time"][i].year]["st_2"]
 
         # 10-d moving average temperature (T_m10)
         ts_vals["t_m10"] = lm.ten_day_moving_avg_temperature(
