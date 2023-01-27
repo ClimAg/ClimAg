@@ -63,9 +63,9 @@ def organic_matter_digestibility(
         - max_omd_gr: Maximum OMD of the GR compartment; default is 0.9
             [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period; default is 600 [°C d]
+            period [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            default is 1200 [°C d]
+            [°C d]
 
     Returns
     -------
@@ -138,14 +138,14 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
         - st_1: Sum of temperatures at the beginning of the reproductive
-          period; default is 600 [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period;
-          default is 1200 [°C d]
+          period [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+            [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
-        - bd_gr: Bulk density of the green reproductive compartment; default is
-          300 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default
+          is 300 [g DM m⁻³]
         - bd_dv: Bulk density of the dead vegetative compartment; default is
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
@@ -173,7 +173,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["sr"] > 0.0 and
-        params["st_2"] > ts_vals["st"] > params["st_1"] + 50.0
+        params["st_g1"] <= ts_vals["st"] <= params["st_g2"]
     ):
 
         # max available compartmental biomass
@@ -255,13 +255,13 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
-        - st_2: Sum of temperatures at the end of the reproductive period;
-          default is 1200 [°C d]
+        - st_2: Sum of temperatures at the end of the reproductive period
+        [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
-        - bd_gr: Bulk density of the green reproductive compartment; default is
-          300 [g DM m⁻³]
+        - bd_gr: Bulk density of the green reproductive compartment; default
+          is 300 [g DM m⁻³]
         - bd_dv: Bulk density of the dead vegetative compartment; default is
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
@@ -283,7 +283,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["h_grass"] > 0.0 and
-        params["st_2"] + 50.0 >= ts_vals["st"] >= params["st_2"]
+        params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
     ):
         harvested_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:

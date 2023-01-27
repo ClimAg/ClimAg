@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from climag.modvege import modvege
+from climag.modvege import modvege, sum_of_temperature_thresholds
 from climag.modvege_read_files import read_params, read_timeseries
 from climag.plot_configs import ie_cordex_modvege_ncfile_name
 
@@ -48,33 +48,36 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    tseries, endday = read_timeseries(filename=input_timeseries_file)
+    tseries, endday = read_timeseries(
+        filename=input_timeseries_file
+    )
+
+    st_thresholds = sum_of_temperature_thresholds(
+        filename=input_timeseries_file
+    )
 
     # initialise the run
-    data_df = modvege(params=params, tseries=tseries, endday=endday)
+    data_df = modvege(
+        params=params, tseries=tseries,
+        st_thresholds=st_thresholds, endday=endday
+    )
 
-    # convert output to dataframe and save as CSV
-    # data_df = tuple([list(range(1, len(data_df[0]) + 1))]) + data_df
-
-    # data_df = pd.DataFrame(
-    #     zip(*data_df), columns=(["day"] + list(output_vars.keys()))
-    # )
-
+    # convert output to dataframe
     data_df = pd.DataFrame(data_df)
 
-    # day number
-    # data_df["day"] = list(range(1, len(data_df) + 1))
-
+    # save as CSV
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
 
     # plot all columns
     data_df.set_index("time", inplace=True)
 
+    # configure plot title
     plot_title = []
     for val in output_vars.values():
         val = " [".join(val) + "]"
         plot_title.append(val)
 
+    # plot data
     data_df.plot(
         subplots=True, layout=(7, 3), figsize=(15, 14),
         xlabel="", title=plot_title, legend=False

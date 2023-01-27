@@ -12,7 +12,7 @@ Dead reproductive         (DR)
 import pandas as pd
 
 
-def read_params(filename):
+def read_params(filename: str) -> dict[str, float]:
     """
     Read the input parameters (constants) file
 
@@ -33,10 +33,6 @@ def read_params(filename):
     - sla         : Specific leaf area (SLA) [0.033 m² g⁻¹]
     - pct_lam     : Percentage of laminae in the green vegetative compartment
                     (%LAM) [0.68]
-    - st_1        : Sum of temperatures at the beginning of the reproductive
-                    period (ST₁) [600 °C d]
-    - st_2        : Sum of temperatures at the end of the reproductive period
-                    (ST₂) [1200 °C d]
     - max_sea     : Maximum seasonal effect (maxSEA) [1.20]
     - min_sea     : Minimum seasonal effect (minSEA) [0.80]
     - lls         : Leaf lifespan (LLS) [500 °C d]
@@ -49,13 +45,13 @@ def read_params(filename):
     - bd_dr       : Bulk density of the dead reproductive compartment (BD_DR)
                     [150 g DM m⁻³]
     - sigma_gv    : Rate of biomass loss with respiration for the green
-                    vegetative compartment (σ_GV) [0.4]
+                    vegetative compartment (*σ*_GV) [0.4]
     - sigma_gr    : Rate of biomass loss with respiration for the green
-                    reproductive compartment (σ_GR) [0.2]
-    - t_0         : Minimum temperature for growth (T₀) [4 °C]
-    - t_1         : Minimum temperature for optimal growth (T₁) [10 °C]
-    - t_2         : Maximum temperature for optimal growth (T₂) [20 °C]
-    - t_max       : Maximum temperature for growth (T_max) [40 °C]
+                    reproductive compartment (*σ*_GR) [0.2]
+    - t_0         : Minimum temperature for growth (*T*₀) [4 °C]
+    - t_1         : Minimum temperature for optimal growth (*T*₁) [10 °C]
+    - t_2         : Maximum temperature for optimal growth (*T*₂) [20 °C]
+    - t_max       : Maximum temperature for growth (*T*_max) [40 °C]
     - k_gv        : Basic senescence rate for the green vegetative compartment
                     (K_GV) [0.002]
     - k_gr        : Basic senescence rate for the green reproductive
@@ -110,17 +106,17 @@ def read_params(filename):
     return params
 
 
-def read_timeseries(filename):
+def read_timeseries(filename: str):
     """
     Read the time series input data
 
     Definition of inputs
     --------------------
-    - day   : Day number
-    - T     : Temperature (*T*) [°C]
-    - PAR_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
-    - PP    : Precipitation (PP) [mm]
-    - PET   : (Potential or reference) evapotranspiration (ET) [mm]
+    - day    : Day number
+    - T      : Temperature (*T*) [°C]
+    - PAR_i  : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
+    - PP     : Precipitation (PP) [mm]
+    - PET    : (Potential or reference) evapotranspiration (PET) [mm]
 
     Parameters
     ----------
@@ -129,7 +125,7 @@ def read_timeseries(filename):
     Returns
     -------
     - A dataframe of the input time series data
-    - Length of the data (number of days)
+    - Length of the data (total number of days)
     """
 
     timeseries = pd.read_csv(filename, parse_dates=["time"])

@@ -215,8 +215,8 @@ def temperature_function(
     """
     Temperature function, *f*(*T*)
 
-    See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for more
-    info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
+    See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for
+    more info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
 
     Assume no growth takes place after a maximum temperature
 
@@ -261,7 +261,12 @@ def seasonal_effect(
 ) -> float:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
-    temperatures
+    temperatures.
+
+    **Note:** A constant value (the average of minSEA and maxSEA) is used for
+    the SEA if the sum of temperatures at the beginning of the reproductive
+    period is lower than the sum of temperatures at the onset of reproductive
+    growth.
 
     SEA > 1 indicates above-ground stimulation by mobilisation of reserves;
     SEA < 1 indicates growth limitation by storage of reserves
@@ -291,9 +296,9 @@ def seasonal_effect(
         - min_sea: Minimum seasonal effect (minSEA); default is 0.8
             [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period (ST₁); default is 600 [°C d]
+            period (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
-            (ST₂); default is 1200 [°C d]
+            (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - st: Sum of temperatures (ST) [°C d]
 
@@ -303,9 +308,7 @@ def seasonal_effect(
     """
 
     if params["st_1"] <= 200.0:
-        # use a constant value if the sum of temperatures at the
-        # beginning of the reproductive period is lower than the sum of
-        # temperatures at the onset of reproductive growth
+        # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
     elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["t_2"]:
         val = params["min_sea"]
@@ -476,17 +479,17 @@ def reproductive_function(
     """
 
     if (
+        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
+    ):
+        val = 0.0
+    elif (
         params["sr"] > 0.0 and
-        params["st_1"] + 50.0 <= ts_vals["st"] <= params["st_2"]
+        params["st_g1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     elif (
         params["h_grass"] > 0.0 and
-        params["st_2"] >= ts_vals["st"] >= params["st_2"] - 50.0
-    ):
-        val = 0.0
-    elif (
-        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
+        params["st_h1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     else:
@@ -562,9 +565,9 @@ def abscission(
         - kl_dr: Basic abscission rate for the dead reproductive compartment;
             default is 0.0005 (Kl_DR) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period; default is 600 (ST₁) [°C d]
+            period; (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            default is 1200 (ST₂) [°C d]
+            (ST₂) [°C d]
     temperature : Mean daily temperature (T) [°C]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
@@ -630,9 +633,9 @@ def senescence(
         - t_0: Minimum temperature for growth; default is 4 (*T*₀) [°C]
         - lls: Leaf lifespan; default is 500 (LLS) [°C d]
         - st_1 : Sum of temperatures at the beginning of the reproductive
-            period; default is 600 (ST₁) [°C d]
+            period; (ST₁) [°C d]
         - st_2 : Sum of temperatures at the end of the reproductive period;
-            default is 1200 (ST₂) [°C d]
+            (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]

@@ -54,10 +54,6 @@ Characteristic traits include high specific leaf area, high digestibility,
 short leaf lifespan, and early reproductive growth and flowering).
 - Specific leaf area (SLA) [0.033 m² g⁻¹]
 - Percentage of laminae in the green vegetative compartment (%LAM) [0.68]
-- Sum of temperatures at the beginning of the reproductive period (ST₁)
-  [600 °C d]
-- Sum of temperatures at the end of the reproductive period (ST₂)
-  [1200 °C d]
 - Maximum seasonal effect (maxSEA) [1.20]
 - Minimum seasonal effect (minSEA) [0.80]
 - Leaf lifespan (LLS) [500 °C d]
@@ -91,11 +87,115 @@ short leaf lifespan, and early reproductive growth and flowering).
 - Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
+import pandas as pd
 import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
 
-def modvege(params, tseries, endday=365) -> dict[str, float]:
+def sum_of_temperature_thresholds(filename: str) -> dict[str, float]:
+    """
+    Calculate sum of temperatures at:
+        - the beginning of the reproductive period (ST₁) [°C d]
+        - the end of the reproductive period (ST₂) [°C d]
+        - the beginning of the grazing season (STg₁) [°C d]
+        - the end of the grazing season (STg₂) [°C d]
+        - the beginning of harvest (STh₁) [°C d]
+
+    Nolan and Flanagan (2020) define the thermal growing season length as the
+    number of days between the first occurrence of at least six consecutive
+    days with a daily mean temperature of > 5°C and the first occurrence of at
+    least six consecutive days with a daily mean temperature of < 5°C.
+
+    Grazing season calculations based solely on temperature do not consider
+    the delay before sufficient plant cover is available to support grazing
+    animals or the ability of animals and machinery to pass over land (Nolan
+    and Flanagan, 2020; Collins and Cummins, 1996; based on Keane, 1982).
+
+    The beginning of the grazing season has a delay of 5-15 days after the
+    start of the growing season based on Broad and Hough (1993).
+    A delay of 15 days is used to allow sufficient reproductive growth.
+
+    The beginning of harvest is assumed to be one day before the grazing
+    season ends. Grazing costs less than indoor feeding, so starting the
+    harvest just a day before the end of the grazing season ensures grazing is
+    maximised.
+
+    The end of harvest is the same as the end of the grazing season.
+
+    Assume animals are fully housed starting 1st December (late November based
+    on Kavanagh, 2016) if growing season continues through December
+    """
+
+    timeseries = pd.read_csv(filename, parse_dates=["time"])
+
+    timeseries.sort_values(by=["time"], inplace=True)
+    timeseries.set_index("time", inplace=True)
+
+    st_thresholds = {}
+    # return only mean values above 4, and subtract by 4
+    timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
+
+    for year in timeseries.index.year.unique():
+        st_thresholds[year] = {}
+
+        # sum of temperatures at the start
+        try:
+            start = list(
+                timeseries.loc[str(year)]["T"].rolling(6).apply(
+                    lambda x: all(x > 5.0)
+                )
+            ).index(1.0)
+            if start < 6:
+                start = 0
+        except ValueError:
+            start = 0
+        # beginning of the reproductive period
+        st_thresholds[year]["st_1"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[start]
+        )
+        # beginning of the grazing season
+        st_thresholds[year]["st_g1"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[start + 15]
+        )
+
+        # sum of temperature thresholds at the end
+        try:
+            end = list(
+                timeseries.loc[str(year)]["T"].rolling(6).apply(
+                    lambda x: all(x < 5.0)
+                )
+            ).index(1.0)
+            if start != 0 and end <= start:
+                end = -1
+        except ValueError:
+            end = -1
+        # end of the reproductive period
+        st_thresholds[year]["st_2"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[end]
+        )
+        # if growing season continues in December, end grazing on 1st December
+        if (
+            end == -1 or
+            end >= timeseries.loc[str(year)].index[-1].dayofyear - 31
+        ):
+            # beginning of the harvest
+            st_thresholds[year]["st_h1"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[-32]
+            )
+            # end of the grazing and harvesting seasons
+            st_thresholds[year]["st_g2"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[-31]
+            )
+        else:
+            st_thresholds[year]["st_h1"] = (
+                timeseries.loc[str(year)]["Tg"].cumsum()[end - 1]
+            )
+            st_thresholds[year]["st_g2"] = st_thresholds[year]["st_2"]
+
+    return st_thresholds
+
+
+def modvege(params, tseries, st_thresholds, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
@@ -107,8 +207,8 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     Parameters
     ----------
     params : Parameters (constants)
-    tseries : Time series data (weather, grass cut, grazing)
-    endday : Number of days of the year (default 365)
+    tseries : Time series meteorological data
+    endday : Number of days of the year (default is 365)
 
     Returns
     -------
@@ -178,6 +278,9 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         if tseries["time"][i].dayofyear == 1:
             # reset to zero on the first day of the year
             ts_vals["i_bm"], ts_vals["h_bm"], ts_vals["st"] = 0.0, 0.0, 0.0
+            # sum of temperature thresholds
+            for key in st_thresholds[tseries["time"][i].year]:
+                params[key] = st_thresholds[tseries["time"][i].year][key]
 
         # 10-d moving average temperature (T_m10)
         ts_vals["t_m10"] = lm.ten_day_moving_avg_temperature(
