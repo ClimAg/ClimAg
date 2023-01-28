@@ -488,7 +488,7 @@ def reproductive_function(
     ):
         val = 0.0
     elif (
-        params["h_grass"] > 0.0 and
+        params["h_grass"] is not None and
         params["st_h1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0

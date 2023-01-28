@@ -156,6 +156,9 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment; default is 0.45 [dimensionless]
         - omd_dr: Organic matter digestibility of the dead reproductive
           compartment; default is 0.4 [dimensionless]
+        - st_g1: Sum of temperatures at the beginning of the grazing season
+            [°C d]
+        - st_g2: Sum of temperatures at the end of the grazing season [°C d]
 
     Returns
     -------
@@ -163,8 +166,8 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
         - bm_gv: Updated standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
-        - bm_gr: Updated standing biomass of the green reproductive compartment
-          [kg DM ha⁻¹]
+        - bm_gr: Updated standing biomass of the green reproductive
+          compartment [kg DM ha⁻¹]
         - bm_dv: Updated standing biomass of the dead vegetative compartment
           [kg DM ha⁻¹]
         - bm_dr: Updated standing biomass of the dead reproductive compartment
@@ -282,7 +285,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["h_grass"] > 0.0 and
+        params["h_grass"] is not None and
         params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
     ):
         harvested_biomass = {}
