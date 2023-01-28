@@ -1,8 +1,6 @@
-#!/usr/bin/env python
-
 """test_climag.py
 
-Tests for the `climag` package
+Tests for the climag package
 
 coverage run -m pytest && coverage report -m
 """
