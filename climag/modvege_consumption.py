@@ -137,10 +137,6 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment [dimensionless]
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
-        - st_1: Sum of temperatures at the beginning of the reproductive
-          period [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period
-          [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
@@ -258,8 +254,6 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
-        - st_2: Sum of temperatures at the end of the reproductive period
-          [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
@@ -269,6 +263,8 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
           150 [g DM m⁻³]
+        - st_h1: Sum of temperatures at the beginning of the harvest [°C d]
+        - st_g2: Sum of temperatures at the end of the grazing season [°C d]
 
     Returns
     -------
