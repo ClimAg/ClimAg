@@ -14,20 +14,14 @@ def test_stocking_rate():
     Test the stocking rate function
     """
 
-    # with stocking rate
-    params = {
-        "lu": 2689.7,
-        "area": 831.5
-    }
+    params = {"lu": 2689.7}
 
+    # with stocking rate
+    params["area"] = 831.5
     assert cm.stocking_rate(params=params) == 3.2347564642212867
 
     # without stocking rate
-    params = {
-        "lu": 3986.7,
-        "area": 0.0
-    }
-
+    params["area"] = 0.0
     # zero division error exception handling
     assert cm.stocking_rate(params=params) == 0.0
 
@@ -41,7 +35,6 @@ def test_organic_matter_digestibility():
         "age_gv": 100.0,
         "age_gr": 2000.0
     }
-
     params = {
         "max_omd_gv": 0.9,
         "min_omd_gv": 0.75,
@@ -64,19 +57,14 @@ def test_biomass_ingestion():
     """
 
     ts_vals = {
-        "st": 460.5,
         "bm_gv": 700.5,
         "bm_gr": 254.7,
         "bm_dv": 307.2,
         "bm_dr": 50.3,
         "omd_gv": 0.79,
         "omd_gr": 0.67,
-        "i_bm": 0.0
     }
-
     params = {
-        "sr": 2.5,
-        "h_grass": 0.05,
         "bd_gv": 850.0,
         "bd_gr": 300.0,
         "bd_dv": 500.0,
@@ -89,6 +77,10 @@ def test_biomass_ingestion():
     }
 
     # with stocking rate
+    params["sr"] = 2.5
+    params["h_grass"] = 0.05
+    ts_vals["st"] = 460.5
+    ts_vals["i_bm"] = 0.0
     cm.biomass_ingestion(ts_vals=ts_vals, params=params)
     cm.biomass_ingestion(ts_vals=ts_vals, params=params)
     assert ts_vals["i_bm"] == 87.5108225108225
@@ -123,16 +115,12 @@ def test_biomass_harvest():
     """
 
     ts_vals = {
-        "st": 2200.0,
         "bm_gv": 700.5,
         "bm_gr": 254.7,
         "bm_dv": 307.2,
         "bm_dr": 50.3,
-        "h_bm": 0.0
     }
-
     params = {
-        "h_grass": 0.05,
         "bd_gv": 850.0,
         "bd_gr": 300.0,
         "bd_dv": 500.0,
@@ -141,6 +129,10 @@ def test_biomass_harvest():
         "st_g2": 2300.0
     }
 
+    # during the harvest season
+    params["h_grass"] = 0.05
+    ts_vals["st"] = 2200.0
+    ts_vals["h_bm"] = 0.0
     cm.biomass_harvest(ts_vals=ts_vals, params=params)
     assert ts_vals["h_bm"] == 393.65999999999997
 
