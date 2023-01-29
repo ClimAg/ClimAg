@@ -39,7 +39,7 @@ Compartment description:
 List of time series variables
 ----------------------------
 - T: Mean daily temperature (*T*) [°C]
-- PAR_i: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+- PAR: Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
 - PP: Precipitation (PP) [mm]
 - PET: Potential evapotranspiration (PET) [mm]
 
@@ -324,12 +324,12 @@ def modvege(params, tseries, st_thresholds, endday=365) -> dict[str, float]:
 
         # environmental limitation of growth (ENV)
         ts_vals["env"] = lm.environmental_limitation(
-            ts_vals=ts_vals, params=params, par_i=tseries["PAR_i"][i]
+            ts_vals=ts_vals, params=params, par_i=tseries["PAR"][i]
         )
 
         # potential growth (PGRO)
         ts_vals["pgro"] = lm.potential_growth(
-            par_i=tseries["PAR_i"][i], ts_vals=ts_vals, params=params
+            par_i=tseries["PAR"][i], ts_vals=ts_vals, params=params
         )
 
         # total growth (GRO)

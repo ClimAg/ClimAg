@@ -114,7 +114,7 @@ def read_timeseries(filename: str):
     --------------------
     - day    : Day number
     - T      : Temperature (*T*) [°C]
-    - PAR_i  : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
+    - PAR    : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     - PP     : Precipitation (PP) [mm]
     - PET    : (Potential or reference) evapotranspiration (PET) [mm]
 

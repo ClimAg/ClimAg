@@ -108,6 +108,30 @@ def rotated_pole_transform(data):
     return transform
 
 
+def hiresireland_date_format(data):
+    """
+    Format date
+    """
+
+    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
+    return date
+
+
+def cordex_date_format(data):
+    """
+    Format date
+    """
+
+    if data.attrs["frequency"] == "mon":
+        date_format = "%b %Y"
+    elif data.attrs["frequency"] == "day":
+        date_format = "%-d %b %Y"
+    else:
+        date_format = "%Y-%m-%d %H:%M:%S"
+    date = datetime.strftime(parse(str(data["time"].values)), date_format)
+    return date
+
+
 def cordex_plot_title_main(data):
     """
     Define the map plot title for CORDEX data.
@@ -134,30 +158,6 @@ def cordex_plot_title_main(data):
     return plot_title
 
 
-def hiresireland_date_format(data):
-    """
-    Format date
-    """
-
-    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
-    return date
-
-
-def cordex_date_format(data):
-    """
-    Format date
-    """
-
-    if data.attrs["frequency"] == "mon":
-        date_format = "%b %Y"
-    elif data.attrs["frequency"] == "day":
-        date_format = "%-d %b %Y"
-    else:
-        date_format = "%Y-%m-%d %H:%M:%S"
-    date = datetime.strftime(parse(str(data["time"].values)), date_format)
-    return date
-
-
 def cordex_plot_title(data, lon=None, lat=None):
     """
     Define the map plot title for CORDEX data with information about the time
@@ -182,7 +182,7 @@ def cordex_plot_title(data, lon=None, lat=None):
     return plot_title
 
 
-def ie_cordex_ncfile_name(data):
+def cordex_ncfile_name(data):
     """
     Define the NetCDF file name for the CORDEX data that has been subset for
     Ireland.
@@ -197,7 +197,7 @@ def ie_cordex_ncfile_name(data):
     """
 
     filename = (
-        "_".join(sorted(list(data.data_vars))) + "_" +
+        "IE_" +
         data.attrs["CORDEX_domain"] + "_" +
         data.attrs["driving_model_id"] + "_" +
         data.attrs["driving_experiment_name"] + "_" +
@@ -207,7 +207,7 @@ def ie_cordex_ncfile_name(data):
         data.attrs["frequency"] + "_" +
         datetime.strftime(parse(str(data["time"][0].values)), "%Y%m%d") + "-" +
         datetime.strftime(parse(str(data["time"][-1].values)), "%Y%m%d")
-        + "_IE.nc"
+        + ".nc"
     )
     return filename
 
@@ -261,13 +261,11 @@ def plot_facet_map_variables(data, boundary_data):
             data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
         )  # colorbar label
 
-        if v == "pr":
+        if v == "PP":
             cmap = "mako_r"
-        elif v == "evspsblpot":
+        elif v == "PET":
             cmap = "BrBG_r"
-        elif v == "mrso":
-            cmap = "BrBG"
-        elif v in ("tas", "rsds", "rsus", "par"):
+        elif v in ("T", "RG", "PAR"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
@@ -341,13 +339,11 @@ def plot_map_variables(data):
         cbar_label = (
             data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
         )  # colorbar label
-        if v == "pr":
+        if v == "PP":
             cmap = "GnBu"
-        elif v == "evspsblpot":
+        elif v == "PET":
             cmap = "BrBG_r"
-        elif v == "mrso":
-            cmap = "BrBG"
-        elif v in ("tas", "rsds", "rsus", "par"):
+        elif v in ("T", "RG", "PAR"):
             cmap = "Spectral_r"
 
         plt.figure(figsize=(7, 7))

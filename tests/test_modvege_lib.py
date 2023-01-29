@@ -14,9 +14,7 @@ def test_leaf_area_index():
     Test leaf_area_index
     """
 
-    ts_vals = {
-        "bm_gv": 1200.0
-    }
+    ts_vals = {"bm_gv": 1200.0}
     params = {
         "sla": 0.033,
         "pct_lam": 0.68
@@ -71,20 +69,20 @@ def test_sum_of_temperatures():
     """
 
     day = 5
-    t_ts = [2.0, 7.0, 4.0, 5.0, 8.0, 3.0, 6.0]
+    t_ts = [2.1, 7.0, 4.1, 5.0, 8.6, 3.2, 6.0, 9.5, 1.0, 3.3, 5.5, 7.2]
     ts_vals = {}
     params = {"t_0": 4.0}
 
     ts_vals["st"] = 4.0
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 8.0
+    ) == 8.6
 
     # resetting the sum to zero
     ts_vals["st"] = 0.0
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 4.0
+    ) == 4.6
 
 
 def test_ten_day_moving_avg_temperature():
