@@ -308,12 +308,10 @@ def seasonal_effect(
     if params["st_1"] <= 200.0:
         # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
-    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["t_2"]:
+    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
         val = params["min_sea"]
     elif (
-        (params["st_1"] - 200.0) <=
-        ts_vals["st"] <=
-        (params["st_1"] - 100.0)
+        params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
     ):
         val = params["max_sea"]
     elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
@@ -325,7 +323,7 @@ def seasonal_effect(
         )
         intercept = params["min_sea"] - gradient * 200.0
         val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-    elif (params["st_1"] - 100.0) < ts_vals["st"] < params["st_2"]:
+    elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
         # SEA decreases linearly from maxSEA to minSEA at ST_2
         gradient = (
             (params["max_sea"] - params["min_sea"]) /
@@ -482,11 +480,12 @@ def reproductive_function(
         val = 0.0
     elif (
         params["sr"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_g1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     elif (
-        params["h_grass"] is not None and
+        params["h_grass"] >= 0.0 and
         params["st_h1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0

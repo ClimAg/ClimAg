@@ -172,6 +172,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["sr"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_g1"] <= ts_vals["st"] <= params["st_g2"]
     ):
 
@@ -281,7 +282,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["h_grass"] is not None and
+        params["h_grass"] >= 0.0 and
         params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
     ):
         harvested_biomass = {}
