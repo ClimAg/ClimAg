@@ -54,18 +54,18 @@ def organic_matter_digestibility(
         - age_gr: Age of the GR compartment [°C d]
     params : A dictionary containing these model parameters:
         - min_omd_gv: Minimum OMD of the GV compartment; default is 0.75
-            [dimensionless]
+          [dimensionless]
         - max_omd_gv: Maximum OMD of the GV compartment; default is 0.9
-            [dimensionless]
+          [dimensionless]
         - lls: Leaf lifespan; default is 500 [°C d]
         - min_omd_gr: Minimum OMD of the GR compartment; default is 0.65
-            [dimensionless]
+          [dimensionless]
         - max_omd_gr: Maximum OMD of the GR compartment; default is 0.9
-            [dimensionless]
+          [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period [°C d]
+          period [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            [°C d]
+          [°C d]
 
     Returns
     -------
@@ -137,10 +137,6 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment [dimensionless]
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
-        - st_1: Sum of temperatures at the beginning of the reproductive
-          period [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period
-            [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
@@ -156,6 +152,9 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment; default is 0.45 [dimensionless]
         - omd_dr: Organic matter digestibility of the dead reproductive
           compartment; default is 0.4 [dimensionless]
+        - st_g1: Sum of temperatures at the beginning of the grazing season
+          [°C d]
+        - st_g2: Sum of temperatures at the end of the grazing season [°C d]
 
     Returns
     -------
@@ -163,8 +162,8 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
         - bm_gv: Updated standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
-        - bm_gr: Updated standing biomass of the green reproductive compartment
-          [kg DM ha⁻¹]
+        - bm_gr: Updated standing biomass of the green reproductive
+          compartment [kg DM ha⁻¹]
         - bm_dv: Updated standing biomass of the dead vegetative compartment
           [kg DM ha⁻¹]
         - bm_dr: Updated standing biomass of the dead reproductive compartment
@@ -173,6 +172,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
     if (
         params["sr"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_g1"] <= ts_vals["st"] <= params["st_g2"]
     ):
 
@@ -255,8 +255,6 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
-        - st_2: Sum of temperatures at the end of the reproductive period
-        [°C d]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is
           850 [g DM m⁻³]
@@ -266,6 +264,8 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
           150 [g DM m⁻³]
+        - st_h1: Sum of temperatures at the beginning of the harvest [°C d]
+        - st_g2: Sum of temperatures at the end of the grazing season [°C d]
 
     Returns
     -------
@@ -273,8 +273,8 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
         - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
         - bm_gv: Updated standing biomass of the green vegetative compartment
           [kg DM ha⁻¹]
-        - bm_gr: Updated standing biomass of the green reproductive compartment
-          [kg DM ha⁻¹]
+        - bm_gr: Updated standing biomass of the green reproductive
+          compartment [kg DM ha⁻¹]
         - bm_dv: Updated standing biomass of the dead vegetative compartment
           [kg DM ha⁻¹]
         - bm_dr: Updated standing biomass of the dead reproductive compartment
@@ -282,7 +282,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["h_grass"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
     ):
         harvested_biomass = {}

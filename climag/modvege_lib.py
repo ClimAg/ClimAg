@@ -20,11 +20,11 @@ def leaf_area_index(
     ----------
     params : A dictionary containing these model parameters:
         - pct_lam: Percentage of laminae in the green vegetative (GV) biomass
-            compartment; default is 0.68 (%LAM) [dimensionless]
+          compartment; default is 0.68 (%LAM) [dimensionless]
         - sla: Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: Standing biomass of the green vegetative (GV) compartment
-            (BM_GV) [kg DM ha⁻¹]
+          (BM_GV) [kg DM ha⁻¹]
 
     Returns
     -------
@@ -81,8 +81,8 @@ def potential_growth(
     ----------
     par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     params : A dictionary containing model parameters:
-        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3
-            [g DM MJ⁻¹]
+        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3.0
+          [g DM MJ⁻¹]
     ts_vals : A dictionary with intermediate time series values for:
         - lai: Leaf area index (LAI) [dimensionless]
 
@@ -145,13 +145,12 @@ def sum_of_temperatures(
     params : A dictionary containing model parameters:
         - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
     ts_vals : A dictionary with intermediate time series values for:
-        - st: Sum of temperatures value for the previous data row (ST)
-            [°C d]
+        - st: Sum of temperatures value for the previous data row (ST) [°C d]
 
     Returns
     -------
     - Sum of temperatures above *T*₀ corresponding to each day of the year
-        (ST) [°C d]
+      (ST) [°C d]
 
     Notes
     -----
@@ -236,9 +235,8 @@ def temperature_function(
     """
 
     if (
-        ts_vals["t_m10"] <=
-        params["t_0"] or ts_vals["t_m10"] >=
-        params["t_max"]
+        ts_vals["t_m10"] <= params["t_0"] or
+        ts_vals["t_m10"] >= params["t_max"]
     ):
         val = 0.0
     elif params["t_0"] < ts_vals["t_m10"] < params["t_1"]:
@@ -292,13 +290,13 @@ def seasonal_effect(
     ----------
     params : A dictionary containing these model parameters:
         - max_sea: Maximum seasonal effect (maxSEA); default is 1.2
-            [dimensionless]
+          [dimensionless]
         - min_sea: Minimum seasonal effect (minSEA); default is 0.8
-            [dimensionless]
+          [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period (ST₁) [°C d]
+          period (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
-            (ST₂) [°C d]
+          (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - st: Sum of temperatures (ST) [°C d]
 
@@ -310,12 +308,10 @@ def seasonal_effect(
     if params["st_1"] <= 200.0:
         # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
-    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["t_2"]:
+    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
         val = params["min_sea"]
     elif (
-        (params["st_1"] - 200.0) <=
-        ts_vals["st"] <=
-        (params["st_1"] - 100.0)
+        params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
     ):
         val = params["max_sea"]
     elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
@@ -327,7 +323,7 @@ def seasonal_effect(
         )
         intercept = params["min_sea"] - gradient * 200.0
         val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-    elif (params["st_1"] - 100.0) < ts_vals["st"] < params["st_2"]:
+    elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
         # SEA decreases linearly from maxSEA to minSEA at ST_2
         gradient = (
             (params["max_sea"] - params["min_sea"]) /
@@ -467,9 +463,9 @@ def reproductive_function(
     params : A dictionary containing model parameters:
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period [°C d]
+          period [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
-            [°C d]
+          [°C d]
         - sr: Stocking rate [LU ha⁻¹]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
 
@@ -484,11 +480,12 @@ def reproductive_function(
         val = 0.0
     elif (
         params["sr"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_g1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
     elif (
-        params["h_grass"] > 0.0 and
+        params["h_grass"] >= 0.0 and
         params["st_h1"] <= ts_vals["st"] <= params["st_2"]
     ):
         val = 0.0
@@ -561,13 +558,13 @@ def abscission(
     params : A dictionary containing model parameters:
         - lls: Leaf lifespan (LLS) [500 °C d]
         - kl_dv: Basic abscission rate for the dead vegetative compartment;
-            default is 0.001 (Kl_DV) [dimensionless]
+          default is 0.001 (Kl_DV) [dimensionless]
         - kl_dr: Basic abscission rate for the dead reproductive compartment;
-            default is 0.0005 (Kl_DR) [dimensionless]
+          default is 0.0005 (Kl_DR) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
-            period; (ST₁) [°C d]
+          period; (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
-            (ST₂) [°C d]
+          (ST₂) [°C d]
     temperature : Mean daily temperature (T) [°C]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
@@ -627,15 +624,15 @@ def senescence(
     ----------
     params : A dictionary containing model parameters:
         - k_gv: Basic senescence rate for the green vegetative compartment;
-            default is 0.002 (K_GV) [dimensionless]
+          default is 0.002 (K_GV) [dimensionless]
         - k_gr: Basic senescence rate for the green reproductive compartment;
-            default is 0.001 (K_GR) [dimensionless]
+          default is 0.001 (K_GR) [dimensionless]
         - t_0: Minimum temperature for growth; default is 4 (*T*₀) [°C]
         - lls: Leaf lifespan; default is 500 (LLS) [°C d]
         - st_1 : Sum of temperatures at the beginning of the reproductive
-            period; (ST₁) [°C d]
+          period; (ST₁) [°C d]
         - st_2 : Sum of temperatures at the end of the reproductive period;
-            (ST₂) [°C d]
+          (ST₂) [°C d]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]
@@ -728,9 +725,9 @@ def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
     ----------
     params : A dictionary containing model parameters:
         - sigma_gv: Rate of biomass loss with respiration for GV
-            [dimensionless]
+          [dimensionless]
         - sigma_gr: Rate of biomass loss with respiration for GR
-            [dimensionless]
+          [dimensionless]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
@@ -791,9 +788,9 @@ def biomass_age(
     ----------
     params : A dictionary containing model parameters:
         - sigma_gv: Rate of biomass loss with respiration for GV
-            [dimensionless]
+          [dimensionless]
         - sigma_gr: Rate of biomass loss with respiration for GR
-            [dimensionless]
+          [dimensionless]
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]

@@ -14,6 +14,26 @@ plot_projection = ccrs.RotatedPole(
 )
 
 
+def longitude_tick_format(x, pos):
+    """
+    Return the longitude in degrees west.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:,.0f}°W".format(x * -1)
+
+
+def latitude_tick_format(x, pos):
+    """
+    Return the latitude in degrees north.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:.0f}°N".format(x)
+
+
 # convert lat/lon to rotated pole coordinates
 def rotated_pole_point(data, lon, lat):
     """
@@ -30,6 +50,7 @@ def rotated_pole_point(data, lon, lat):
     -------
     - transformed longitude and latitude in rotated pole coordinates
     """
+
     if data.rio.crs is None:
         pole_longitude = (
             data["rotated_pole"].attrs["grid_north_pole_longitude"]
@@ -64,6 +85,7 @@ def rotated_pole_transform(data):
     -------
     - rotated pole transform
     """
+
     if data.rio.crs is None:
         pole_longitude = (
             data["rotated_pole"].attrs["grid_north_pole_longitude"]
@@ -86,24 +108,6 @@ def rotated_pole_transform(data):
     return transform
 
 
-def longitude_tick_format(x, pos):
-    """
-    Return the longitude in degrees west.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-    return "{:,.0f}°W".format(x * -1)
-
-
-def latitude_tick_format(x, pos):
-    """
-    Return the latitude in degrees north.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-    return "{:.0f}°N".format(x)
-
-
 def cordex_plot_title_main(data):
     """
     Define the map plot title for CORDEX data.
@@ -116,6 +120,7 @@ def cordex_plot_title_main(data):
     -------
     - plot title
     """
+
     plot_title = (
         data.attrs["project_id"] + ", " +
         data.attrs["CORDEX_domain"] + ", " +
@@ -133,6 +138,7 @@ def hiresireland_date_format(data):
     """
     Format date
     """
+
     date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
     return date
 
@@ -141,6 +147,7 @@ def cordex_date_format(data):
     """
     Format date
     """
+
     if data.attrs["frequency"] == "mon":
         date_format = "%b %Y"
     elif data.attrs["frequency"] == "day":
@@ -166,6 +173,7 @@ def cordex_plot_title(data, lon=None, lat=None):
     -------
     - plot title
     """
+
     if lon is None and lat is None:
         end_str = cordex_date_format(data)
     else:
@@ -187,6 +195,7 @@ def ie_cordex_ncfile_name(data):
     -------
     - file name
     """
+
     filename = (
         "_".join(sorted(list(data.data_vars))) + "_" +
         data.attrs["CORDEX_domain"] + "_" +
@@ -215,6 +224,7 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
     -------
     - file name
     """
+
     filename = (
         "modvege_" +
         cordex_data.attrs["CORDEX_domain"] + "_" +
@@ -243,6 +253,7 @@ def plot_facet_map_variables(data, boundary_data):
     boundary_data : Ireland boundary data (vector, loaded as a GeoPandas
         dataframe), e.g. from Ordnance Survey Ireland, NUTS (Eurostat)
     """
+
     plot_transform = rotated_pole_transform(data)
 
     for v in data.data_vars:
@@ -323,6 +334,7 @@ def plot_map_variables(data):
     ----------
     data : climate model dataset (loaded using xarray)
     """
+
     plot_transform = rotated_pole_transform(data)
 
     for v in data.data_vars:
