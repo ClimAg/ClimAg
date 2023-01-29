@@ -81,7 +81,7 @@ def potential_growth(
     ----------
     par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     params : A dictionary containing model parameters:
-        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3
+        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3.0
           [g DM MJ⁻¹]
     ts_vals : A dictionary with intermediate time series values for:
         - lai: Leaf area index (LAI) [dimensionless]
@@ -235,9 +235,8 @@ def temperature_function(
     """
 
     if (
-        ts_vals["t_m10"] <=
-        params["t_0"] or ts_vals["t_m10"] >=
-        params["t_max"]
+        ts_vals["t_m10"] <= params["t_0"] or
+        ts_vals["t_m10"] >= params["t_max"]
     ):
         val = 0.0
     elif params["t_0"] < ts_vals["t_m10"] < params["t_1"]:

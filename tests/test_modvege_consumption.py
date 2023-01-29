@@ -31,10 +31,7 @@ def test_organic_matter_digestibility():
     Test the organic matter digestibility function
     """
 
-    ts_vals = {
-        "age_gv": 100.0,
-        "age_gr": 2000.0
-    }
+    ts_vals = {}
     params = {
         "max_omd_gv": 0.9,
         "min_omd_gv": 0.75,
@@ -45,10 +42,18 @@ def test_organic_matter_digestibility():
         "st_2": 2300.0
     }
 
+    ts_vals["age_gv"] = 100.0
+    ts_vals["age_gr"] = 500.0
     cm.organic_matter_digestibility(ts_vals=ts_vals, params=params)
-
     assert ts_vals["omd_gv"] == 0.87
-    assert ts_vals["omd_gr"] == 0.6706422018348623
+    assert ts_vals["omd_gr"] == 0.8426605504587156
+
+    # ensuring the calculated values don't go below the minimum values
+    ts_vals["age_gv"] = 1000.0
+    ts_vals["age_gr"] = 3000.0
+    cm.organic_matter_digestibility(ts_vals=ts_vals, params=params)
+    assert ts_vals["omd_gv"] == 0.75
+    assert ts_vals["omd_gr"] == 0.65
 
 
 def test_biomass_ingestion():
@@ -77,13 +82,12 @@ def test_biomass_ingestion():
     }
 
     # with stocking rate
-    params["sr"] = 2.5
-    params["h_grass"] = 0.05
     ts_vals["st"] = 460.5
     ts_vals["i_bm"] = 0.0
+    params["sr"] = 2.5
+    params["h_grass"] = 0.05
     cm.biomass_ingestion(ts_vals=ts_vals, params=params)
-    cm.biomass_ingestion(ts_vals=ts_vals, params=params)
-    assert ts_vals["i_bm"] == 87.5108225108225
+    assert ts_vals["i_bm"] == 43.75541125541125
 
     # without stocking rate
     ts_vals["i_bm"] = 0.0
@@ -98,8 +102,8 @@ def test_biomass_ingestion():
     assert ts_vals["i_bm"] == 0.0
 
     # before the grazing season
-    params["h_grass"] = 0.05
     ts_vals["st"] = 100.0
+    params["h_grass"] = 0.05
     cm.biomass_ingestion(ts_vals=ts_vals, params=params)
     assert ts_vals["i_bm"] == 0.0
 
@@ -130,9 +134,9 @@ def test_biomass_harvest():
     }
 
     # during the harvest season
-    params["h_grass"] = 0.05
     ts_vals["st"] = 2200.0
     ts_vals["h_bm"] = 0.0
+    params["h_grass"] = 0.05
     cm.biomass_harvest(ts_vals=ts_vals, params=params)
     assert ts_vals["h_bm"] == 393.65999999999997
 
@@ -148,7 +152,7 @@ def test_biomass_harvest():
     assert ts_vals["h_bm"] == 0.0
 
     # without residual grass height
-    params["h_grass"] = np.nan
     ts_vals["st"] = 2200.0
+    params["h_grass"] = np.nan
     cm.biomass_harvest(ts_vals=ts_vals, params=params)
     assert ts_vals["h_bm"] == 0.0

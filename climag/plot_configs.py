@@ -14,6 +14,26 @@ plot_projection = ccrs.RotatedPole(
 )
 
 
+def longitude_tick_format(x, pos):
+    """
+    Return the longitude in degrees west.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:,.0f}°W".format(x * -1)
+
+
+def latitude_tick_format(x, pos):
+    """
+    Return the latitude in degrees north.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:.0f}°N".format(x)
+
+
 # convert lat/lon to rotated pole coordinates
 def rotated_pole_point(data, lon, lat):
     """
@@ -86,26 +106,6 @@ def rotated_pole_transform(data):
         pole_longitude=pole_longitude, pole_latitude=pole_latitude
     )
     return transform
-
-
-def longitude_tick_format(x, pos):
-    """
-    Return the longitude in degrees west.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-
-    return "{:,.0f}°W".format(x * -1)
-
-
-def latitude_tick_format(x, pos):
-    """
-    Return the latitude in degrees north.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-
-    return "{:.0f}°N".format(x)
 
 
 def cordex_plot_title_main(data):
