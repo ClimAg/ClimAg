@@ -237,23 +237,25 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         "bm_gr": [],
         "bm_dv": [],
         "bm_dr": [],
-        # "age_gv": [],
-        # "age_gr": [],
-        # "age_dv": [],
-        # "age_dr": [],
         "bm": [],
         "pgro": [],
         "gro": [],
         "i_bm": [],
         "h_bm": [],
-        # "st": [],
-        # "sea": [],
-        # "f_t": [],
         "env": [],
         "rep": [],
         "lai": [],
         "aet": [],
-        "wr": []
+        "wr": [],
+        # "w": [],
+        # "age_gv": [],
+        # "age_gr": [],
+        # "age_dv": [],
+        # "age_dr": [],
+        # "st": [],
+        # "sea": [],
+        # "f_t": [],
+        # "f_w": []
     }
 
     # dictionary to store intermediate time series values
@@ -399,8 +401,14 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
         outputs_dict["h_bm"].append(ts_vals["h_bm"])
         outputs_dict["i_bm"].append(ts_vals["i_bm"])
-        outputs_dict["gro"].append(ts_vals["gro"])
         outputs_dict["bm"].append(ts_vals["bm"])
+        outputs_dict["pgro"].append(ts_vals["pgro"])
+        outputs_dict["gro"].append(ts_vals["gro"])
+        outputs_dict["lai"].append(ts_vals["lai"])
+        outputs_dict["wr"].append(ts_vals["wr"])
+        outputs_dict["aet"].append(ts_vals["aet"])
+        outputs_dict["env"].append(ts_vals["env"])
+        outputs_dict["rep"].append(ts_vals["rep"])
         # outputs_dict["st"].append(ts_vals["st"])
         # outputs_dict["age_gv"].append(ts_vals["age_gv"])
         # outputs_dict["age_gr"].append(ts_vals["age_gr"])
@@ -408,11 +416,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         # outputs_dict["age_dr"].append(ts_vals["age_dr"])
         # outputs_dict["f_t"].append(ts_vals["f_t"])
         # outputs_dict["sea"].append(ts_vals["sea"])
-        outputs_dict["lai"].append(ts_vals["lai"])
-        outputs_dict["wr"].append(ts_vals["wr"])
-        outputs_dict["aet"].append(ts_vals["aet"])
-        outputs_dict["env"].append(ts_vals["env"])
-        outputs_dict["pgro"].append(ts_vals["pgro"])
-        outputs_dict["rep"].append(ts_vals["rep"])
+        # outputs_dict["w"].append(ts_vals["w"])
+        # outputs_dict["f_w"].append(ts_vals["f_w"])
 
     return outputs_dict

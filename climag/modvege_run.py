@@ -19,23 +19,25 @@ output_vars = {
     "bm_gr": ["Green reproductive biomass", "kg DM ha⁻¹"],
     "bm_dv": ["Dead vegetative biomass", "kg DM ha⁻¹"],
     "bm_dr": ["Dead reproductive biomass", "kg DM ha⁻¹"],
-    # "age_gv": ["Green vegetative biomass age", "°C d"],
-    # "age_gr": ["Green reproductive biomass age", "°C d"],
-    # "age_dv": ["Dead vegetative biomass age", "°C d"],
-    # "age_dr": ["Dead reproductive biomass age", "°C d"],
     "bm": ["Total standing biomass", "kg DM ha⁻¹"],
     "pgro": ["Potential growth", "kg DM ha⁻¹"],
     "gro": ["Total growth", "kg DM ha⁻¹"],
     "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
     "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
-    # "st": ["Sum of temperatures", "°C d"],
-    # "sea": ["Seasonal effect", "dimensionless"],
-    # "f_t": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
     "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
     "aet": ["Actual evapotranspiration", "mm"],
-    "wr": ["Water reserves", "mm"]
+    "wr": ["Water reserves", "mm"],
+    # "w": ["Water stress", "dimensionless"],
+    # "age_gv": ["Green vegetative biomass age", "°C d"],
+    # "age_gr": ["Green reproductive biomass age", "°C d"],
+    # "age_dv": ["Dead vegetative biomass age", "°C d"],
+    # "age_dr": ["Dead reproductive biomass age", "°C d"],
+    # "st": ["Sum of temperatures", "°C d"],
+    # "sea": ["Seasonal effect", "dimensionless"],
+    # "f_t": ["Temperature function", "dimensionless"],
+    # "f_w": ["Water stress function", "dimensionless"]
 }
 
 

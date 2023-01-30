@@ -258,8 +258,7 @@ def plot_facet_map_variables(data, boundary_data):
 
     for var in [
         x for x in data.data_vars if x not in [
-            "aet", "bm_dv", "bm_dr", "bm_gv", "bm_gr",
-            "env", "lai", "rep", "wr"
+            "bm_dv", "bm_dr", "bm_gv", "bm_gr", "lai", "rep"
         ]
     ]:
         cbar_label = (
@@ -267,9 +266,9 @@ def plot_facet_map_variables(data, boundary_data):
             data[var].attrs["units"] + "]"
         )  # colorbar label
 
-        if var == "PP":
+        if var in ("PP", "wr"):
             cmap = "mako_r"
-        elif var == "PET":
+        elif var in ("PET", "aet", "env"):
             cmap = "BrBG_r"
         elif var in ("T", "RG", "PAR"):
             cmap = "Spectral_r"
