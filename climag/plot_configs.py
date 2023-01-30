@@ -256,16 +256,22 @@ def plot_facet_map_variables(data, boundary_data):
 
     plot_transform = rotated_pole_transform(data)
 
-    for v in data.data_vars:
+    for var in [
+        x for x in data.data_vars if x not in [
+            "aet", "bm_dv", "bm_dr", "bm_gv", "bm_gr",
+            "env", "lai", "rep", "wr"
+        ]
+    ]:
         cbar_label = (
-            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+            data[var].attrs["long_name"] + " [" +
+            data[var].attrs["units"] + "]"
         )  # colorbar label
 
-        if v == "PP":
+        if var == "PP":
             cmap = "mako_r"
-        elif v == "PET":
+        elif var == "PET":
             cmap = "BrBG_r"
-        elif v in ("T", "RG", "PAR"):
+        elif var in ("T", "RG", "PAR"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
@@ -283,7 +289,7 @@ def plot_facet_map_variables(data, boundary_data):
             y_ticks = []
             x_ticks = []
 
-        fig = data[v].plot(
+        fig = data[var].plot(
             x="rlon", y="rlat", col="time", col_wrap=col_wrap, cmap=cmap,
             robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label),
             levels=15, transform=plot_transform,
@@ -293,16 +299,16 @@ def plot_facet_map_variables(data, boundary_data):
         fig.set_xlabels("")
         fig.set_ylabels("")
 
-        for i, ax in enumerate(fig.axes.flat):
+        for i, axs in enumerate(fig.axes.flat):
             boundary_data.to_crs(plot_projection).boundary.plot(
-                ax=ax, color="darkslategrey", linewidth=.5
+                ax=axs, color="darkslategrey", linewidth=.5
             )
-            ax.set_title(cordex_date_format(data.isel(time=i)))
-            ax.set_xlim(-1.9, 1.6)
-            ax.set_ylim(-2.1, 2.1)
+            axs.set_title(cordex_date_format(data.isel(time=i)))
+            axs.set_xlim(-1.9, 1.6)
+            axs.set_ylim(-2.1, 2.1)
             # use gridlines to add tick labels (lon/lat)
             if i in y_ticks:
-                ax.gridlines(
+                axs.gridlines(
                     draw_labels=["y", "left"],
                     ylocs=range(-90, 90, 1),
                     color="None",
@@ -311,7 +317,7 @@ def plot_facet_map_variables(data, boundary_data):
                     y_inline=False
                 )
             if i in x_ticks:
-                ax.gridlines(
+                axs.gridlines(
                     draw_labels=["x", "bottom"],
                     xlocs=range(-180, 180, 2),
                     color="None",
@@ -335,24 +341,25 @@ def plot_map_variables(data):
 
     plot_transform = rotated_pole_transform(data)
 
-    for v in data.data_vars:
+    for var in data.data_vars:
         cbar_label = (
-            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+            data[var].attrs["long_name"] + " [" +
+            data[var].attrs["units"] + "]"
         )  # colorbar label
-        if v == "PP":
+        if var == "PP":
             cmap = "GnBu"
-        elif v == "PET":
+        elif var == "PET":
             cmap = "BrBG_r"
-        elif v in ("T", "RG", "PAR"):
+        elif var in ("T", "RG", "PAR"):
             cmap = "Spectral_r"
 
         plt.figure(figsize=(7, 7))
 
-        ax = plt.axes(projection=plot_projection)
+        axs = plt.axes(projection=plot_projection)
 
         # plot data for the variable
-        data[v].plot(
-            ax=ax,
+        data[var].plot(
+            ax=axs,
             cmap=cmap,
             x="rlon",
             y="rlat",
@@ -363,10 +370,10 @@ def plot_map_variables(data):
         )
 
         # add boundaries
-        ax.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+        axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
 
         # ax.set_title(cplt.cordex_plot_title(data_ie))  # set plot title
-        ax.set_title(None)
+        axs.set_title(None)
 
         plt.axis("equal")
         plt.tight_layout()
@@ -374,7 +381,7 @@ def plot_map_variables(data):
         plt.ylim(-2.05, 2.05)
 
         # specify gridline spacing and labels
-        ax.gridlines(
+        axs.gridlines(
             draw_labels=dict(bottom="x", left="y"),
             xlocs=range(-180, 180, 2),
             ylocs=range(-90, 90, 1),
