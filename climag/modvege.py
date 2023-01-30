@@ -87,12 +87,11 @@ short leaf lifespan, and early reproductive growth and flowering).
 - Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
-import pandas as pd
 import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
 
-def sum_of_temperature_thresholds(filename: str) -> dict[str, float]:
+def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     """
     Calculate sum of temperatures at:
         - the beginning of the reproductive period (ST₁) [°C d]
@@ -126,12 +125,13 @@ def sum_of_temperature_thresholds(filename: str) -> dict[str, float]:
     on Kavanagh, 2016) if growing season continues through December
     """
 
-    timeseries = pd.read_csv(filename, parse_dates=["time"])
+    st_thresholds = {}
+
+    # timeseries = pd.read_csv(filename, parse_dates=["time"])
 
     timeseries.sort_values(by=["time"], inplace=True)
     timeseries.set_index("time", inplace=True)
 
-    st_thresholds = {}
     # return only mean values above 4, and subtract by 4
     timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
 
@@ -192,10 +192,13 @@ def sum_of_temperature_thresholds(filename: str) -> dict[str, float]:
             )
             st_thresholds[year]["st_g2"] = st_thresholds[year]["st_2"]
 
+    timeseries.reset_index(inplace=True)
+    timeseries.drop(columns="Tg", inplace=True)
+
     return st_thresholds
 
 
-def modvege(params, tseries, st_thresholds, endday=365) -> dict[str, float]:
+def modvege(params, tseries, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
@@ -224,6 +227,8 @@ def modvege(params, tseries, st_thresholds, endday=365) -> dict[str, float]:
     """
 
     params["sr"] = cm.stocking_rate(params=params)
+
+    st_thresholds = sum_of_temperature_thresholds(timeseries=tseries)
 
     # dictionary of outputs
     outputs_dict = {

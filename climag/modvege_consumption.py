@@ -135,6 +135,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment [dimensionless]
         - omd_gr: Organic matter digestibility of the green reproductive
           compartment [dimensionless]
+        - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
@@ -254,6 +255,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
           [kg DM ha⁻¹]
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
+        - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is

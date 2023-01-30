@@ -48,19 +48,10 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
-    tseries, endday = read_timeseries(
-        filename=input_timeseries_file
-    )
-
-    st_thresholds = sum_of_temperature_thresholds(
-        filename=input_timeseries_file
-    )
+    tseries, endday = read_timeseries(filename=input_timeseries_file)
 
     # initialise the run
-    data_df = modvege(
-        params=params, tseries=tseries,
-        st_thresholds=st_thresholds, endday=endday
-    )
+    data_df = modvege(params=params, tseries=tseries, endday=endday)
 
     # convert output to dataframe
     data_df = pd.DataFrame(data_df)
@@ -109,15 +100,14 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
     # list of input variables
     input_vars = sorted(list(tseries.data_vars))
 
-    # use rsds as par for now for the HiResIreland data
-    if "par" not in tseries.data_vars:
-        tseries = tseries.rename({"rsds": "par"})
-
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
     for year in [2055]:
         tseries_y = tseries.sel(
-            time=slice(f"{year}-01-01", f"{year}-12-31")
+            time=slice(
+                f"{year}-01-01",
+                f"{year}-12-{int(tseries['time'][-1].dt.day)}"
+            )
         )
 
         # extract the end day of the year
@@ -126,7 +116,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         # assign the outputs as new variables
         for key, val in output_vars.items():
             tseries_y[key] = xr.full_like(
-                tseries_y["pr"], fill_value=np.nan
+                tseries_y["PP"], fill_value=np.nan
             )
             tseries_y[key].attrs = {
                 # "standard_name": val[0].lower().replace(
@@ -141,15 +131,15 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         data_df = {}
 
         # loop through each grid cell
-        # for rlon, rlat in [(20, 20), (21, 21)]:
-        for rlon, rlat in itertools.product(
-            range(len(tseries.coords["rlon"])),
-            range(len(tseries.coords["rlat"]))
-        ):
+        for rlon, rlat in [(20, 20), (21, 21)]:
+            # for rlon, rlat in itertools.product(
+            #     range(len(tseries.coords["rlon"])),
+            #     range(len(tseries.coords["rlat"]))
+            # ):
             tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
             # ignore null cells
-            if not tseries_l["pr"].isnull().all():
+            if not tseries_l["PP"].isnull().all():
                 data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
                     {"time": tseries_l["time"]}
                 )  # create a dataframe using the time array
