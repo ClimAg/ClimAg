@@ -579,28 +579,30 @@ def abscission(
 
     # abscission of the DV biomass
     if ts_vals["age_dv"] / params["lls"] < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_dv"] = 1.0
     elif ts_vals["age_dv"] / params["lls"] < 2.0 / 3.0:
-        f_age = 2.0
+        ts_vals["f_age_dv"] = 2.0
     else:
-        f_age = 3.0
+        ts_vals["f_age_dv"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dv"] = (
-            params["kl_dv"] * ts_vals["bm_dv"] * temperature * f_age
+            params["kl_dv"] * ts_vals["bm_dv"] *
+            temperature * ts_vals["f_age_dv"]
         )
     else:
         ts_vals["abs_dv"] = 0.0
 
     # abscission of the DR biomass
     if ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_dr"] = 1.0
     elif ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 2.0 / 3.0:
-        f_age = 2.0
+        ts_vals["f_age_dr"] = 2.0
     else:
-        f_age = 3.0
+        ts_vals["f_age_dr"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dr"] = (
-            params["kl_dr"] * ts_vals["bm_dr"] * temperature * f_age
+            params["kl_dr"] * ts_vals["bm_dr"] *
+            temperature * ts_vals["f_age_dr"]
         )
     else:
         ts_vals["abs_dr"] = 0.0
@@ -647,17 +649,20 @@ def senescence(
 
     # senescing GV biomass
     if ts_vals["age_gv"] / params["lls"] < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_gv"] = 1.0
     elif ts_vals["age_gv"] / params["lls"] < 1.0:
         # linear gradient
         gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
         intercept = 3.0 - gradient * 1.0
-        f_age = gradient * ts_vals["age_gv"] / params["lls"] + intercept
+        ts_vals["f_age_gv"] = (
+            gradient * ts_vals["age_gv"] / params["lls"] + intercept
+        )
     else:
-        f_age = 3.0
+        ts_vals["f_age_gv"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gv"] = (
-            params["k_gv"] * ts_vals["bm_gv"] * temperature * f_age
+            params["k_gv"] * ts_vals["bm_gv"] *
+            temperature * ts_vals["f_age_gv"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gv"] = (
@@ -668,20 +673,21 @@ def senescence(
 
     # senescing GR biomass
     if ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_gr"] = 1.0
     elif ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0:
         # linear gradient
         gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
         intercept = 3.0 - gradient * 1.0
-        f_age = (
+        ts_vals["f_age_gr"] = (
             gradient * ts_vals["age_gr"] /
             (params["st_2"] - params["st_1"]) + intercept
         )
     else:
-        f_age = 3.0
+        ts_vals["f_age_gr"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gr"] = (
-            params["k_gr"] * ts_vals["bm_gr"] * temperature * f_age
+            params["k_gr"] * ts_vals["bm_gr"] *
+            temperature * ts_vals["f_age_gr"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gr"] = (

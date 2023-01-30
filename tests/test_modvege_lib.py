@@ -38,10 +38,12 @@ def test_actual_evapotranspiration():
 
     ts_vals["lai"] = 0.9
     assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == 1.05
+    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) <= pet
 
     # the value cannot exceed the potential evapotranspiration
     ts_vals["lai"] = 4.3
-    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == 3.5
+    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == pet
+    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) <= pet
 
 
 def test_potential_growth():
@@ -65,6 +67,7 @@ def test_par_function():
 
     par_i = 15.0
     assert lm.par_function(par_i=par_i) == 0.5555555555555556
+    assert 0.0 < lm.par_function(par_i=par_i) < 1.0
 
     # par_i < 5.0
     par_i = 3.2
@@ -141,12 +144,14 @@ def test_temperature_function():
     assert lm.temperature_function(
         ts_vals=ts_vals, params=params
     ) == 0.5833333333333335
+    assert 0.0 < lm.temperature_function(ts_vals=ts_vals, params=params) < 1.0
 
     # t_2 < t_m10 < t_max
     ts_vals["t_m10"] = 35.5
     assert lm.temperature_function(
         ts_vals=ts_vals, params=params
     ) == 0.22499999999999987
+    assert 0.0 < lm.temperature_function(ts_vals=ts_vals, params=params) < 1.0
 
 
 def test_seasonal_effect():
@@ -183,12 +188,22 @@ def test_seasonal_effect():
     assert lm.seasonal_effect(
         ts_vals=ts_vals, params=params
     ) == 0.9500000000000001
+    assert (
+        params["min_sea"] <
+        lm.seasonal_effect(ts_vals=ts_vals, params=params) <
+        params["max_sea"]
+    )
 
     # st_1 - 100.0 < st < st_2
     ts_vals["st"] = 980.0
     assert lm.seasonal_effect(
         ts_vals=ts_vals, params=params
     ) == 0.9257142857142857
+    assert (
+        params["min_sea"] <
+        lm.seasonal_effect(ts_vals=ts_vals, params=params) <
+        params["max_sea"]
+    )
 
 
 def test_water_reserves():
@@ -208,12 +223,18 @@ def test_water_reserves():
     assert lm.water_reserves(
         ts_vals=ts_vals, params=params, precipitation=precipitation
     ) == 20.0
+    assert 0.0 <= lm.water_reserves(
+        ts_vals=ts_vals, params=params, precipitation=precipitation
+    ) <= params["whc"]
 
     # low water-holding capacity
     params["whc"] = 10.5
     assert lm.water_reserves(
         ts_vals=ts_vals, params=params, precipitation=precipitation
     ) == 10.5
+    assert 0.0 <= lm.water_reserves(
+        ts_vals=ts_vals, params=params, precipitation=precipitation
+    ) <= params["whc"]
 
     # no precipitation and high water-holding capacity
     precipitation = 0.0
@@ -221,6 +242,9 @@ def test_water_reserves():
     assert lm.water_reserves(
         ts_vals=ts_vals, params=params, precipitation=precipitation
     ) == 0.0
+    assert 0.0 <= lm.water_reserves(
+        ts_vals=ts_vals, params=params, precipitation=precipitation
+    ) <= params["whc"]
 
 
 def test_water_stress():
@@ -369,13 +393,35 @@ def test_abscission():
         "st_2": 1200.0
     }
 
-    # temperature <= 0.0
+    # f_age_dv = 1.0 and f_age_dr = 1.0
     temperature = -1.5
-    ts_vals["age_dv"] = 700.0
+    ts_vals["age_dv"] = 100.0
     ts_vals["age_dr"] = 120.0
     lm.abscission(
         ts_vals=ts_vals, params=params, temperature=temperature
     )
+    assert ts_vals["f_age_dv"] == 1.0
+    assert ts_vals["f_age_dr"] == 1.0
+
+    # f_age_dv = 2.0 and f_age_dr = 2.0
+    ts_vals["age_dv"] = 250.0
+    ts_vals["age_dr"] = 335.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_dv"] == 2.0
+    assert ts_vals["f_age_dr"] == 2.0
+
+    # f_age_dv = 3.0 and f_age_dr = 3.0
+    ts_vals["age_dv"] = 600.0
+    ts_vals["age_dr"] = 700.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_dv"] == 3.0
+    assert ts_vals["f_age_dr"] == 3.0
+
+    # temperature <= 0.0
     assert ts_vals["abs_dv"] == 0.0
     assert ts_vals["abs_dr"] == 0.0
 
@@ -385,7 +431,7 @@ def test_abscission():
         ts_vals=ts_vals, params=params, temperature=temperature
     )
     assert ts_vals["abs_dv"] == 2.76
-    assert ts_vals["abs_dr"] == 0.20792
+    assert ts_vals["abs_dr"] == 0.62376
 
 
 def test_senescence():
@@ -408,13 +454,39 @@ def test_senescence():
         "st_2": 1200.0
     }
 
-    # temperature > t_0
+    # f_age_gv = 1.0 and f_age_gr = 1.0
     temperature = 8.9
+    ts_vals["age_gv"] = 105.0
+    ts_vals["age_gr"] = 150.0
     lm.senescence(
         ts_vals=ts_vals, params=params, temperature=temperature
     )
-    assert ts_vals["sen_gv"] == 64.43778
-    assert ts_vals["sen_gr"] == 4.6589497500000006
+    assert ts_vals["f_age_gv"] == 1.0
+    assert ts_vals["f_age_gr"] == 1.0
+
+    # f_age_gv = 3.0 and f_age_gr = 3.0
+    ts_vals["age_gv"] = 590.7
+    ts_vals["age_gr"] = 785.2
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_gv"] == 3.0
+    assert ts_vals["f_age_gr"] == 3.0
+
+    # f_age_gv and f_age_gr slope
+    ts_vals["age_gv"] = 425.0
+    ts_vals["age_gr"] = 591.6
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_gv"] == 2.55
+    assert 1.0 < ts_vals["f_age_gv"] < 3.0
+    assert ts_vals["f_age_gr"] == 2.958
+    assert 1.0 < ts_vals["f_age_gr"] < 3.0
+
+    # temperature > t_0
+    assert ts_vals["sen_gv"] == 54.772113000000004
+    assert ts_vals["sen_gr"] == 6.057658620000001
 
     # temperature < 0.0
     temperature = -1.8
