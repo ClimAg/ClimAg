@@ -483,10 +483,9 @@ def reproductive_function(
     """
 
     if (
-        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
+        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"] or
+        ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0
     ):
-        val = 0.0
-    elif ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0:
         val = 0.0
     else:
         val = 0.25 + ((1.0 - 0.25) * (params["ni"] - 0.35)) / (1.0 - 0.35)

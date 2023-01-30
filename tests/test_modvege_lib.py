@@ -64,8 +64,11 @@ def test_par_function():
     """
 
     par_i = 15.0
-
     assert lm.par_function(par_i=par_i) == 0.5555555555555556
+
+    # par_i < 5.0
+    par_i = 3.2
+    assert lm.par_function(par_i=par_i) == 1.0
 
 
 def test_sum_of_temperatures():
@@ -347,3 +350,110 @@ def test_total_growth():
     }
 
     assert lm.total_growth(ts_vals=ts_vals) == 35.625
+
+
+def test_abscission():
+    """
+    Test abscission
+    """
+
+    ts_vals = {
+        "bm_dv": 200.0,
+        "bm_dr": 90.4
+    }
+    params = {
+        "lls": 500.0,
+        "kl_dv": 0.001,
+        "kl_dr": 0.0005,
+        "st_1": 600.0,
+        "st_2": 1200.0
+    }
+
+    # temperature <= 0.0
+    temperature = -1.5
+    ts_vals["age_dv"] = 700.0
+    ts_vals["age_dr"] = 120.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["abs_dv"] == 0.0
+    assert ts_vals["abs_dr"] == 0.0
+
+    # temperature > 0
+    temperature = 4.6
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["abs_dv"] == 2.76
+    assert ts_vals["abs_dr"] == 0.20792
+
+
+def test_senescence():
+    """
+    Test senescence
+    """
+
+    ts_vals = {
+        "age_gv": 890.2,
+        "bm_gv": 1206.7,
+        "age_gr": 455.0,
+        "bm_gr": 230.1
+    }
+    params = {
+        "lls": 500.0,
+        "k_gv": 0.002,
+        "k_gr": 0.001,
+        "t_0": 4.0,
+        "st_1": 600.0,
+        "st_2": 1200.0
+    }
+
+    # temperature > t_0
+    temperature = 8.9
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["sen_gv"] == 64.43778
+    assert ts_vals["sen_gr"] == 4.6589497500000006
+
+    # temperature < 0.0
+    temperature = -1.8
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["sen_gv"] == 4.34412
+    assert ts_vals["sen_gr"] == 0.41418
+
+    # 0.0 <= temperature <= t_0
+    temperature = 2.7
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["sen_gv"] == 0.0
+    assert ts_vals["sen_gr"] == 0.0
+
+
+def test_biomass_growth():
+    """
+    Test biomass_growth
+    """
+
+    ts_vals = {"gro": 139.4}
+
+    # rep > 0.0
+    ts_vals["rep"] = 0.9
+    assert lm.biomass_growth(ts_vals=ts_vals) == (
+        13.939999999999998, 125.46000000000001
+    )
+    assert ts_vals["gro"] == sum(lm.biomass_growth(ts_vals=ts_vals))
+
+    # rep = 0.0
+    ts_vals["rep"] = 0.0
+    assert lm.biomass_growth(ts_vals=ts_vals) == (139.4, 0.0)
+    assert ts_vals["gro"] == sum(lm.biomass_growth(ts_vals=ts_vals))
+
+
+def test_standing_biomass():
+    """
+    Test standing_biomass
+    """

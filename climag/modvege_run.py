@@ -97,9 +97,6 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
     # get the CRS
     data_crs = tseries.rio.crs
 
-    # list of input variables
-    # input_vars = sorted(list(tseries.data_vars))
-
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
     for year in [2055, 2056]:
@@ -170,9 +167,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
             "creation_date": str(datetime.now(tz=timezone.utc)),
             "contact": "nstreethran@ucc.ie",
             "frequency": "day",
-            "references": "https://github.com/ClimAg",
-            # "input_data": str(tseries.attrs),
-            # "input_variables": input_vars
+            "references": "https://github.com/ClimAg"
         }
 
         # reassign CRS
