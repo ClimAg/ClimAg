@@ -212,7 +212,7 @@ def cordex_ncfile_name(data):
     return filename
 
 
-def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
+def cordex_modvege_ncfile_name(cordex_data, output_data):
     """
     Define the NetCDF file name for the ModVege grass growth model outputs.
 
@@ -226,7 +226,7 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
     """
 
     filename = (
-        "modvege_" +
+        "modvege_IE_" +
         cordex_data.attrs["CORDEX_domain"] + "_" +
         cordex_data.attrs["driving_model_id"] + "_" +
         cordex_data.attrs["driving_experiment_name"] + "_" +
@@ -237,7 +237,7 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
         datetime.strftime(parse(str(output_data["time"][0].values)), "%Y%m%d")
         + "-" +
         datetime.strftime(parse(str(output_data["time"][-1].values)), "%Y%m%d")
-        + "_IE.nc"
+        + ".nc"
     )
     return filename
 

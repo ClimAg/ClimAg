@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from climag.modvege import modvege, sum_of_temperature_thresholds
+from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
-from climag.plot_configs import ie_cordex_modvege_ncfile_name
+from climag.plot_configs import cordex_modvege_ncfile_name
 
 output_vars = {
     "bm_gv": ["Green vegetative biomass", "kg DM ha⁻¹"],
@@ -30,7 +30,7 @@ output_vars = {
     "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
     # "st": ["Sum of temperatures", "°C d"],
     # "sea": ["Seasonal effect", "dimensionless"],
-    "f_t": ["Temperature function", "dimensionless"],
+    # "f_t": ["Temperature function", "dimensionless"],
     "env": ["Environmental limitation of growth", "dimensionless"],
     "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
@@ -98,11 +98,11 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
     data_crs = tseries.rio.crs
 
     # list of input variables
-    input_vars = sorted(list(tseries.data_vars))
+    # input_vars = sorted(list(tseries.data_vars))
 
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
-    for year in [2055]:
+    for year in [2055, 2056]:
         tseries_y = tseries.sel(
             time=slice(
                 f"{year}-01-01",
@@ -110,18 +110,12 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
             )
         )
 
-        # extract the end day of the year
-        # endday = tseries_y["time"].dt.dayofyear.values.max()
-
         # assign the outputs as new variables
         for key, val in output_vars.items():
             tseries_y[key] = xr.full_like(
                 tseries_y["PP"], fill_value=np.nan
             )
             tseries_y[key].attrs = {
-                # "standard_name": val[0].lower().replace(
-                #     " ", "_"
-                # ),
                 "long_name": val[0],
                 "units": val[1]
             }
@@ -148,11 +142,6 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                 for var in tseries_l.data_vars:
                     data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_l[var]
 
-                # assign other variables
-                data_df[f"{rlon}_{rlat}_{year}"]["eta"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"]["lai"] = 0.0
-                data_df[f"{rlon}_{rlat}_{year}"]["gcut_height"] = 0.0
-
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(
                     params=params,
@@ -161,13 +150,8 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                 )
 
                 # convert output to dataframe
-                data_df[f"{rlon}_{rlat}_{year}"] = tuple([list(
-                    range(1, len(data_df[f"{rlon}_{rlat}_{year}"][0]) + 1)
-                )]) + data_df[f"{rlon}_{rlat}_{year}"]
-
                 data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
-                    zip(*data_df[f"{rlon}_{rlat}_{year}"]),
-                    columns=(["day"] + list(output_vars.keys()))
+                    data_df[f"{rlon}_{rlat}_{year}"]
                 )
 
                 # assign the output variables to the main xarray dataset
@@ -187,20 +171,24 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
             "contact": "nstreethran@ucc.ie",
             "frequency": "day",
             "references": "https://github.com/ClimAg",
-            "input_data": str(tseries.attrs),
-            "input_variables": input_vars
+            # "input_data": str(tseries.attrs),
+            # "input_variables": input_vars
         }
-
-        # save as a NetCDF file
-        os.makedirs(out_dir, exist_ok=True)
 
         # reassign CRS
         tseries_y.rio.write_crs(data_crs, inplace=True)
 
+        # save as a NetCDF file
         if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
+            out_dir_ = os.path.join(
+                out_dir, "EURO-CORDEX",
+                tseries.attrs["experiment_id"],
+                tseries.attrs["driving_model_id"]
+            )
+            os.makedirs(out_dir_, exist_ok=True)
             file_name = os.path.join(
-                out_dir,
-                ie_cordex_modvege_ncfile_name(
+                out_dir_,
+                cordex_modvege_ncfile_name(
                     cordex_data=tseries, output_data=tseries_y
                 )
             )
