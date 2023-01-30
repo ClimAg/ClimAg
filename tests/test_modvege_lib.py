@@ -14,13 +14,18 @@ def test_leaf_area_index():
     Test leaf_area_index
     """
 
-    ts_vals = {"bm_gv": 1200.0}
+    ts_vals = {
+        "bm_gv": 1200.0,
+        "bm_gr": 500.0
+    }
     params = {
         "sla": 0.033,
         "pct_lam": 0.68
     }
 
-    assert lm.leaf_area_index(ts_vals=ts_vals, params=params) == 2.6928
+    assert lm.leaf_area_index(
+        ts_vals=ts_vals, params=params
+    ) == 3.8148000000000004
 
 
 def test_actual_evapotranspiration():
@@ -281,38 +286,36 @@ def test_reproductive_function():
     params = {
         "st_1": 85.0,
         "st_2": 2250.0,
-        "st_g1": 110.0,
-        "st_h1": 2175.0,
         "ni": 0.75
     }
 
+    # before reproductive period
     ts_vals["st"] = 34.7
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
+    # after reproductive period
     ts_vals["st"] = 2500.5
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
-    # stocking rate > 0.0
+    # with grazing and harvesting
     ts_vals["st"] = 400.0
-    params["sr"] = 2.5
-    params["h_grass"] = 0.05
+    ts_vals["i_bm"] = 13.2
+    ts_vals["h_bm"] = 10.2
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
-    # stocking rate = 0.0
-    params["sr"] = 0.0
+    # with grazing and without harvesting
+    ts_vals["h_bm"] = 0.0
+    assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
+
+    # without grazing and harvesting
+    ts_vals["i_bm"] = 0.0
     assert lm.reproductive_function(
         params=params, ts_vals=ts_vals
     ) == 0.7115384615384616
 
-    # harvest only
-    ts_vals["st"] = 2200.0
+    # with harvesting and without grazing
+    ts_vals["h_bm"] = 10.2
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
-
-    # without harvest
-    params["h_grass"] = np.nan
-    assert lm.reproductive_function(
-        params=params, ts_vals=ts_vals
-    ) == 0.7115384615384616
 
 
 def test_environmental_limitation():

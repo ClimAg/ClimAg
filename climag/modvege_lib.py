@@ -25,13 +25,21 @@ def leaf_area_index(
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: Standing biomass of the green vegetative (GV) compartment
           (BM_GV) [kg DM ha⁻¹]
+        - bm_gr: Standing biomass of the green reproductive (GR) compartment
+          (BM_GR) [kg DM ha⁻¹]
 
     Returns
     -------
     - Leaf area index (LAI) [dimensionless]
     """
 
-    return params["sla"] * ts_vals["bm_gv"] / 10.0 * params["pct_lam"]
+    # return params["sla"] * ts_vals["bm_gv"] / 10.0 * params["pct_lam"]
+    # use the sum of both green compartments
+    return (
+        params["sla"] *
+        (ts_vals["bm_gv"] + ts_vals["bm_gr"]) / 10.0 *
+        params["pct_lam"]
+    )
 
 
 def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
@@ -460,14 +468,14 @@ def reproductive_function(
     ----------
     ts_vals : A dictionary with intermediate time series values for:
         - st: Sum of temperatures [°C d]
+        - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
+        - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing model parameters:
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
           period [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
           [°C d]
-        - sr: Stocking rate [LU ha⁻¹]
-        - h_grass: Minimum residual grass height; default is 0.05 [m]
 
     Returns
     -------
@@ -478,16 +486,7 @@ def reproductive_function(
         ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
     ):
         val = 0.0
-    elif (
-        params["sr"] > 0.0 and
-        params["h_grass"] >= 0.0 and
-        params["st_g1"] <= ts_vals["st"] <= params["st_2"]
-    ):
-        val = 0.0
-    elif (
-        params["h_grass"] >= 0.0 and
-        params["st_h1"] <= ts_vals["st"] <= params["st_2"]
-    ):
+    elif ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0:
         val = 0.0
     else:
         val = 0.25 + ((1.0 - 0.25) * (params["ni"] - 0.35)) / (1.0 - 0.35)
