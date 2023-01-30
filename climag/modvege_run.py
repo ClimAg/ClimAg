@@ -3,7 +3,7 @@
 https://github.com/YannChemin/modvege
 """
 
-import itertools
+# import itertools
 import os
 from datetime import datetime, timezone
 import matplotlib.pyplot as plt

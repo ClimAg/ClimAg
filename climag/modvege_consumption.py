@@ -194,7 +194,6 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         # ingested compartmental biomass
         weights = {}
         ingested = {}
-        available = {}
 
         weights_total = (
             ts_vals["omd_gv"] + ts_vals["omd_gr"] +
@@ -213,11 +212,12 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
         for key in weights:
             ingested[key] = max_ingested_biomass * weights[key]
-            available[key] = available_biomass[key]
             ingested[key] += needed
-            if available[key] < ingested[key]:
-                needed = ingested[key] - available[key]
-                ingested[key] = available[key]
+            if available_biomass[key] < ingested[key]:
+                needed = ingested[key] - available_biomass[key]
+                ingested[key] = available_biomass[key]
+            else:
+                needed = 0.0
             # update biomass compartments
             # 10% of biomass is lost during ingestion
             ts_vals[key] -= ingested[key] / 0.9

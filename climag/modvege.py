@@ -248,7 +248,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         "h_bm": [],
         # "st": [],
         # "sea": [],
-        "f_t": [],
+        # "f_t": [],
         "env": [],
         "rep": [],
         "lai": [],
@@ -406,7 +406,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         # outputs_dict["age_gr"].append(ts_vals["age_gr"])
         # outputs_dict["age_dv"].append(ts_vals["age_dv"])
         # outputs_dict["age_dr"].append(ts_vals["age_dr"])
-        outputs_dict["f_t"].append(ts_vals["f_t"])
+        # outputs_dict["f_t"].append(ts_vals["f_t"])
         # outputs_dict["sea"].append(ts_vals["sea"])
         outputs_dict["lai"].append(ts_vals["lai"])
         outputs_dict["wr"].append(ts_vals["wr"])
