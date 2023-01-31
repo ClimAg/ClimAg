@@ -7,11 +7,17 @@ from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from dateutil.parser import parse
+import seaborn as sns
 
 # set plot projection to the projection of the HiResIreland dataset
 plot_projection = ccrs.RotatedPole(
         pole_longitude=172.100006103516, pole_latitude=36.5999984741211
 )
+
+# seaborn colourmaps
+cmap_mako_r = sns.color_palette("mako_r", as_cmap=True)
+# cmap_crest = sns.color_palette("crest", as_cmap=True)
+# cmap_flare = sns.color_palette("flare", as_cmap=True)
 
 
 def longitude_tick_format(x, pos):
@@ -266,11 +272,11 @@ def plot_facet_map_variables(data, boundary_data):
             data[var].attrs["units"] + "]"
         )  # colorbar label
 
-        if var in ("PP", "wr"):
-            cmap = "mako_r"
-        elif var in ("PET", "aet", "env"):
-            cmap = "BrBG_r"
-        elif var in ("T", "RG", "PAR"):
+        if var == "PP":
+            cmap = cmap_mako_r
+        elif var in ("wr", "env"):
+            cmap = "GnBu"
+        elif var in ("T", "RG", "PAR", "PET", "aet"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
@@ -289,9 +295,12 @@ def plot_facet_map_variables(data, boundary_data):
             x_ticks = []
 
         fig = data[var].plot(
-            x="rlon", y="rlat", col="time", col_wrap=col_wrap, cmap=cmap,
-            robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label),
-            levels=15, transform=plot_transform,
+            x="rlon", y="rlat", col="time",
+            col_wrap=col_wrap,
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs=dict(aspect=40, label=cbar_label),
+            transform=plot_transform,
             subplot_kws=dict(projection=plot_projection)
         )
 
@@ -340,17 +349,24 @@ def plot_map_variables(data):
 
     plot_transform = rotated_pole_transform(data)
 
-    for var in data.data_vars:
+    for var in [
+        x for x in data.data_vars if x not in [
+            "bm_dv", "bm_dr", "bm_gv", "bm_gr", "lai", "rep"
+        ]
+    ]:
         cbar_label = (
             data[var].attrs["long_name"] + " [" +
             data[var].attrs["units"] + "]"
         )  # colorbar label
+
         if var == "PP":
+            cmap = cmap_mako_r
+        elif var in ("wr", "env"):
             cmap = "GnBu"
-        elif var == "PET":
-            cmap = "BrBG_r"
-        elif var in ("T", "RG", "PAR"):
+        elif var in ("T", "RG", "PAR", "PET", "aet"):
             cmap = "Spectral_r"
+        else:
+            cmap = "YlGn"
 
         plt.figure(figsize=(7, 7))
 
@@ -362,9 +378,8 @@ def plot_map_variables(data):
             cmap=cmap,
             x="rlon",
             y="rlat",
-            levels=15,
-            cbar_kwargs=dict(label=cbar_label),
             robust=True,
+            cbar_kwargs=dict(label=cbar_label),
             transform=plot_transform
         )
 

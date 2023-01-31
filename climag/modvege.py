@@ -246,16 +246,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         "rep": [],
         "lai": [],
         "aet": [],
-        "wr": [],
-        # "w": [],
-        # "age_gv": [],
-        # "age_gr": [],
-        # "age_dv": [],
-        # "age_dr": [],
-        # "st": [],
-        # "sea": [],
-        # "f_t": [],
-        # "f_w": []
+        "wr": []
     }
 
     # dictionary to store intermediate time series values
@@ -409,14 +400,5 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         outputs_dict["aet"].append(ts_vals["aet"])
         outputs_dict["env"].append(ts_vals["env"])
         outputs_dict["rep"].append(ts_vals["rep"])
-        # outputs_dict["st"].append(ts_vals["st"])
-        # outputs_dict["age_gv"].append(ts_vals["age_gv"])
-        # outputs_dict["age_gr"].append(ts_vals["age_gr"])
-        # outputs_dict["age_dv"].append(ts_vals["age_dv"])
-        # outputs_dict["age_dr"].append(ts_vals["age_dr"])
-        # outputs_dict["f_t"].append(ts_vals["f_t"])
-        # outputs_dict["sea"].append(ts_vals["sea"])
-        # outputs_dict["w"].append(ts_vals["w"])
-        # outputs_dict["f_w"].append(ts_vals["f_w"])
 
     return outputs_dict

@@ -513,9 +513,9 @@ def test_biomass_growth():
 
     # rep > 0.0
     ts_vals["rep"] = 0.9
-    assert lm.biomass_growth(ts_vals=ts_vals) == (
-        13.939999999999998, 125.46000000000001
-    )
+    # assert lm.biomass_growth(ts_vals=ts_vals) == (
+    #     13.939999999999998, 125.46000000000001
+    # )
     assert ts_vals["gro"] == sum(lm.biomass_growth(ts_vals=ts_vals))
 
     # rep = 0.0

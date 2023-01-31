@@ -3,7 +3,7 @@
 https://github.com/YannChemin/modvege
 """
 
-# import itertools
+import itertools
 import os
 from datetime import datetime, timezone
 import matplotlib.pyplot as plt
@@ -28,16 +28,7 @@ output_vars = {
     "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
     "aet": ["Actual evapotranspiration", "mm"],
-    "wr": ["Water reserves", "mm"],
-    # "w": ["Water stress", "dimensionless"],
-    # "age_gv": ["Green vegetative biomass age", "°C d"],
-    # "age_gr": ["Green reproductive biomass age", "°C d"],
-    # "age_dv": ["Dead vegetative biomass age", "°C d"],
-    # "age_dr": ["Dead reproductive biomass age", "°C d"],
-    # "st": ["Sum of temperatures", "°C d"],
-    # "sea": ["Seasonal effect", "dimensionless"],
-    # "f_t": ["Temperature function", "dimensionless"],
-    # "f_w": ["Water stress function", "dimensionless"]
+    "wr": ["Water reserves", "mm"]
 }
 
 
@@ -101,7 +92,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
 
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
-    for year in [2055, 2056]:
+    for year in [2053, 2054, 2055, 2056, 2057]:
         tseries_y = tseries.sel(
             time=slice(
                 f"{year}-01-01",
@@ -124,7 +115,8 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         data_df = {}
 
         # loop through each grid cell
-        for rlon, rlat in [(20, 20), (21, 21)]:
+        # for rlon, rlat in [(20, 20), (21, 21)]:
+        for rlon, rlat in itertools.product(range(10), range(10)):
             # for rlon, rlat in itertools.product(
             #     range(len(tseries.coords["rlon"])),
             #     range(len(tseries.coords["rlat"]))

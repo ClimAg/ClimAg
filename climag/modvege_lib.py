@@ -33,7 +33,6 @@ def leaf_area_index(
     - Leaf area index (LAI) [dimensionless]
     """
 
-    # return params["sla"] * ts_vals["bm_gv"] / 10.0 * params["pct_lam"]
     # use the sum of both green compartments
     return (
         params["sla"] *
@@ -185,6 +184,8 @@ def sum_of_temperatures(
     for i in range(day):
         if t_ts[i] > params["t_0"]:
             val = ts_vals["st"] + t_ts[i] - params["t_0"]
+        else:
+            val = ts_vals["st"]
     return val
 
 
@@ -316,29 +317,30 @@ def seasonal_effect(
     if params["st_1"] <= 200.0:
         # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
-    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
-        val = params["min_sea"]
-    elif (
-        params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
-    ):
-        val = params["max_sea"]
-    elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
-        # assume SEA increases linearly from minSEA at the onset of
-        # growth to maxSEA
-        gradient = (
-            (params["max_sea"] - params["min_sea"]) /
-            ((params["st_1"] - 200.0) - 200.0)
-        )
-        intercept = params["min_sea"] - gradient * 200.0
-        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-    elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
-        # SEA decreases linearly from maxSEA to minSEA at ST_2
-        gradient = (
-            (params["max_sea"] - params["min_sea"]) /
-            ((params["st_1"] - 100.0) - params["st_2"])
-        )
-        intercept = params["min_sea"] - gradient * params["st_2"]
-        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
+    else:
+        if ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
+            val = params["min_sea"]
+        elif (
+            params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
+        ):
+            val = params["max_sea"]
+        elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
+            # assume SEA increases linearly from minSEA at the onset of
+            # growth to maxSEA
+            gradient = (
+                (params["max_sea"] - params["min_sea"]) /
+                ((params["st_1"] - 200.0) - 200.0)
+            )
+            intercept = params["min_sea"] - gradient * 200.0
+            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
+        elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
+            # SEA decreases linearly from maxSEA to minSEA at ST_2
+            gradient = (
+                (params["max_sea"] - params["min_sea"]) /
+                ((params["st_1"] - 100.0) - params["st_2"])
+            )
+            intercept = params["min_sea"] - gradient * params["st_2"]
+            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
     return val
 
 
