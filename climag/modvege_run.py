@@ -66,9 +66,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
         subplots=True, layout=(7, 3), figsize=(15, 14),
         xlabel="", title=plot_title, legend=False
     )
-
     plt.tight_layout()
-
     plt.show()
 
 
@@ -92,7 +90,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
 
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
-    for year in [2053, 2054, 2055, 2056, 2057]:
+    for year in [2054, 2055, 2056]:
         tseries_y = tseries.sel(
             time=slice(
                 f"{year}-01-01",
@@ -116,11 +114,11 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
 
         # loop through each grid cell
         # for rlon, rlat in [(20, 20), (21, 21)]:
-        for rlon, rlat in itertools.product(range(10), range(10)):
-            # for rlon, rlat in itertools.product(
-            #     range(len(tseries.coords["rlon"])),
-            #     range(len(tseries.coords["rlat"]))
-            # ):
+        # for rlon, rlat in itertools.product(range(10), range(10)):
+        for rlon, rlat in itertools.product(
+            range(len(tseries.coords["rlon"])),
+            range(len(tseries.coords["rlat"]))
+        ):
             tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
             # ignore null cells
