@@ -87,6 +87,7 @@ short leaf lifespan, and early reproductive growth and flowering).
 - Maximum radiation use efficiency (RUE_max) [3 g DM MJ⁻¹]
 """
 
+import numpy as np
 import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
@@ -105,6 +106,13 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     days with a daily mean temperature of > 5°C and the first occurrence of at
     least six consecutive days with a daily mean temperature of < 5°C.
 
+    If the temperatures are too low (i.e. no six consecutive days > 5°C) to
+    calculate the start date of the growing season, assume it is the 15th
+    March, which is the median date for the midlands and part of northern
+    Ireland (Collins and Cummins, 1996; based on Smith, 1976), and the date
+    when cows are out full time according to Teagasc recommendations
+    (Kavanagh, 2016).
+
     Grazing season calculations based solely on temperature do not consider
     the delay before sufficient plant cover is available to support grazing
     animals or the ability of animals and machinery to pass over land (Nolan
@@ -121,22 +129,32 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
 
     The end of harvest is the same as the end of the grazing season.
 
-    Assume animals are fully housed starting 1st December (late November based
+    Assume animals are fully housed by 1st December (late November based
     on Kavanagh, 2016) if growing season continues through December
     """
 
     st_thresholds = {}
-
-    # timeseries = pd.read_csv(filename, parse_dates=["time"])
 
     timeseries.sort_values(by=["time"], inplace=True)
     timeseries.set_index("time", inplace=True)
 
     # return only mean values above 4, and subtract by 4
     timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
+    # fill NaN values
+    timeseries[["Tg"]] = timeseries[["Tg"]].fillna(value=0)
 
     for year in timeseries.index.year.unique():
         st_thresholds[year] = {}
+
+        # grazing season length using the Smith formula
+        grazing_season = round(
+            29.3 * np.mean(timeseries.loc[str(year)]["T"]) -
+            0.1 * np.mean(timeseries.loc[str(year)]["PP"]) +
+            19.5
+        )
+        # adjust the length if the dataset has 360 days/year
+        if timeseries.loc[str(year)].index[-1].dayofyear < 365:
+            grazing_season -= 5
 
         # sum of temperatures at the start
         try:
@@ -145,10 +163,15 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
                     lambda x: all(x > 5.0)
                 )
             ).index(1.0)
-            if start < 6:
+            # the lowest possible start index would be 5
+            # so force the lowest value to zero
+            if start == 5:
                 start = 0
         except ValueError:
-            start = 0
+            # if the temperatures are too low for the start of the growing
+            # season to be calculated, assume it is on 15th March
+            start = timeseries.loc[f"{year}-03"].index[14].dayofyear - 1
+
         # beginning of the reproductive period
         st_thresholds[year]["st_1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[start]
@@ -157,40 +180,26 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         st_thresholds[year]["st_g1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[start + 15]
         )
-
-        # sum of temperature thresholds at the end
-        try:
-            end = list(
-                timeseries.loc[str(year)]["T"].rolling(6).apply(
-                    lambda x: all(x < 5.0)
-                )
-            ).index(1.0)
-            if start != 0 and end <= start:
-                end = -1
-        except ValueError:
-            end = -1
         # end of the reproductive period
         st_thresholds[year]["st_2"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[end]
+            timeseries.loc[str(year)]["Tg"].cumsum()[
+                timeseries.loc[str(year)].index[-1].dayofyear - 1
+            ]
         )
+        # end of the grazing and harvesting season
+        # use the calculated grazing season length
         # if growing season continues in December, end grazing on 1st December
-        if (
-            end == -1 or
-            end >= timeseries.loc[str(year)].index[-1].dayofyear - 31
-        ):
-            # beginning of the harvest
-            st_thresholds[year]["st_h1"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[-32]
-            )
-            # end of the grazing and harvesting seasons
-            st_thresholds[year]["st_g2"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[-31]
-            )
-        else:
-            st_thresholds[year]["st_h1"] = (
-                timeseries.loc[str(year)]["Tg"].cumsum()[end - 1]
-            )
-            st_thresholds[year]["st_g2"] = st_thresholds[year]["st_2"]
+        grazing_end = min(
+            timeseries.loc[f"{year}-12"].index[0].dayofyear - 1,
+            start + 15 + grazing_season
+        )
+        st_thresholds[year]["st_g2"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end]
+        )
+        # beginning of harvest
+        st_thresholds[year]["st_h1"] = (
+            timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end - 1]
+        )
 
     timeseries.reset_index(inplace=True)
     timeseries.drop(columns="Tg", inplace=True)

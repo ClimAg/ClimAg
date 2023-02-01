@@ -476,8 +476,6 @@ def reproductive_function(
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
           period [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period
-          [°C d]
 
     Returns
     -------
@@ -485,7 +483,7 @@ def reproductive_function(
     """
 
     if (
-        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"] or
+        ts_vals["st"] < params["st_1"] or
         ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0
     ):
         val = 0.0

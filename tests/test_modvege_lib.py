@@ -78,21 +78,27 @@ def test_sum_of_temperatures():
     Test sum_of_temperatures
     """
 
-    day = 5
     t_ts = [2.1, 7.0, 4.1, 5.0, 8.6, 3.2, 6.0, 9.5, 1.0, 3.3, 5.5, 7.2]
     ts_vals = {}
     params = {"t_0": 4.0}
 
-    ts_vals["st"] = 4.0
+    day = 5
+    ts_vals["st"] = 4.1
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 8.6
+    ) == 8.7
 
     # resetting the sum to zero
     ts_vals["st"] = 0.0
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
     ) == 4.6
+
+    # using a day when the sum is less than t_0
+    day = 9
+    assert lm.sum_of_temperatures(
+        params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
+    ) == ts_vals["st"]
 
 
 def test_ten_day_moving_avg_temperature():
@@ -111,9 +117,6 @@ def test_ten_day_moving_avg_temperature():
 
     # when day >= 10
     day = 11
-    # assert lm.ten_day_moving_avg_temperature(
-    #     day=day, t_ts=t_ts
-    # ) == 5.319999999999999
     assert lm.ten_day_moving_avg_temperature(
         day=day, t_ts=t_ts
     ) == np.mean(t_ts[(day - 10):day])
@@ -511,17 +514,24 @@ def test_biomass_growth():
 
     ts_vals = {"gro": 139.4}
 
-    # rep > 0.0
+    # 0.0 < rep < 0.5
+    ts_vals["rep"] = 0.4
+    assert (
+        lm.biomass_growth(ts_vals=ts_vals)[0] >
+        lm.biomass_growth(ts_vals=ts_vals)[1]
+    )
+    assert sum(lm.biomass_growth(ts_vals=ts_vals)) == ts_vals["gro"]
+
+    # rep > 0.5
     ts_vals["rep"] = 0.9
-    # assert lm.biomass_growth(ts_vals=ts_vals) == (
-    #     13.939999999999998, 125.46000000000001
-    # )
-    assert ts_vals["gro"] == sum(lm.biomass_growth(ts_vals=ts_vals))
+    assert (
+        lm.biomass_growth(ts_vals=ts_vals)[0] <
+        lm.biomass_growth(ts_vals=ts_vals)[1]
+    )
+    assert sum(lm.biomass_growth(ts_vals=ts_vals)) == ts_vals["gro"]
 
     # rep = 0.0
     ts_vals["rep"] = 0.0
-    # assert lm.biomass_growth(ts_vals=ts_vals) == (139.4, 0.0)
-    # assert ts_vals["gro"] == sum(lm.biomass_growth(ts_vals=ts_vals))
     assert lm.biomass_growth(ts_vals=ts_vals) == (ts_vals["gro"], 0.0)
 
 
