@@ -25,13 +25,20 @@ def leaf_area_index(
     ts_vals : A dictionary with intermediate time series values for:
         - bm_gv: Standing biomass of the green vegetative (GV) compartment
           (BM_GV) [kg DM ha⁻¹]
+        - bm_gr: Standing biomass of the green reproductive (GR) compartment
+          (BM_GR) [kg DM ha⁻¹]
 
     Returns
     -------
     - Leaf area index (LAI) [dimensionless]
     """
 
-    return params["sla"] * ts_vals["bm_gv"] / 10.0 * params["pct_lam"]
+    # use the sum of both green compartments
+    return (
+        params["sla"] *
+        (ts_vals["bm_gv"] + ts_vals["bm_gr"]) / 10.0 *
+        params["pct_lam"]
+    )
 
 
 def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
@@ -177,6 +184,8 @@ def sum_of_temperatures(
     for i in range(day):
         if t_ts[i] > params["t_0"]:
             val = ts_vals["st"] + t_ts[i] - params["t_0"]
+        else:
+            val = ts_vals["st"]
     return val
 
 
@@ -308,29 +317,30 @@ def seasonal_effect(
     if params["st_1"] <= 200.0:
         # use a constant value
         val = np.mean([params["max_sea"], params["min_sea"]])
-    elif ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
-        val = params["min_sea"]
-    elif (
-        params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
-    ):
-        val = params["max_sea"]
-    elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
-        # assume SEA increases linearly from minSEA at the onset of
-        # growth to maxSEA
-        gradient = (
-            (params["max_sea"] - params["min_sea"]) /
-            ((params["st_1"] - 200.0) - 200.0)
-        )
-        intercept = params["min_sea"] - gradient * 200.0
-        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-    elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
-        # SEA decreases linearly from maxSEA to minSEA at ST_2
-        gradient = (
-            (params["max_sea"] - params["min_sea"]) /
-            ((params["st_1"] - 100.0) - params["st_2"])
-        )
-        intercept = params["min_sea"] - gradient * params["st_2"]
-        val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
+    else:
+        if ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
+            val = params["min_sea"]
+        elif (
+            params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
+        ):
+            val = params["max_sea"]
+        elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
+            # assume SEA increases linearly from minSEA at the onset of
+            # growth to maxSEA
+            gradient = (
+                (params["max_sea"] - params["min_sea"]) /
+                ((params["st_1"] - 200.0) - 200.0)
+            )
+            intercept = params["min_sea"] - gradient * 200.0
+            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
+        elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
+            # SEA decreases linearly from maxSEA to minSEA at ST_2
+            gradient = (
+                (params["max_sea"] - params["min_sea"]) /
+                ((params["st_1"] - 100.0) - params["st_2"])
+            )
+            intercept = params["min_sea"] - gradient * params["st_2"]
+            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
     return val
 
 
@@ -460,14 +470,12 @@ def reproductive_function(
     ----------
     ts_vals : A dictionary with intermediate time series values for:
         - st: Sum of temperatures [°C d]
+        - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
+        - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing model parameters:
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
           period [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period
-          [°C d]
-        - sr: Stocking rate [LU ha⁻¹]
-        - h_grass: Minimum residual grass height; default is 0.05 [m]
 
     Returns
     -------
@@ -475,18 +483,8 @@ def reproductive_function(
     """
 
     if (
-        ts_vals["st"] < params["st_1"] or ts_vals["st"] > params["st_2"]
-    ):
-        val = 0.0
-    elif (
-        params["sr"] > 0.0 and
-        params["h_grass"] >= 0.0 and
-        params["st_g1"] <= ts_vals["st"] <= params["st_2"]
-    ):
-        val = 0.0
-    elif (
-        params["h_grass"] >= 0.0 and
-        params["st_h1"] <= ts_vals["st"] <= params["st_2"]
+        ts_vals["st"] < params["st_1"] or
+        ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0
     ):
         val = 0.0
     else:
@@ -581,28 +579,30 @@ def abscission(
 
     # abscission of the DV biomass
     if ts_vals["age_dv"] / params["lls"] < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_dv"] = 1.0
     elif ts_vals["age_dv"] / params["lls"] < 2.0 / 3.0:
-        f_age = 2.0
+        ts_vals["f_age_dv"] = 2.0
     else:
-        f_age = 3.0
+        ts_vals["f_age_dv"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dv"] = (
-            params["kl_dv"] * ts_vals["bm_dv"] * temperature * f_age
+            params["kl_dv"] * ts_vals["bm_dv"] *
+            temperature * ts_vals["f_age_dv"]
         )
     else:
         ts_vals["abs_dv"] = 0.0
 
     # abscission of the DR biomass
     if ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_dr"] = 1.0
     elif ts_vals["age_dr"] / (params["st_2"] - params["st_1"]) < 2.0 / 3.0:
-        f_age = 2.0
+        ts_vals["f_age_dr"] = 2.0
     else:
-        f_age = 3.0
+        ts_vals["f_age_dr"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dr"] = (
-            params["kl_dr"] * ts_vals["bm_dr"] * temperature * f_age
+            params["kl_dr"] * ts_vals["bm_dr"] *
+            temperature * ts_vals["f_age_dr"]
         )
     else:
         ts_vals["abs_dr"] = 0.0
@@ -649,17 +649,20 @@ def senescence(
 
     # senescing GV biomass
     if ts_vals["age_gv"] / params["lls"] < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_gv"] = 1.0
     elif ts_vals["age_gv"] / params["lls"] < 1.0:
         # linear gradient
         gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
         intercept = 3.0 - gradient * 1.0
-        f_age = gradient * ts_vals["age_gv"] / params["lls"] + intercept
+        ts_vals["f_age_gv"] = (
+            gradient * ts_vals["age_gv"] / params["lls"] + intercept
+        )
     else:
-        f_age = 3.0
+        ts_vals["f_age_gv"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gv"] = (
-            params["k_gv"] * ts_vals["bm_gv"] * temperature * f_age
+            params["k_gv"] * ts_vals["bm_gv"] *
+            temperature * ts_vals["f_age_gv"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gv"] = (
@@ -670,20 +673,21 @@ def senescence(
 
     # senescing GR biomass
     if ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0 / 3.0:
-        f_age = 1.0
+        ts_vals["f_age_gr"] = 1.0
     elif ts_vals["age_gr"] / (params["st_2"] - params["st_1"]) < 1.0:
         # linear gradient
         gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
         intercept = 3.0 - gradient * 1.0
-        f_age = (
+        ts_vals["f_age_gr"] = (
             gradient * ts_vals["age_gr"] /
             (params["st_2"] - params["st_1"]) + intercept
         )
     else:
-        f_age = 3.0
+        ts_vals["f_age_gr"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gr"] = (
-            params["k_gr"] * ts_vals["bm_gr"] * temperature * f_age
+            params["k_gr"] * ts_vals["bm_gr"] *
+            temperature * ts_vals["f_age_gr"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gr"] = (

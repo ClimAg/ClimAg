@@ -7,11 +7,17 @@ from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from dateutil.parser import parse
+import seaborn as sns
 
 # set plot projection to the projection of the HiResIreland dataset
 plot_projection = ccrs.RotatedPole(
         pole_longitude=172.100006103516, pole_latitude=36.5999984741211
 )
+
+# seaborn colourmaps
+cmap_mako_r = sns.color_palette("mako_r", as_cmap=True)
+# cmap_crest = sns.color_palette("crest", as_cmap=True)
+# cmap_flare = sns.color_palette("flare", as_cmap=True)
 
 
 def longitude_tick_format(x, pos):
@@ -108,6 +114,30 @@ def rotated_pole_transform(data):
     return transform
 
 
+def hiresireland_date_format(data):
+    """
+    Format date
+    """
+
+    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
+    return date
+
+
+def cordex_date_format(data):
+    """
+    Format date
+    """
+
+    if data.attrs["frequency"] == "mon":
+        date_format = "%b %Y"
+    elif data.attrs["frequency"] == "day":
+        date_format = "%-d %b %Y"
+    else:
+        date_format = "%Y-%m-%d %H:%M:%S"
+    date = datetime.strftime(parse(str(data["time"].values)), date_format)
+    return date
+
+
 def cordex_plot_title_main(data):
     """
     Define the map plot title for CORDEX data.
@@ -134,30 +164,6 @@ def cordex_plot_title_main(data):
     return plot_title
 
 
-def hiresireland_date_format(data):
-    """
-    Format date
-    """
-
-    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
-    return date
-
-
-def cordex_date_format(data):
-    """
-    Format date
-    """
-
-    if data.attrs["frequency"] == "mon":
-        date_format = "%b %Y"
-    elif data.attrs["frequency"] == "day":
-        date_format = "%-d %b %Y"
-    else:
-        date_format = "%Y-%m-%d %H:%M:%S"
-    date = datetime.strftime(parse(str(data["time"].values)), date_format)
-    return date
-
-
 def cordex_plot_title(data, lon=None, lat=None):
     """
     Define the map plot title for CORDEX data with information about the time
@@ -182,7 +188,7 @@ def cordex_plot_title(data, lon=None, lat=None):
     return plot_title
 
 
-def ie_cordex_ncfile_name(data):
+def cordex_ncfile_name(data):
     """
     Define the NetCDF file name for the CORDEX data that has been subset for
     Ireland.
@@ -197,7 +203,7 @@ def ie_cordex_ncfile_name(data):
     """
 
     filename = (
-        "_".join(sorted(list(data.data_vars))) + "_" +
+        "IE_" +
         data.attrs["CORDEX_domain"] + "_" +
         data.attrs["driving_model_id"] + "_" +
         data.attrs["driving_experiment_name"] + "_" +
@@ -207,12 +213,12 @@ def ie_cordex_ncfile_name(data):
         data.attrs["frequency"] + "_" +
         datetime.strftime(parse(str(data["time"][0].values)), "%Y%m%d") + "-" +
         datetime.strftime(parse(str(data["time"][-1].values)), "%Y%m%d")
-        + "_IE.nc"
+        + ".nc"
     )
     return filename
 
 
-def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
+def cordex_modvege_ncfile_name(cordex_data, output_data):
     """
     Define the NetCDF file name for the ModVege grass growth model outputs.
 
@@ -226,7 +232,7 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
     """
 
     filename = (
-        "modvege_" +
+        "modvege_IE_" +
         cordex_data.attrs["CORDEX_domain"] + "_" +
         cordex_data.attrs["driving_model_id"] + "_" +
         cordex_data.attrs["driving_experiment_name"] + "_" +
@@ -237,7 +243,7 @@ def ie_cordex_modvege_ncfile_name(cordex_data, output_data):
         datetime.strftime(parse(str(output_data["time"][0].values)), "%Y%m%d")
         + "-" +
         datetime.strftime(parse(str(output_data["time"][-1].values)), "%Y%m%d")
-        + "_IE.nc"
+        + ".nc"
     )
     return filename
 
@@ -256,18 +262,21 @@ def plot_facet_map_variables(data, boundary_data):
 
     plot_transform = rotated_pole_transform(data)
 
-    for v in data.data_vars:
+    for var in [
+        x for x in data.data_vars if x not in [
+            "bm_dv", "bm_dr", "bm_gv", "bm_gr", "lai", "rep"
+        ]
+    ]:
         cbar_label = (
-            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+            data[var].attrs["long_name"] + " [" +
+            data[var].attrs["units"] + "]"
         )  # colorbar label
 
-        if v == "pr":
-            cmap = "mako_r"
-        elif v == "evspsblpot":
-            cmap = "BrBG_r"
-        elif v == "mrso":
-            cmap = "BrBG"
-        elif v in ("tas", "rsds", "rsus", "par"):
+        if var == "PP":
+            cmap = cmap_mako_r
+        elif var in ("wr", "env"):
+            cmap = "GnBu"
+        elif var in ("T", "RG", "PAR", "PET", "aet"):
             cmap = "Spectral_r"
         else:
             cmap = "YlGn"
@@ -285,26 +294,29 @@ def plot_facet_map_variables(data, boundary_data):
             y_ticks = []
             x_ticks = []
 
-        fig = data[v].plot(
-            x="rlon", y="rlat", col="time", col_wrap=col_wrap, cmap=cmap,
-            robust=True, cbar_kwargs=dict(aspect=40, label=cbar_label),
-            levels=15, transform=plot_transform,
+        fig = data[var].plot(
+            x="rlon", y="rlat", col="time",
+            col_wrap=col_wrap,
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs=dict(aspect=40, label=cbar_label),
+            transform=plot_transform,
             subplot_kws=dict(projection=plot_projection)
         )
 
         fig.set_xlabels("")
         fig.set_ylabels("")
 
-        for i, ax in enumerate(fig.axes.flat):
+        for i, axs in enumerate(fig.axes.flat):
             boundary_data.to_crs(plot_projection).boundary.plot(
-                ax=ax, color="darkslategrey", linewidth=.5
+                ax=axs, color="darkslategrey", linewidth=.5
             )
-            ax.set_title(cordex_date_format(data.isel(time=i)))
-            ax.set_xlim(-1.9, 1.6)
-            ax.set_ylim(-2.1, 2.1)
+            axs.set_title(cordex_date_format(data.isel(time=i)))
+            axs.set_xlim(-1.9, 1.6)
+            axs.set_ylim(-2.1, 2.1)
             # use gridlines to add tick labels (lon/lat)
             if i in y_ticks:
-                ax.gridlines(
+                axs.gridlines(
                     draw_labels=["y", "left"],
                     ylocs=range(-90, 90, 1),
                     color="None",
@@ -313,7 +325,7 @@ def plot_facet_map_variables(data, boundary_data):
                     y_inline=False
                 )
             if i in x_ticks:
-                ax.gridlines(
+                axs.gridlines(
                     draw_labels=["x", "bottom"],
                     xlocs=range(-180, 180, 2),
                     color="None",
@@ -337,40 +349,45 @@ def plot_map_variables(data):
 
     plot_transform = rotated_pole_transform(data)
 
-    for v in data.data_vars:
+    for var in [
+        x for x in data.data_vars if x not in [
+            "bm_dv", "bm_dr", "bm_gv", "bm_gr", "lai", "rep"
+        ]
+    ]:
         cbar_label = (
-            data[v].attrs["long_name"] + " [" + data[v].attrs["units"] + "]"
+            data[var].attrs["long_name"] + " [" +
+            data[var].attrs["units"] + "]"
         )  # colorbar label
-        if v == "pr":
+
+        if var == "PP":
+            cmap = cmap_mako_r
+        elif var in ("wr", "env"):
             cmap = "GnBu"
-        elif v == "evspsblpot":
-            cmap = "BrBG_r"
-        elif v == "mrso":
-            cmap = "BrBG"
-        elif v in ("tas", "rsds", "rsus", "par"):
+        elif var in ("T", "RG", "PAR", "PET", "aet"):
             cmap = "Spectral_r"
+        else:
+            cmap = "YlGn"
 
         plt.figure(figsize=(7, 7))
 
-        ax = plt.axes(projection=plot_projection)
+        axs = plt.axes(projection=plot_projection)
 
         # plot data for the variable
-        data[v].plot(
-            ax=ax,
+        data[var].plot(
+            ax=axs,
             cmap=cmap,
             x="rlon",
             y="rlat",
-            levels=15,
-            cbar_kwargs=dict(label=cbar_label),
             robust=True,
+            cbar_kwargs=dict(label=cbar_label),
             transform=plot_transform
         )
 
         # add boundaries
-        ax.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+        axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
 
         # ax.set_title(cplt.cordex_plot_title(data_ie))  # set plot title
-        ax.set_title(None)
+        axs.set_title(None)
 
         plt.axis("equal")
         plt.tight_layout()
@@ -378,7 +395,7 @@ def plot_map_variables(data):
         plt.ylim(-2.05, 2.05)
 
         # specify gridline spacing and labels
-        ax.gridlines(
+        axs.gridlines(
             draw_labels=dict(bottom="x", left="y"),
             xlocs=range(-180, 180, 2),
             ylocs=range(-90, 90, 1),

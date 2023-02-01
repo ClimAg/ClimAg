@@ -135,6 +135,7 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           compartment [dimensionless]
         - omd_gr: Organic matter digestibility of the green reproductive
           compartment [dimensionless]
+        - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
         - sr: Stocking rate [LU ha⁻¹]
         - h_grass: Minimum residual grass height; default is 0.05 [m]
@@ -193,7 +194,6 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         # ingested compartmental biomass
         weights = {}
         ingested = {}
-        available = {}
 
         weights_total = (
             ts_vals["omd_gv"] + ts_vals["omd_gr"] +
@@ -212,11 +212,12 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
         for key in weights:
             ingested[key] = max_ingested_biomass * weights[key]
-            available[key] = available_biomass[key]
             ingested[key] += needed
-            if available[key] < ingested[key]:
-                needed = ingested[key] - available[key]
-                ingested[key] = available[key]
+            if available_biomass[key] < ingested[key]:
+                needed = ingested[key] - available_biomass[key]
+                ingested[key] = available_biomass[key]
+            else:
+                needed = 0.0
             # update biomass compartments
             # 10% of biomass is lost during ingestion
             ts_vals[key] -= ingested[key] / 0.9
@@ -254,6 +255,7 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
           [kg DM ha⁻¹]
         - bm_dr: Standing biomass of the dead reproductive compartment
           [kg DM ha⁻¹]
+        - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
     params : A dictionary containing these model parameters:
         - h_grass: Minimum residual grass height; default is 0.05 [m]
         - bd_gv: Bulk density of the green vegetative compartment; default is

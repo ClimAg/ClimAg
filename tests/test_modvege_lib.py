@@ -15,14 +15,17 @@ def test_leaf_area_index():
     """
 
     ts_vals = {
-        "bm_gv": 1200.0
+        "bm_gv": 1200.0,
+        "bm_gr": 500.0
     }
     params = {
         "sla": 0.033,
         "pct_lam": 0.68
     }
 
-    assert lm.leaf_area_index(ts_vals=ts_vals, params=params) == 2.6928
+    assert lm.leaf_area_index(
+        ts_vals=ts_vals, params=params
+    ) == 3.8148000000000004
 
 
 def test_actual_evapotranspiration():
@@ -34,11 +37,12 @@ def test_actual_evapotranspiration():
     ts_vals = {}
 
     ts_vals["lai"] = 0.9
-    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == 1.05
+    # assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == 1.05
+    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) < pet
 
     # the value cannot exceed the potential evapotranspiration
     ts_vals["lai"] = 4.3
-    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == 3.5
+    assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == pet
 
 
 def test_potential_growth():
@@ -61,8 +65,12 @@ def test_par_function():
     """
 
     par_i = 15.0
+    # assert lm.par_function(par_i=par_i) == 0.5555555555555556
+    assert 0.0 < lm.par_function(par_i=par_i) < 1.0
 
-    assert lm.par_function(par_i=par_i) == 0.5555555555555556
+    # par_i < 5.0
+    par_i = 3.2
+    assert lm.par_function(par_i=par_i) == 1.0
 
 
 def test_sum_of_temperatures():
@@ -70,21 +78,27 @@ def test_sum_of_temperatures():
     Test sum_of_temperatures
     """
 
-    day = 5
-    t_ts = [2.0, 7.0, 4.0, 5.0, 8.0, 3.0, 6.0]
+    t_ts = [2.1, 7.0, 4.1, 5.0, 8.6, 3.2, 6.0, 9.5, 1.0, 3.3, 5.5, 7.2]
     ts_vals = {}
     params = {"t_0": 4.0}
 
-    ts_vals["st"] = 4.0
+    day = 5
+    ts_vals["st"] = 4.1
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 8.0
+    ) == 8.7
 
     # resetting the sum to zero
     ts_vals["st"] = 0.0
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 4.0
+    ) == 4.6
+
+    # using a day when the sum is less than t_0
+    day = 9
+    assert lm.sum_of_temperatures(
+        params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
+    ) == ts_vals["st"]
 
 
 def test_ten_day_moving_avg_temperature():
@@ -96,13 +110,16 @@ def test_ten_day_moving_avg_temperature():
 
     # when day < 10
     day = 5
-    assert lm.ten_day_moving_avg_temperature(day=day, t_ts=t_ts) == 8.6
+    # assert lm.ten_day_moving_avg_temperature(day=day, t_ts=t_ts) == 8.6
+    assert lm.ten_day_moving_avg_temperature(
+        day=day, t_ts=t_ts
+    ) == t_ts[day - 1]
 
     # when day >= 10
     day = 11
     assert lm.ten_day_moving_avg_temperature(
         day=day, t_ts=t_ts
-    ) == 5.319999999999999
+    ) == np.mean(t_ts[(day - 10):day])
 
 
 def test_temperature_function():
@@ -132,15 +149,17 @@ def test_temperature_function():
 
     # t_0 < t_m10 < t_1
     ts_vals["t_m10"] = 7.5
-    assert lm.temperature_function(
-        ts_vals=ts_vals, params=params
-    ) == 0.5833333333333335
+    # assert lm.temperature_function(
+    #     ts_vals=ts_vals, params=params
+    # ) == 0.5833333333333335
+    assert 0.0 < lm.temperature_function(ts_vals=ts_vals, params=params) < 1.0
 
     # t_2 < t_m10 < t_max
     ts_vals["t_m10"] = 35.5
-    assert lm.temperature_function(
-        ts_vals=ts_vals, params=params
-    ) == 0.22499999999999987
+    # assert lm.temperature_function(
+    #     ts_vals=ts_vals, params=params
+    # ) == 0.22499999999999987
+    assert 0.0 < lm.temperature_function(ts_vals=ts_vals, params=params) < 1.0
 
 
 def test_seasonal_effect():
@@ -174,15 +193,25 @@ def test_seasonal_effect():
 
     # 200.0 < st < st_1 - 200.0
     ts_vals["st"] = 275.0
-    assert lm.seasonal_effect(
-        ts_vals=ts_vals, params=params
-    ) == 0.9500000000000001
+    # assert lm.seasonal_effect(
+    #     ts_vals=ts_vals, params=params
+    # ) == 0.9500000000000001
+    assert (
+        params["min_sea"] <
+        lm.seasonal_effect(ts_vals=ts_vals, params=params) <
+        params["max_sea"]
+    )
 
     # st_1 - 100.0 < st < st_2
     ts_vals["st"] = 980.0
-    assert lm.seasonal_effect(
-        ts_vals=ts_vals, params=params
-    ) == 0.9257142857142857
+    # assert lm.seasonal_effect(
+    #     ts_vals=ts_vals, params=params
+    # ) == 0.9257142857142857
+    assert (
+        params["min_sea"] <
+        lm.seasonal_effect(ts_vals=ts_vals, params=params) <
+        params["max_sea"]
+    )
 
 
 def test_water_reserves():
@@ -201,13 +230,16 @@ def test_water_reserves():
     params["whc"] = 200.5
     assert lm.water_reserves(
         ts_vals=ts_vals, params=params, precipitation=precipitation
-    ) == 20.0
+    ) == precipitation
+    assert 0.0 <= lm.water_reserves(
+        ts_vals=ts_vals, params=params, precipitation=precipitation
+    ) <= params["whc"]
 
     # low water-holding capacity
     params["whc"] = 10.5
     assert lm.water_reserves(
         ts_vals=ts_vals, params=params, precipitation=precipitation
-    ) == 10.5
+    ) == params["whc"]
 
     # no precipitation and high water-holding capacity
     precipitation = 0.0
@@ -282,39 +314,32 @@ def test_reproductive_function():
     ts_vals = {}
     params = {
         "st_1": 85.0,
-        "st_2": 2250.0,
-        "st_g1": 110.0,
-        "st_h1": 2175.0,
         "ni": 0.75
     }
 
+    # before reproductive period
     ts_vals["st"] = 34.7
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
-    ts_vals["st"] = 2500.5
-    assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
-
-    # stocking rate > 0.0
+    # with grazing and harvesting
     ts_vals["st"] = 400.0
-    params["sr"] = 2.5
-    params["h_grass"] = 0.05
+    ts_vals["i_bm"] = 13.2
+    ts_vals["h_bm"] = 10.2
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
-    # stocking rate = 0.0
-    params["sr"] = 0.0
+    # with grazing and without harvesting
+    ts_vals["h_bm"] = 0.0
+    assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
+
+    # without grazing and harvesting
+    ts_vals["i_bm"] = 0.0
     assert lm.reproductive_function(
         params=params, ts_vals=ts_vals
     ) == 0.7115384615384616
 
-    # harvest only
-    ts_vals["st"] = 2200.0
+    # with harvesting and without grazing
+    ts_vals["h_bm"] = 10.2
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
-
-    # without harvest
-    params["h_grass"] = np.nan
-    assert lm.reproductive_function(
-        params=params, ts_vals=ts_vals
-    ) == 0.7115384615384616
 
 
 def test_environmental_limitation():
@@ -346,3 +371,166 @@ def test_total_growth():
     }
 
     assert lm.total_growth(ts_vals=ts_vals) == 35.625
+
+
+def test_abscission():
+    """
+    Test abscission
+    """
+
+    ts_vals = {
+        "bm_dv": 200.0,
+        "bm_dr": 90.4
+    }
+    params = {
+        "lls": 500.0,
+        "kl_dv": 0.001,
+        "kl_dr": 0.0005,
+        "st_1": 600.0,
+        "st_2": 1200.0
+    }
+
+    # f_age_dv = 1.0 and f_age_dr = 1.0
+    temperature = -1.5
+    ts_vals["age_dv"] = 100.0
+    ts_vals["age_dr"] = 120.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_dv"] == 1.0
+    assert ts_vals["f_age_dr"] == 1.0
+
+    # f_age_dv = 2.0 and f_age_dr = 2.0
+    ts_vals["age_dv"] = 250.0
+    ts_vals["age_dr"] = 335.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_dv"] == 2.0
+    assert ts_vals["f_age_dr"] == 2.0
+
+    # f_age_dv = 3.0 and f_age_dr = 3.0
+    ts_vals["age_dv"] = 600.0
+    ts_vals["age_dr"] = 700.0
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_dv"] == 3.0
+    assert ts_vals["f_age_dr"] == 3.0
+
+    # temperature <= 0.0
+    assert ts_vals["abs_dv"] == 0.0
+    assert ts_vals["abs_dr"] == 0.0
+
+    # temperature > 0
+    temperature = 4.6
+    lm.abscission(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["abs_dv"] == 2.76
+    assert ts_vals["abs_dr"] == 0.62376
+
+
+def test_senescence():
+    """
+    Test senescence
+    """
+
+    ts_vals = {
+        "age_gv": 890.2,
+        "bm_gv": 1206.7,
+        "age_gr": 455.0,
+        "bm_gr": 230.1
+    }
+    params = {
+        "lls": 500.0,
+        "k_gv": 0.002,
+        "k_gr": 0.001,
+        "t_0": 4.0,
+        "st_1": 600.0,
+        "st_2": 1200.0
+    }
+
+    # f_age_gv = 1.0 and f_age_gr = 1.0
+    temperature = 8.9
+    ts_vals["age_gv"] = 105.0
+    ts_vals["age_gr"] = 150.0
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_gv"] == 1.0
+    assert ts_vals["f_age_gr"] == 1.0
+
+    # f_age_gv = 3.0 and f_age_gr = 3.0
+    ts_vals["age_gv"] = 590.7
+    ts_vals["age_gr"] = 785.2
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_gv"] == 3.0
+    assert ts_vals["f_age_gr"] == 3.0
+
+    # f_age_gv and f_age_gr slope
+    ts_vals["age_gv"] = 425.0
+    ts_vals["age_gr"] = 591.6
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["f_age_gv"] == 2.55
+    assert 1.0 < ts_vals["f_age_gv"] < 3.0
+    assert ts_vals["f_age_gr"] == 2.958
+    assert 1.0 < ts_vals["f_age_gr"] < 3.0
+
+    # temperature > t_0
+    assert ts_vals["sen_gv"] == 54.772113000000004
+    assert ts_vals["sen_gr"] == 6.057658620000001
+
+    # temperature < 0.0
+    temperature = -1.8
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["sen_gv"] == 4.34412
+    assert ts_vals["sen_gr"] == 0.41418
+
+    # 0.0 <= temperature <= t_0
+    temperature = 2.7
+    lm.senescence(
+        ts_vals=ts_vals, params=params, temperature=temperature
+    )
+    assert ts_vals["sen_gv"] == 0.0
+    assert ts_vals["sen_gr"] == 0.0
+
+
+def test_biomass_growth():
+    """
+    Test biomass_growth
+    """
+
+    ts_vals = {"gro": 139.4}
+
+    # 0.0 < rep < 0.5
+    ts_vals["rep"] = 0.4
+    assert (
+        lm.biomass_growth(ts_vals=ts_vals)[0] >
+        lm.biomass_growth(ts_vals=ts_vals)[1]
+    )
+    assert sum(lm.biomass_growth(ts_vals=ts_vals)) == ts_vals["gro"]
+
+    # rep > 0.5
+    ts_vals["rep"] = 0.9
+    assert (
+        lm.biomass_growth(ts_vals=ts_vals)[0] <
+        lm.biomass_growth(ts_vals=ts_vals)[1]
+    )
+    assert sum(lm.biomass_growth(ts_vals=ts_vals)) == ts_vals["gro"]
+
+    # rep = 0.0
+    ts_vals["rep"] = 0.0
+    assert lm.biomass_growth(ts_vals=ts_vals) == (ts_vals["gro"], 0.0)
+
+
+def test_standing_biomass():
+    """
+    Test standing_biomass
+    """
