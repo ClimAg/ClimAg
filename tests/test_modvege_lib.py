@@ -314,16 +314,11 @@ def test_reproductive_function():
     ts_vals = {}
     params = {
         "st_1": 85.0,
-        "st_2": 2250.0,
         "ni": 0.75
     }
 
     # before reproductive period
     ts_vals["st"] = 34.7
-    assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
-
-    # after reproductive period
-    ts_vals["st"] = 2500.5
     assert lm.reproductive_function(params=params, ts_vals=ts_vals) == 0.0
 
     # with grazing and harvesting

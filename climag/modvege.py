@@ -101,6 +101,16 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         - the end of the grazing season (STg₂) [°C d]
         - the beginning of harvest (STh₁) [°C d]
 
+    Parameters
+    ----------
+    timeseries : Input meteorological time series data (Pandas dataframe)
+
+    Returns
+    -------
+    - A dictionary of the sum of temperature thresholds
+
+    Notes
+    -----
     Nolan and Flanagan (2020) define the thermal growing season length as the
     number of days between the first occurrence of at least six consecutive
     days with a daily mean temperature of > 5°C and the first occurrence of at
@@ -109,9 +119,14 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     If the temperatures are too low (i.e. no six consecutive days > 5°C) to
     calculate the start date of the growing season, assume it is the 15th
     March, which is the median date for the midlands and part of northern
-    Ireland (Collins and Cummins, 1996; based on Smith, 1976), and the date
-    when cows are out full time according to Teagasc recommendations
+    Ireland (Collins and Cummins, 1996; Connaughton, 1973). This is also
+    the date when cows are out full time according to Teagasc recommendations
     (Kavanagh, 2016).
+
+    Calculating the end date of the growing season is not straightforward, as
+    the temperatues may be too high for there to be six consecutive days
+    < 5°C, or these six consecutive days may happen very early in the year,
+    and may even be before the growing season start date.
 
     Grazing season calculations based solely on temperature do not consider
     the delay before sufficient plant cover is available to support grazing
@@ -120,17 +135,28 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
 
     The beginning of the grazing season has a delay of 5-15 days after the
     start of the growing season based on Broad and Hough (1993).
-    A delay of 15 days is used to allow sufficient reproductive growth.
+    A delay of 10 days is used to allow sufficient reproductive growth.
+    The end date of the grazing season is determined using the Smith formula
+    for calculating the grazing season length (Collins and Cummins, 1996;
+    based on Smith, 1976).
+
+    The end date of the grazing season cannot exceed 1st December. Livestock
+    are assumed to be fully housed by 22nd November based on Teagasc
+    recommendations (Kavanagh, 2016). The mean latest autumn closing date is
+    3rd December, with a two-week interval of 26th November to 9th December
+    (Looney et al., 2021).
+
+    Grazing will only take place if there is sufficient biomass available; if
+    the residual biomass has a height of less than 5 cm, no grazing or
+    harvesting will take place. Therefore, the amount of ingested and
+    harvested biomass are mainly influenced by the environmental factors that
+    affect growth, such as temperature, radiation, and precipitation.
 
     The beginning of harvest is assumed to be one day before the grazing
     season ends. Grazing costs less than indoor feeding, so starting the
     harvest just a day before the end of the grazing season ensures grazing is
     maximised.
-
     The end of harvest is the same as the end of the grazing season.
-
-    Assume animals are fully housed by 1st December (late November based
-    on Kavanagh, 2016) if growing season continues through December
     """
 
     st_thresholds = {}
@@ -154,7 +180,9 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         )
         # adjust the length if the dataset has 360 days/year
         if timeseries.loc[str(year)].index[-1].dayofyear < 365:
-            grazing_season -= 5
+            grazing_season -= (
+                365 - timeseries.loc[str(year)].index[-1].dayofyear
+            )
 
         # sum of temperatures at the start
         try:
@@ -178,7 +206,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         )
         # beginning of the grazing season
         st_thresholds[year]["st_g1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[start + 15]
+            timeseries.loc[str(year)]["Tg"].cumsum()[start + 10]
         )
         # end of the reproductive period
         st_thresholds[year]["st_2"] = (
@@ -191,7 +219,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         # if growing season continues in December, end grazing on 1st December
         grazing_end = min(
             timeseries.loc[f"{year}-12"].index[0].dayofyear - 1,
-            start + 15 + grazing_season
+            start + 10 + grazing_season
         )
         st_thresholds[year]["st_g2"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end]
@@ -211,10 +239,10 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     """
     **ModVege** model as a function
 
-    Jouven, M., Carrère, P., and Baumont, R. (2006). 'Model predicting dynamics
-    of biomass, structure and digestibility of herbage in managed permanent
-    pastures. 1. Model description', Grass and Forage Science, vol. 61, no. 2,
-    pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
+    Jouven, M., Carrère, P., and Baumont, R. (2006). 'Model predicting
+    dynamics of biomass, structure and digestibility of herbage in managed
+    permanent pastures. 1. Model description', Grass and Forage Science, vol.
+    61, no. 2, pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
 
     Parameters
     ----------
@@ -233,6 +261,11 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     - Total growth [kg DM ha⁻¹]
     - Ingested biomass [kg DM ha⁻¹]
     - Harvested biomass [kg DM ha⁻¹]
+    - Leaf area index [dimensionless]
+    - Water reserves [mm]
+    - Actual evapotranspiration [mm]
+    - Environmental limitation of growth [dimensionless]
+    - Reproductive function [dimensionless]
     """
 
     params["sr"] = cm.stocking_rate(params=params)
@@ -348,19 +381,6 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         ts_vals["rep"] = lm.reproductive_function(
             params=params, ts_vals=ts_vals
         )
-
-        # allocation to reproductive
-        # TO-DO: when to change NI, and by how much?
-        # NI        A2R         NI = [0.35 - 1.2] A2R = [0.3 - 1.23]
-        # 0.4       0.30769
-        # 0.5       0.42307
-        # 0.6       0.53846
-        # 0.7       0.65384
-        # 0.8       0.76923
-        # 0.9       0.88461
-        # 1.0       1
-        # 1.1       1.11538
-        # 1.2       1.23076
 
         # senescence (SEN)
         lm.senescence(
