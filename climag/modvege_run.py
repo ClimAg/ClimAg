@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import xarray as xr
 from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
@@ -70,13 +71,24 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     plt.show()
 
 
-def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
+def run_modvege_nc(
+    input_timeseries_file, input_params_file, out_dir,
+    input_params_vector=None
+):
     """
     Input time series: NetCDF (climate data)
     """
 
+    params = {}
+
     # read parameter file into a dataframe
-    params = read_params(filename=input_params_file)
+    params["params"] = read_params(filename=input_params_file)
+
+    if input_params_vector is not None:
+        params["stocking_rate"] = gpd.read_file(
+            os.path.join("data", "ModVege", "params.gpkg"),
+            layer="stocking_rate"
+        )
 
     tseries = xr.open_dataset(
         input_timeseries_file,
@@ -86,7 +98,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
     )
 
     # get the CRS
-    data_crs = tseries.rio.crs
+    params["data_crs"] = tseries.rio.crs
 
     # loop through each year
     # for year in set(tseries_loc["time"].dt.year.values):
@@ -116,24 +128,44 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         # for rlon, rlat in [(20, 20), (21, 21)]:
         # for rlon, rlat in itertools.product(range(10), range(10)):
         for rlon, rlat in itertools.product(
-            range(len(tseries.coords["rlon"])),
-            range(len(tseries.coords["rlat"]))
+            range(len(tseries_y.coords["rlon"])),
+            range(len(tseries_y.coords["rlat"]))
         ):
             tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
             # ignore null cells
             if not tseries_l["PP"].isnull().all():
+                # create a dataframe using the time array and variables
                 data_df[f"{rlon}_{rlat}_{year}"] = pd.DataFrame(
-                    {"time": tseries_l["time"]}
-                )  # create a dataframe using the time array
+                    {
+                        "time": tseries_l["time"],
+                        "PP": tseries_l["PP"],
+                        "PAR": tseries_l["PAR"],
+                        "PET": tseries_l["PET"],
+                        "T": tseries_l["T"]
+                    }
+                )
 
-                # assign the variables to columns
-                for var in tseries_l.data_vars:
-                    data_df[f"{rlon}_{rlat}_{year}"][var] = tseries_l[var]
+                # site-specific characteristics
+                if input_params_vector is not None:
+                    params["params"]["sr"] = float(
+                        params["stocking_rate"][
+                            (
+                                params["stocking_rate"]["rlon"] == float(
+                                    tseries_l["rlon"].values
+                                )
+                            ) &
+                            (
+                                params["stocking_rate"]["rlat"] == float(
+                                    tseries_l["rlat"].values
+                                )
+                            )
+                        ]["stocking_rate"]
+                    )
 
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(
-                    params=params,
+                    params=params["params"],
                     tseries=data_df[f"{rlon}_{rlat}_{year}"],
                     endday=tseries_y["time"].dt.dayofyear.values.max()
                 )
@@ -143,7 +175,7 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
                     data_df[f"{rlon}_{rlat}_{year}"]
                 )
 
-                # assign the output variables to the main xarray dataset
+                # assign the output variables to the main Xarray dataset
                 for key in output_vars:
                     tseries_y[key].loc[dict(
                         rlon=tseries_l.coords["rlon"],
@@ -163,32 +195,39 @@ def run_modvege_nc(input_timeseries_file, input_params_file, out_dir):
         }
 
         # reassign CRS
-        tseries_y.rio.write_crs(data_crs, inplace=True)
+        tseries_y.rio.write_crs(params["data_crs"], inplace=True)
 
         # save as a NetCDF file
         if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
-            out_dir_ = os.path.join(
+            params["out_dir"] = os.path.join(
                 out_dir, "EURO-CORDEX",
                 tseries.attrs["experiment_id"],
                 tseries.attrs["driving_model_id"]
             )
-            os.makedirs(out_dir_, exist_ok=True)
-            file_name = os.path.join(
-                out_dir_,
+            os.makedirs(params["out_dir"], exist_ok=True)
+            tseries_y.to_netcdf(os.path.join(
+                params["out_dir"],
                 cordex_modvege_ncfile_name(
                     cordex_data=tseries, output_data=tseries_y
                 )
-            )
+            ))
         else:
-            file_name = os.path.join(
-                out_dir,
-                f"modvege_{tseries.attrs['title']}_{year}.nc"
+            params["out_dir"] = os.path.join(
+                out_dir, "HiResIreland",
+                tseries.attrs["title"].split("_")[2],
+                tseries.attrs["title"].split("_")[1]
             )
+            os.makedirs(params["out_dir"], exist_ok=True)
+            tseries_y.to_netcdf(os.path.join(
+                params["out_dir"],
+                f"modvege_{tseries.attrs['title']}_{year}.nc"
+            ))
 
-        tseries_y.to_netcdf(file_name)
 
-
-def run_modvege(input_params_file, input_timeseries_file, out_dir):
+def run_modvege(
+    input_params_file, input_timeseries_file, out_dir,
+    input_params_vector=None
+):
     """
     Preprocess the inputs to run ModVege as a function and save the results
     as a CSV file
@@ -203,4 +242,7 @@ def run_modvege(input_params_file, input_timeseries_file, out_dir):
     if input_timeseries_file.endswith(".csv"):
         run_modvege_csv(input_timeseries_file, input_params_file, out_dir)
     else:  # open the climate model dataset
-        run_modvege_nc(input_timeseries_file, input_params_file, out_dir)
+        run_modvege_nc(
+            input_timeseries_file, input_params_file, out_dir,
+            input_params_vector
+        )

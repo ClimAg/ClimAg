@@ -268,8 +268,6 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
     - Reproductive function [dimensionless]
     """
 
-    params["sr"] = cm.stocking_rate(params=params)
-
     st_thresholds = sum_of_temperature_thresholds(timeseries=tseries)
 
     # dictionary of outputs
