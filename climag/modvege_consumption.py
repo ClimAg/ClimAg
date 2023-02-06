@@ -8,29 +8,6 @@ import numpy as np
 np.seterr("raise")
 
 
-def stocking_rate(params: dict[str, float]) -> float:
-    """
-    Calculate the stocking rate
-
-    Parameters
-    ----------
-    params : A dictionary containing these model parameters:
-        - lu : Total number of livestock units [LU]
-        - area : Total grassland area available for grazing [ha]
-
-    Returns
-    -------
-    - An updated `params` dictionary with:
-        - sr: Stocking rate [LU ha⁻¹]
-    """
-
-    try:
-        val = params["lu"] / params["area"]
-    except ZeroDivisionError:
-        val = 0.0
-    return val
-
-
 def organic_matter_digestibility(
     ts_vals: dict[str, float], params: dict[str, float]
 ):

@@ -1,6 +1,9 @@
 """modvege_run.py
 
 https://github.com/YannChemin/modvege
+
+Run in a Python interpreter
+exec(open("climag/modvege_run.py").read())
 """
 
 import itertools
@@ -84,12 +87,6 @@ def run_modvege_nc(
     # read parameter file into a dataframe
     params["params"] = read_params(filename=input_params_file)
 
-    if input_params_vector is not None:
-        params["stocking_rate"] = gpd.read_file(
-            os.path.join("data", "ModVege", "params.gpkg"),
-            layer="stocking_rate"
-        )
-
     tseries = xr.open_dataset(
         input_timeseries_file,
         decode_coords="all",
@@ -97,12 +94,24 @@ def run_modvege_nc(
         #                # yet, so chunking must be disabled...
     )
 
+    if input_params_vector is not None:
+        if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
+            params["gpkg"] = gpd.read_file(
+                os.path.join("data", "ModVege", "params.gpkg"),
+                layer="eurocordex"
+            )
+        else:
+            params["gpkg"] = gpd.read_file(
+                os.path.join("data", "ModVege", "params.gpkg"),
+                layer="hiresireland"
+            )
+
     # get the CRS
     params["data_crs"] = tseries.rio.crs
 
     # loop through each year
-    # for year in set(tseries_loc["time"].dt.year.values):
-    for year in [2054, 2055, 2056]:
+    # for year in [2054, 2055, 2056]:
+    for year in set(tseries["time"].dt.year.values):
         tseries_y = tseries.sel(
             time=slice(
                 f"{year}-01-01",
@@ -148,20 +157,21 @@ def run_modvege_nc(
 
                 # site-specific characteristics
                 if input_params_vector is not None:
-                    params["params"]["sr"] = float(
-                        params["stocking_rate"][
-                            (
-                                params["stocking_rate"]["rlon"] == float(
-                                    tseries_l["rlon"].values
+                    for key in ["sr", "ni", "whc"]:
+                        params["params"][key] = float(
+                            params["gpkg"][
+                                (
+                                    params["gpkg"]["rlon"] == float(
+                                        tseries_l["rlon"].values
+                                    )
+                                ) &
+                                (
+                                    params["gpkg"]["rlat"] == float(
+                                        tseries_l["rlat"].values
+                                    )
                                 )
-                            ) &
-                            (
-                                params["stocking_rate"]["rlat"] == float(
-                                    tseries_l["rlat"].values
-                                )
-                            )
-                        ]["stocking_rate"]
-                    )
+                            ][key]
+                        )
 
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(

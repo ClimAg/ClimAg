@@ -18,3 +18,4 @@ dependencies:
   - pooch
   - cdo
   - pytest
+  - rasterstats
