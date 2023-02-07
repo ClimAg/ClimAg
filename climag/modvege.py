@@ -277,6 +277,10 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         "bm_gr": [],
         "bm_dv": [],
         "bm_dr": [],
+        "age_gv": [],
+        "age_gr": [],
+        "age_dv": [],
+        "age_dr": [],
         "bm": [],
         "pgro": [],
         "gro": [],
@@ -309,7 +313,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
                 params["bm_dv"], params["bm_dr"],
                 params["age_gv"], params["age_gr"],
                 params["age_dv"], params["age_dr"],
-                params["whc"]
+                params["wr"]
             )
 
         # initialise ingested/harvested biomass and temperature sum
@@ -417,6 +421,10 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
         outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
         outputs_dict["bm_gr"].append(ts_vals["bm_gr"])
         outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
+        outputs_dict["age_gv"].append(ts_vals["age_gv"])
+        outputs_dict["age_dv"].append(ts_vals["age_dv"])
+        outputs_dict["age_gr"].append(ts_vals["age_gr"])
+        outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["h_bm"].append(ts_vals["h_bm"])
         outputs_dict["i_bm"].append(ts_vals["i_bm"])
         outputs_dict["bm"].append(ts_vals["bm"])

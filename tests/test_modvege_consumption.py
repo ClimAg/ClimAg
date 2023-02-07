@@ -9,27 +9,6 @@ import numpy as np
 import climag.modvege_consumption as cm
 
 
-def test_stocking_rate():
-    """
-    Test the stocking rate function
-    """
-
-    params = {"lu": 2689.7}
-
-    # with stocking rate
-    params["area"] = 831.5
-    assert (
-        cm.stocking_rate(params=params)
-        == params["lu"] / params["area"]
-        >= 0.0
-    )
-
-    # without stocking rate
-    params["area"] = 0.0
-    # zero division error exception handling
-    assert cm.stocking_rate(params=params) == 0.0
-
-
 def test_organic_matter_digestibility():
     """
     Test the organic matter digestibility function

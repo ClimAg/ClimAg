@@ -75,8 +75,6 @@ def read_params(filename: str) -> dict[str, float]:
                     compartment (OMD_DV) [0.45]
     - omd_dr      : Organic matter digestibility for the dead reproductive
                     compartment (OMD_DR) [0.40]
-    - ni          : Nitrogen nutritional index
-    - whc         : Soil water-holding capacity (WHC) [mm]
     - bm_gv       : Initial biomass of GV [kg DM ha⁻¹]
     - bm_gr       : Initial biomass of GR [kg DM ha⁻¹]
     - bm_dv       : Initial biomass of DV [kg DM ha⁻¹]
@@ -85,11 +83,11 @@ def read_params(filename: str) -> dict[str, float]:
     - age_gr      : Initial GR age [°C d]
     - age_dv      : Initial DV age [°C d]
     - age_dr      : Initial DR age [°C d]
-    - lu          : Number of livestock units in a grazing area [LU]
-    - area        : Total grazing area (i.e. grassland available for grazing)
-                    [ha]
     - i_bm_lu     : Maximum biomass ingestion per livestock unit
                     [13 kg DM LU⁻¹]
+    - ni          : Nitrogen nutritional index
+    - whc         : Soil water-holding capacity (WHC) [mm]
+    - sr          : Stocking rate
 
     Parameters
     ----------
