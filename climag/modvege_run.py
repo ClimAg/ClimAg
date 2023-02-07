@@ -1,9 +1,6 @@
 """modvege_run.py
 
 https://github.com/YannChemin/modvege
-
-Run in a Python interpreter
-exec(open("climag/modvege_run.py").read())
 """
 
 import itertools
@@ -120,10 +117,10 @@ def run_modvege_nc(
     model_vals["data_crs"] = tseries.rio.crs
 
     # loop through each year
-    model_vals["year_list"] = [2054, 2055, 2056]
-    # model_vals["year_list"] = list(
-    #     sorted(set(tseries["time"].dt.year.values))
-    # )
+    # model_vals["year_list"] = [2054, 2055, 2056]
+    model_vals["year_list"] = list(
+        sorted(set(tseries["time"].dt.year.values))
+    )
     for year in model_vals["year_list"]:
         tseries_y = tseries.sel(
             time=slice(
