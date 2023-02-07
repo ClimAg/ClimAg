@@ -189,7 +189,9 @@ def sum_of_temperatures(
     return val
 
 
-def ten_day_moving_avg_temperature(day: int, t_ts: list[float]) -> float:
+def ten_day_moving_avg_temperature(
+    day: int, t_ts: list[float], t_init: list[float] = None
+) -> float:
     """
     Calculate the 10-d moving average temperature.
 
@@ -207,13 +209,15 @@ def ten_day_moving_avg_temperature(day: int, t_ts: list[float]) -> float:
     - 10-d moving average temperature [°C]
     """
 
-    if (day - 1) < (10 - 1):
-        # ** USING THE TEMP, NOT 10-d MOVING AVG!
-        val = t_ts[day - 1]
+    if day < 10:
+        if t_init is None:
+            # ** USING THE TEMP, NOT 10-d MOVING AVG!
+            val = t_ts[day - 1]
+        else:
+            t_list = list(t_init) + list(t_ts)
+            val = np.mean([t_list[(day + 8) - j] for j in range(9, -1, -1)])
     else:
-        val = np.mean([
-            t_ts[(day - 1) - j] for j in range(10 - 1, 0 - 1, -1)
-        ])
+        val = np.mean([t_ts[(day - 1) - j] for j in range(9, -1, -1)])
     return val
 
 

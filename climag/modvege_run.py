@@ -46,7 +46,8 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     tseries, endday = read_timeseries(filename=input_timeseries_file)
 
-    # initial water reserves
+    # assume the initial water reserves is equivalent to the water holding
+    # capacity
     params["wr"] = params["whc"]
 
     # initialise the run
@@ -185,6 +186,12 @@ def run_modvege_nc(
                             ][key]
                         )
 
+                # temperatures for calculating ten-day moving averages in the
+                # following year when day < 10
+                model_vals[f"{rlon}_{rlat}_{year}"] = {}
+                model_vals[f"{rlon}_{rlat}_{year}"]["t_init"] = (
+                    data_df[f"{rlon}_{rlat}_{year}"]["T"].iloc[-10:-1]
+                )
                 # starting values
                 if year > model_vals["year_list"][0]:
                     (
@@ -192,7 +199,7 @@ def run_modvege_nc(
                         params["csv"]["bm_dv"], params["csv"]["bm_dr"],
                         params["csv"]["age_gv"], params["csv"]["age_gr"],
                         params["csv"]["age_dv"], params["csv"]["age_dr"],
-                        params["csv"]["wr"]
+                        params["csv"]["wr"], model_vals["t_init"]
                     ) = (
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["bm_gv"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["bm_gr"],
@@ -202,16 +209,19 @@ def run_modvege_nc(
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["age_gr"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["age_dv"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["age_dr"],
-                        model_vals[f"{rlon}_{rlat}_{year - 1}"]["wr"]
+                        model_vals[f"{rlon}_{rlat}_{year - 1}"]["wr"],
+                        model_vals[f"{rlon}_{rlat}_{year - 1}"]["t_init"]
                     )
                 else:
                     params["csv"]["wr"] = params["csv"]["whc"]
+                    model_vals["t_init"] = None
 
                 # initialise the run
                 data_df[f"{rlon}_{rlat}_{year}"] = modvege(
                     params=params["csv"],
                     tseries=data_df[f"{rlon}_{rlat}_{year}"],
-                    endday=len(tseries_l["time"])
+                    endday=len(tseries_l["time"]),
+                    t_init=model_vals["t_init"]
                 )
 
                 # convert output to dataframe
@@ -220,7 +230,6 @@ def run_modvege_nc(
                 )
 
                 # save starting values for the next simulation year
-                model_vals[f"{rlon}_{rlat}_{year}"] = {}
                 (
                     model_vals[f"{rlon}_{rlat}_{year}"]["bm_gv"],
                     model_vals[f"{rlon}_{rlat}_{year}"]["bm_gr"],

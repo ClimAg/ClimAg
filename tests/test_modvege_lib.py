@@ -110,10 +110,15 @@ def test_ten_day_moving_avg_temperature():
 
     # when day < 10
     day = 5
-    # assert lm.ten_day_moving_avg_temperature(day=day, t_ts=t_ts) == 8.6
     assert lm.ten_day_moving_avg_temperature(
         day=day, t_ts=t_ts
     ) == t_ts[day - 1]
+
+    # when day < 10 and t_init is given
+    t_init = [5.7, 8.9, 2.4, 5.3, 4.8, 9.0, 3.4, 6.5, 7.8]
+    assert lm.ten_day_moving_avg_temperature(
+        day=day, t_ts=t_ts, t_init=t_init
+    ) == np.mean((list(t_init) + list(t_ts))[(day - 1):(day + 9)])
 
     # when day >= 10
     day = 11

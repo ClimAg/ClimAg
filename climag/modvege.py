@@ -235,7 +235,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     return st_thresholds
 
 
-def modvege(params, tseries, endday=365) -> dict[str, float]:
+def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
     """
     **ModVege** model as a function
 
@@ -326,7 +326,7 @@ def modvege(params, tseries, endday=365) -> dict[str, float]:
 
         # 10-d moving average temperature (T_m10)
         ts_vals["t_m10"] = lm.ten_day_moving_avg_temperature(
-            day=(i + 1), t_ts=tseries["T"]
+            day=(i + 1), t_ts=tseries["T"], t_init=t_init
         )
 
         # sum of temperatures (ST)
