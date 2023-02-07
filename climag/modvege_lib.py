@@ -400,7 +400,11 @@ def water_stress(
     - Water stress (*W*) [dimensionless]
     """
 
-    return min(ts_vals["wr"] / params["whc"], 1.0)
+    try:
+        val = min(ts_vals["wr"] / params["whc"], 1.0)
+    except ZeroDivisionError:
+        val = 0.0
+    return val
 
 
 def water_stress_function(ts_vals: dict[str, float], pet) -> float:

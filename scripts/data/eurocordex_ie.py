@@ -8,7 +8,7 @@ environment:
 import os
 exec(
     open(
-        os.path.join("data", "EURO-CORDEX", "eurocordex_ie.py"),
+        os.path.join("scripts", "data", "eurocordex_ie.py"),
         encoding="utf-8"
     ).read()
 )
