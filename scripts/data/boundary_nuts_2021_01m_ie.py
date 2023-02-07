@@ -1,4 +1,5 @@
-"""
+"""boundary_nuts_2021_01m_ie.py
+
 NUTS (Nomenclature of territorial units for statistics) 2021 boundaries
 for the Island of Ireland
 
@@ -8,7 +9,7 @@ environment:
 import os
 exec(
     open(
-        os.path.join("scripts", "data", "nuts_2021_01m_ie_boundary.py"),
+        os.path.join("scripts", "data", "boundary_nuts_2021_01m_ie.py"),
         encoding="utf-8"
     ).read()
 )
