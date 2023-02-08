@@ -134,3 +134,4 @@ draft/
 .vscode/
 tests/data
 .fuse_*
+.empty/

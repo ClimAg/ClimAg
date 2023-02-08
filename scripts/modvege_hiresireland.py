@@ -8,7 +8,7 @@ environment:
 import os
 exec(
     open(
-        os.path.join("scripts", "modvege_hiresireland.py",
+        os.path.join("scripts", "modvege_hiresireland.py"),
         encoding="utf-8"
     ).read()
 )

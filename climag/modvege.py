@@ -91,6 +91,8 @@ import numpy as np
 import climag.modvege_lib as lm
 import climag.modvege_consumption as cm
 
+np.seterr("raise")
+
 
 def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     """

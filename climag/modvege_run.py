@@ -14,6 +14,8 @@ import xarray as xr
 from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
 
+np.seterr("raise")
+
 output_vars = {
     "bm_gv": ["Green vegetative biomass", "kg DM ha⁻¹"],
     "bm_gr": ["Green reproductive biomass", "kg DM ha⁻¹"],
@@ -93,6 +95,8 @@ def run_modvege_nc(
 
     # read parameter file into a dataframe
     params["csv"] = read_params(filename=input_params_file)
+
+    print(f"Running simulations for input file '{input_timeseries_file}'...")
 
     tseries = xr.open_dataset(
         input_timeseries_file,
@@ -227,6 +231,7 @@ def run_modvege_nc(
                 )
 
                 # save starting values for the next simulation year
+                # round to 7 decimal places to prevent FloatingPointError
                 (
                     model_vals[f"{rlon}_{rlat}_{year}"]["bm_gv"],
                     model_vals[f"{rlon}_{rlat}_{year}"]["bm_gr"],
@@ -238,15 +243,33 @@ def run_modvege_nc(
                     model_vals[f"{rlon}_{rlat}_{year}"]["age_dr"],
                     model_vals[f"{rlon}_{rlat}_{year}"]["wr"]
                 ) = (
-                    data_df[f"{rlon}_{rlat}_{year}"]["bm_gv"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["bm_gr"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["bm_dv"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["bm_dr"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["age_gv"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["age_gr"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["age_dv"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["age_dr"].iat[-1],
-                    data_df[f"{rlon}_{rlat}_{year}"]["wr"].iat[-1]
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["bm_gv"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["bm_gr"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["bm_dv"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["bm_dr"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["age_gv"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["age_gr"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["age_dv"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["age_dr"].iat[-1], 7
+                    ),
+                    round(
+                        data_df[f"{rlon}_{rlat}_{year}"]["wr"].iat[-1], 7
+                    )
                 )
 
                 # drop biomass age columns
@@ -303,6 +326,8 @@ def run_modvege_nc(
                 model_vals["out_dir"],
                 f"modvege_IE_HiResIreland_{tseries.attrs['title']}_{year}.nc"
             ))
+
+        print(f"{year} complete...")
 
 
 def run_modvege(

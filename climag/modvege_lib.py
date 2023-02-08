@@ -318,34 +318,41 @@ def seasonal_effect(
     - Seasonal effect [dimensionless]
     """
 
-    if params["st_1"] <= 200.0:
-        # use a constant value
-        val = np.mean([params["max_sea"], params["min_sea"]])
-    else:
-        if ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
-            val = params["min_sea"]
-        elif (
-            params["st_1"] - 200.0 <= ts_vals["st"] <= params["st_1"] - 100.0
-        ):
-            val = params["max_sea"]
-        elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
-            # assume SEA increases linearly from minSEA at the onset of
-            # growth to maxSEA
-            gradient = (
-                (params["max_sea"] - params["min_sea"]) /
-                ((params["st_1"] - 200.0) - 200.0)
-            )
-            intercept = params["min_sea"] - gradient * 200.0
-            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-        elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
-            # SEA decreases linearly from maxSEA to minSEA at ST_2
-            gradient = (
-                (params["max_sea"] - params["min_sea"]) /
-                ((params["st_1"] - 100.0) - params["st_2"])
-            )
-            intercept = params["min_sea"] - gradient * params["st_2"]
-            val = max(gradient * ts_vals["st"] + intercept, params["min_sea"])
-    return val
+    # if params["st_1"] <= 200.0:
+    #     # use a constant value
+    #     val = np.mean([params["max_sea"], params["min_sea"]])
+    # else:
+    #     if ts_vals["st"] <= 200.0 or ts_vals["st"] >= params["st_2"]:
+    #         val = params["min_sea"]
+    #     elif (
+    #         params["st_1"] - 200.0 <=
+    #         ts_vals["st"] <=
+    #         params["st_1"] - 100.0
+    #     ):
+    #         val = params["max_sea"]
+    #     elif 200.0 < ts_vals["st"] < (params["st_1"] - 200.0):
+    #         # assume SEA increases linearly from minSEA at the onset of
+    #         # growth to maxSEA
+    #         gradient = (
+    #             (params["max_sea"] - params["min_sea"]) /
+    #             ((params["st_1"] - 200.0) - 200.0)
+    #         )
+    #         intercept = params["min_sea"] - gradient * 200.0
+    #         val = max(
+    #             gradient * ts_vals["st"] + intercept, params["min_sea"]
+    #         )
+    #     elif params["st_1"] - 100.0 < ts_vals["st"] < params["st_2"]:
+    #         # SEA decreases linearly from maxSEA to minSEA at ST_2
+    #         gradient = (
+    #             (params["max_sea"] - params["min_sea"]) /
+    #             ((params["st_1"] - 100.0) - params["st_2"])
+    #         )
+    #         intercept = params["min_sea"] - gradient * params["st_2"]
+    #         val = max(
+    #             gradient * ts_vals["st"] + intercept, params["min_sea"]
+    #         )
+    # return val
+    return np.mean([params["max_sea"], params["min_sea"]])
 
 
 def water_reserves(
