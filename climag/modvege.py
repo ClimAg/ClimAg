@@ -164,7 +164,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     st_thresholds = {}
 
     timeseries.sort_values(by=["time"], inplace=True)
-    timeseries.set_index("time", inplace=True)
+    timeseries = timeseries.reset_index().set_index("time")
 
     # return only mean values above 4, and subtract by 4
     timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
@@ -181,10 +181,8 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
             19.5
         )
         # adjust the length if the dataset has 360 days/year
-        if timeseries.loc[str(year)].index[-1].dayofyear < 365:
-            grazing_season -= (
-                365 - timeseries.loc[str(year)].index[-1].dayofyear
-            )
+        if len(timeseries.loc[str(year)]) == 360:
+            grazing_season -= 5
 
         # sum of temperatures at the start
         try:
@@ -200,7 +198,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         except ValueError:
             # if the temperatures are too low for the start of the growing
             # season to be calculated, assume it is on 15th March
-            start = timeseries.loc[f"{year}-03"].index[14].dayofyear - 1
+            start = int(timeseries.loc[f"{year}-03-15"]["index"])
 
         # beginning of the reproductive period
         st_thresholds[year]["st_1"] = (
@@ -212,15 +210,13 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         )
         # end of the reproductive period
         st_thresholds[year]["st_2"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[
-                timeseries.loc[str(year)].index[-1].dayofyear - 1
-            ]
+            timeseries.loc[str(year)]["Tg"].cumsum()[-1]
         )
         # end of the grazing and harvesting season
         # use the calculated grazing season length
         # if growing season continues in December, end grazing on 1st December
         grazing_end = min(
-            timeseries.loc[f"{year}-12"].index[0].dayofyear - 1,
+            int(timeseries.loc[f"{year}-12-01"]["index"]),
             start + 10 + grazing_season
         )
         st_thresholds[year]["st_g2"] = (
@@ -232,7 +228,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         )
 
     timeseries.reset_index(inplace=True)
-    timeseries.drop(columns="Tg", inplace=True)
+    timeseries.drop(columns=["Tg", "index"], inplace=True)
 
     return st_thresholds
 
@@ -420,12 +416,12 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         # recover output streams
         outputs_dict["time"].append(tseries["time"][i])
         outputs_dict["bm_gv"].append(ts_vals["bm_gv"])
-        outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
         outputs_dict["bm_gr"].append(ts_vals["bm_gr"])
+        outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
         outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
         outputs_dict["age_gv"].append(ts_vals["age_gv"])
-        outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_gr"].append(ts_vals["age_gr"])
+        outputs_dict["age_dv"].append(ts_vals["age_dv"])
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["h_bm"].append(ts_vals["h_bm"])
         outputs_dict["i_bm"].append(ts_vals["i_bm"])

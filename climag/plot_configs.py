@@ -11,7 +11,7 @@ import seaborn as sns
 
 # set plot projection to the projection of the HiResIreland dataset
 plot_projection = ccrs.RotatedPole(
-        pole_longitude=172.100006103516, pole_latitude=36.5999984741211
+    pole_longitude=172.100006103516, pole_latitude=36.5999984741211
 )
 
 # seaborn colourmaps
@@ -128,13 +128,13 @@ def cordex_date_format(data):
     Format date
     """
 
-    if data.attrs["frequency"] == "mon":
-        date_format = "%b %Y"
-    elif data.attrs["frequency"] == "day":
-        date_format = "%-d %b %Y"
-    else:
-        date_format = "%Y-%m-%d %H:%M:%S"
-    date = datetime.strftime(parse(str(data["time"].values)), date_format)
+    # if data.attrs["frequency"] == "mon":
+    #     date_format = "%b %Y"
+    # elif data.attrs["frequency"] == "day":
+    #     date_format = "%-d %b %Y"
+    # else:
+    #     date_format = "%Y-%m-%d %H:%M:%S"
+    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
     return date
 
 
@@ -183,39 +183,9 @@ def cordex_plot_title(data, lon=None, lat=None):
     if lon is None and lat is None:
         end_str = cordex_date_format(data)
     else:
-        end_str = "(" + str(lon) + ", " + str(lat) + ")"
+        end_str = f"({lon}, {lat})"
     plot_title = cordex_plot_title_main(data) + ", " + end_str
     return plot_title
-
-
-def cordex_ncfile_name(data):
-    """
-    Define the NetCDF file name for the CORDEX data that has been subset for
-    Ireland.
-
-    Parameters
-    ----------
-    data : input CORDEX data
-
-    Returns
-    -------
-    - file name
-    """
-
-    filename = (
-        "IE_" +
-        data.attrs["CORDEX_domain"] + "_" +
-        data.attrs["driving_model_id"] + "_" +
-        data.attrs["driving_experiment_name"] + "_" +
-        data.attrs["driving_model_ensemble_member"] + "_" +
-        data.attrs["model_id"] + "_" +
-        data.attrs["rcm_version_id"] + "_" +
-        data.attrs["frequency"] + "_" +
-        datetime.strftime(parse(str(data["time"][0].values)), "%Y%m%d") + "-" +
-        datetime.strftime(parse(str(data["time"][-1].values)), "%Y%m%d")
-        + ".nc"
-    )
-    return filename
 
 
 def plot_facet_map_variables(data, boundary_data):
@@ -238,8 +208,7 @@ def plot_facet_map_variables(data, boundary_data):
         ]
     ]:
         cbar_label = (
-            data[var].attrs["long_name"] + " [" +
-            data[var].attrs["units"] + "]"
+            f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
         )  # colorbar label
 
         if var == "PP":
@@ -269,9 +238,9 @@ def plot_facet_map_variables(data, boundary_data):
             col_wrap=col_wrap,
             cmap=cmap,
             robust=True,
-            cbar_kwargs=dict(aspect=40, label=cbar_label),
+            cbar_kwargs={"aspect": 40, "label": cbar_label},
             transform=plot_transform,
-            subplot_kws=dict(projection=plot_projection)
+            subplot_kws={"projection": plot_projection}
         )
 
         fig.set_xlabels("")
@@ -325,8 +294,7 @@ def plot_map_variables(data):
         ]
     ]:
         cbar_label = (
-            data[var].attrs["long_name"] + " [" +
-            data[var].attrs["units"] + "]"
+            f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
         )  # colorbar label
 
         if var == "PP":
@@ -349,7 +317,7 @@ def plot_map_variables(data):
             x="rlon",
             y="rlat",
             robust=True,
-            cbar_kwargs=dict(label=cbar_label),
+            cbar_kwargs={"label": cbar_label},
             transform=plot_transform
         )
 
@@ -366,7 +334,7 @@ def plot_map_variables(data):
 
         # specify gridline spacing and labels
         axs.gridlines(
-            draw_labels=dict(bottom="x", left="y"),
+            draw_labels={"bottom": "x", "left": "y"},
             xlocs=range(-180, 180, 2),
             ylocs=range(-90, 90, 1),
             color="lightslategrey",

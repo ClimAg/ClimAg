@@ -57,8 +57,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     # drop biomass age columns
     data_df.drop(
-        columns=["age_gv", "age_gr", "age_dv", "age_dr"],
-        inplace=True
+        columns=["age_gv", "age_gr", "age_dv", "age_dr"], inplace=True
     )
 
     # save as CSV
@@ -82,6 +81,23 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     plt.show()
 
 
+def site_specific_params_file(input_params_vector, tseries, params):
+    """
+    Load the site-specific characteristics layers that vary spatially
+    """
+
+    # site-specific characteristics that vary spatially
+    if input_params_vector is not None:
+        if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
+            params["gpkg"] = gpd.read_file(
+                input_params_vector, layer="eurocordex"
+            )
+        else:
+            params["gpkg"] = gpd.read_file(
+                input_params_vector, layer="hiresireland"
+            )
+
+
 def run_modvege_nc(
     input_timeseries_file, input_params_file, out_dir,
     input_params_vector=None
@@ -90,13 +106,16 @@ def run_modvege_nc(
     Input time series: NetCDF (climate data)
     """
 
+    print(
+        f"Running simulations for input file '{input_timeseries_file}'...",
+        datetime.now(tz=timezone.utc)
+    )
+
     params = {}
     model_vals = {}
 
     # read parameter file into a dataframe
     params["csv"] = read_params(filename=input_params_file)
-
-    print(f"Running simulations for input file '{input_timeseries_file}'...")
 
     tseries = xr.open_dataset(
         input_timeseries_file,
@@ -105,33 +124,26 @@ def run_modvege_nc(
         #                # yet, so chunking must be disabled...
     )
 
-    if input_params_vector is not None:
-        if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
-            params["gpkg"] = gpd.read_file(
-                os.path.join("data", "ModVege", "params.gpkg"),
-                layer="eurocordex"
-            )
-        else:
-            params["gpkg"] = gpd.read_file(
-                os.path.join("data", "ModVege", "params.gpkg"),
-                layer="hiresireland"
-            )
+    # adjustments for 360-day calendar
+    if "HadGEM2-ES" in input_timeseries_file:
+        tseries = tseries.convert_calendar("standard", align_on="year")
+
+    # site-specific characteristics that vary spatially
+    site_specific_params_file(
+        input_params_vector=input_params_vector,
+        tseries=tseries,
+        params=params
+    )
 
     # get the CRS
     model_vals["data_crs"] = tseries.rio.crs
 
     # loop through each year
-    # model_vals["year_list"] = [2054, 2055, 2056]
     model_vals["year_list"] = list(
         sorted(set(tseries["time"].dt.year.values))
     )
     for year in model_vals["year_list"]:
-        tseries_y = tseries.sel(
-            time=slice(
-                f"{year}-01-01",
-                f"{year}-12-{int(tseries['time'][-1].dt.day)}"
-            )
-        )
+        tseries_y = tseries.sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
 
         # assign the outputs as new variables
         for key, val in output_vars.items():
@@ -148,8 +160,6 @@ def run_modvege_nc(
         data_df = {}
 
         # loop through each grid cell
-        # for rlon, rlat in [(20, 20), (21, 21)]:
-        # for rlon, rlat in itertools.product(range(10), range(10)):
         for rlon, rlat in itertools.product(
             range(len(tseries_y.coords["rlon"])),
             range(len(tseries_y.coords["rlat"]))
@@ -193,6 +203,7 @@ def run_modvege_nc(
                 model_vals[f"{rlon}_{rlat}_{year}"]["t_init"] = (
                     data_df[f"{rlon}_{rlat}_{year}"]["T"].iloc[-10:-1]
                 )
+
                 # starting values
                 if year > model_vals["year_list"][0]:
                     (
@@ -280,11 +291,11 @@ def run_modvege_nc(
 
                 # assign the output variables to the main Xarray dataset
                 for key in output_vars:
-                    tseries_y[key].loc[dict(
-                        rlon=tseries_l.coords["rlon"],
-                        rlat=tseries_l.coords["rlat"],
-                        time=tseries_l.coords["time"]
-                    )] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
+                    tseries_y[key].loc[{
+                        "rlon": tseries_l.coords["rlon"],
+                        "rlat": tseries_l.coords["rlat"],
+                        "time": tseries_l.coords["time"]
+                    }] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
         # delete input variables
         tseries_y = tseries_y.drop_vars(list(tseries.data_vars))
@@ -327,7 +338,7 @@ def run_modvege_nc(
                 f"modvege_IE_HiResIreland_{tseries.attrs['title']}_{year}.nc"
             ))
 
-        print(f"{year} complete...")
+        print(f"{year} complete...", datetime.now(tz=timezone.utc))
 
 
 def run_modvege(

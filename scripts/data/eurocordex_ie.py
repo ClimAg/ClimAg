@@ -137,6 +137,9 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
     data.rio.write_crs(data_crs, inplace=True)
 
     # export to NetCDF
-    FILE_NAME = cplt.cordex_ncfile_name(data)
+    FILE_NAME = (
+        f"IE_{data.attrs['model_id']}_{data.attrs['driving_model_id']}"
+        f"_{data.attrs['experiment_id']}_{data.attrs['CORDEX_domain']}.nc"
+    )
 
     data.to_netcdf(os.path.join(DATA_DIR, FILE_NAME))
