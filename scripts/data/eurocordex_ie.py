@@ -21,7 +21,6 @@ from datetime import datetime, timezone
 import geopandas as gpd
 import intake
 import xarray as xr
-import climag.plot_configs as cplt
 
 DATA_DIR_BASE = os.path.join("data", "EURO-CORDEX")
 
@@ -30,9 +29,7 @@ DATA_DIR = os.path.join(DATA_DIR_BASE, "IE")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Ireland boundary
-GPKG_BOUNDARY = os.path.join(
-    "data", "boundaries", "NUTS2021", "NUTS_2021.gpkg"
-)
+GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
 ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 # reading the local catalogue
@@ -75,7 +72,7 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
 
     # calculate photosynthetically active radiation (PAR)
     # Papaioannou et al. (1993) - irradiance ratio
-    data = data.assign(par=(data["rsds"] * 0.473))
+    data = data.assign(par=data["rsds"] * 0.473)
 
     # convert variable units and assign attributes
     for v in data.data_vars:
@@ -126,6 +123,13 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
         "evspsblpot": "PET", "par": "PAR"
     })
 
+    # assign dataset name
+    for x in ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]:
+        if x in data.attrs["driving_model_id"]:
+            data.attrs["dataset"] = (
+                f"IE_EURO-CORDEX_RCA4_{x}_{data.attrs['experiment_id']}"
+            )
+
     # assign attributes for the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
@@ -137,9 +141,4 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
     data.rio.write_crs(data_crs, inplace=True)
 
     # export to NetCDF
-    FILE_NAME = (
-        f"IE_{data.attrs['model_id']}_{data.attrs['driving_model_id']}"
-        f"_{data.attrs['experiment_id']}_{data.attrs['CORDEX_domain']}.nc"
-    )
-
-    data.to_netcdf(os.path.join(DATA_DIR, FILE_NAME))
+    data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))

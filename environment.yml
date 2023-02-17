@@ -16,6 +16,6 @@ dependencies:
   - seaborn
   - cfgrib
   - pooch
-  # - cdo  # unavailable for Windows; use python-cdo
+  - cdo  # unavailable for Windows
   - pytest
   - rasterstats

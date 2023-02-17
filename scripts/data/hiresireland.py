@@ -29,9 +29,7 @@ DATA_DIR = os.path.join(DATA_DIR_BASE, "IE")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Ireland boundary
-GPKG_BOUNDARY = os.path.join(
-    "data", "boundaries", "NUTS2021", "NUTS_2021.gpkg"
-)
+GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
 ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 for exp, model in itertools.product(
@@ -68,7 +66,7 @@ for exp, model in itertools.product(
 
     # ### Calculate photosynthetically active radiation
     # Papaioannou et al. (1993) - irradiance ratio
-    data = data.assign(par=(data["ASOB_S"] * 0.473))
+    data = data.assign(par=data["ASOB_S"] * 0.473)
 
     # ### Convert units and rename variables
     for v in data.data_vars:
@@ -126,6 +124,12 @@ for exp, model in itertools.product(
         "w": "PET", "par": "PAR"
     })
 
+    # remove dataset history
+    del data.attrs["history"]
+
+    # assign dataset name
+    data.attrs["dataset"] = f"IE_HiResIreland_{data.attrs['title'][:-4]}"
+
     # assign attributes for the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
@@ -134,13 +138,9 @@ for exp, model in itertools.product(
         " by nstreethran@ucc.ie."
     )
 
-    # remove dataset history
-    del data.attrs["history"]
-
     # ### Export data
     # reassign CRS
     data.rio.write_crs(data_crs, inplace=True)
 
     # export to NetCDF
-    FILE_NAME = "IE_" + data.attrs["title"] + ".nc"
-    data.to_netcdf(os.path.join(DATA_DIR, FILE_NAME))
+    data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))

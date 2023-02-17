@@ -15,6 +15,7 @@ exec(
 """
 
 import os
+import sys
 import glob
 from climag.modvege_run import run_modvege
 
@@ -35,3 +36,5 @@ for ts in ts_files:
         out_dir=DATA_DIR,
         input_params_vector=PARAMS_GPKG_FILE
     )
+
+sys.exit()
