@@ -177,7 +177,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         # grazing season length using the Smith formula
         grazing_season = round(
             29.3 * np.mean(timeseries.loc[str(year)]["T"]) -
-            0.1 * np.mean(timeseries.loc[str(year)]["PP"]) +
+            0.1 * np.sum(timeseries.loc[str(year)]["PP"]) +
             19.5
         )
         # adjust the length if the dataset has 360 days/year
