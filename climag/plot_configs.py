@@ -134,69 +134,19 @@ def hiresireland_date_format(data):
     return date
 
 
-def cordex_date_format(data):
-    """
-    Format date
-    """
+# def cordex_date_format(data):
+#     """
+#     Format date
+#     """
 
-    # if data.attrs["frequency"] == "mon":
-    #     date_format = "%b %Y"
-    # elif data.attrs["frequency"] == "day":
-    #     date_format = "%-d %b %Y"
-    # else:
-    #     date_format = "%Y-%m-%d %H:%M:%S"
-    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
-    return date
-
-
-def cordex_plot_title_main(data):
-    """
-    Define the map plot title for CORDEX data.
-
-    Parameters
-    ----------
-    data : input CORDEX data
-
-    Returns
-    -------
-    - plot title
-    """
-
-    plot_title = (
-        data.attrs["project_id"] + ", " +
-        data.attrs["CORDEX_domain"] + ", " +
-        data.attrs["driving_model_id"] + ", " +
-        data.attrs["driving_model_ensemble_member"] + ", " +
-        data.attrs["driving_experiment_name"] + ", " +
-        data.attrs["model_id"] + ", " +
-        data.attrs["rcm_version_id"] + ", " +
-        data.attrs["frequency"]
-    )
-    return plot_title
-
-
-def cordex_plot_title(data, lon=None, lat=None):
-    """
-    Define the map plot title for CORDEX data with information about the time
-    or point subset.
-
-    Parameters
-    ----------
-    data : input CORDEX data
-    lon : longitude of the point subset (optional)
-    lat : latitude of the point subset (optional)
-
-    Returns
-    -------
-    - plot title
-    """
-
-    if lon is None and lat is None:
-        end_str = cordex_date_format(data)
-    else:
-        end_str = f"({lon}, {lat})"
-    plot_title = cordex_plot_title_main(data) + ", " + end_str
-    return plot_title
+#     # if data.attrs["frequency"] == "mon":
+#     #     date_format = "%b %Y"
+#     # elif data.attrs["frequency"] == "day":
+#     #     date_format = "%-d %b %Y"
+#     # else:
+#     #     date_format = "%Y-%m-%d %H:%M:%S"
+#     date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
+#     return date
 
 
 def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
@@ -224,7 +174,7 @@ def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
         cmap = cmap_mako_r
     elif var in ("wr", "env"):
         cmap = "GnBu"
-    elif var in ("T", "RG", "PAR", "PET", "aet"):
+    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
         cmap = "Spectral_r"
     else:
         cmap = "YlGn"
@@ -260,7 +210,7 @@ def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
         boundary_data.to_crs(plot_projection).boundary.plot(
             ax=axs, color="darkslategrey", linewidth=.5
         )
-        axs.set_title(cordex_date_format(data.isel(time=i)))
+        # axs.set_title(cordex_date_format(data.isel(time=i)))
         axs.set_xlim(-1.9, 1.6)
         axs.set_ylim(-2.1, 2.1)
         # use gridlines to add tick labels (lon/lat)
@@ -309,7 +259,7 @@ def plot_map(data, var, cbar_levels=None, title="default"):
         cmap = cmap_mako_r
     elif var in ("wr", "env"):
         cmap = "GnBu"
-    elif var in ("T", "RG", "PAR", "PET", "aet"):
+    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
         cmap = "Spectral_r"
     else:
         cmap = "YlGn"
@@ -388,38 +338,47 @@ def plot_averages(
 
     plot_transform = rotated_pole_transform(data)
 
-    cbar_label = (
-        f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
-    )  # colorbar label
-
     if var == "PP":
         cmap = cmap_mako_r
     elif var in ("wr", "env"):
         cmap = "GnBu"
-    elif var in ("T", "RG", "PAR", "PET", "aet"):
+    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
         cmap = "Spectral_r"
     else:
         cmap = "YlGn"
 
     if averages == "month":
-        columns, aspect = 4, 25
+        columns, cbar_aspect = 4, 25
+    elif averages == "year":
+        columns, cbar_aspect = 6, 35
     else:
-        columns, aspect = 2, 20
+        columns, cbar_aspect = 2, 20
 
     fig = data_weighted[var].where(pd.notnull(data[var][0])).plot(
         x="rlon", y="rlat", col=averages,
         col_wrap=columns,
         cmap=cmap,
         robust=True,
-        cbar_kwargs={"aspect": aspect, "label": cbar_label},
+        cbar_kwargs={
+            "aspect": cbar_aspect,
+            "label": (
+                f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
+            )
+        },
         transform=plot_transform,
         subplot_kws={"projection": plot_projection},
-        levels=cbar_levels
+        levels=cbar_levels,
+        xlim=(-1.9, 1.6),
+        ylim=(-2.1, 2.1),
+        aspect=.9
     )
 
     for i, axs in enumerate(fig.axs.flat):
-        boundary_data.to_crs(plot_projection).boundary.plot(
-            ax=axs, color="darkslategrey", linewidth=.5
+        # boundary_data.to_crs(plot_projection).boundary.plot(
+        #     ax=axs, color="darkslategrey", linewidth=.5
+        # )
+        boundary_data.to_crs(plot_projection).plot(
+            ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
         )
         if averages == "month":
             axs.set_title(
@@ -432,8 +391,6 @@ def plot_averages(
             axs.set_title(
                 str(data_weighted.isel({averages: i})[averages].values)
             )
-        axs.set_xlim(-1.9, 1.6)
-        axs.set_ylim(-2.1, 2.1)
 
     plt.show()
 
@@ -529,13 +486,13 @@ def boxplot_configs(data, var, lonlat, axs, fliers):
         boxprops={"facecolor": "Lavender", "color": "DarkSlateGrey"},
         meanprops={
             "markeredgecolor": "DarkSlateGrey",
-            "marker": "*",
+            "marker": "d",
             "markerfacecolor": (1, 1, 0, 0)  # transparent
         },
         flierprops={
-            "alpha": .25, "markeredgecolor": "LightSlateGrey", "zorder": 1
+            "alpha": .5, "markeredgecolor": "LightSteelBlue", "zorder": 1
         },
-        xlabel=(
+        title=(
             f"{data['eurocordex_historical'][var].attrs['long_name']} "
             f"[{data['eurocordex_historical'][var].attrs['units']}]"
         )
@@ -565,7 +522,7 @@ def plot_box(data, var, lonlat, figsize=(10, 4), fliers=False):
     plt.show()
 
 
-def plot_box_multi(data, varlist, lonlat, figsize=(12, 6), fliers=False):
+def plot_box_multi(data, varlist, lonlat, figsize=(13.5, 6), fliers=False):
     """
     Generate box plots for Xarray datasets stored in a dictionary
 
