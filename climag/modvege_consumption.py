@@ -124,8 +124,8 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
           500 [g DM m⁻³]
         - bd_dr: Bulk density of the dead reproductive compartment; default is
           150 [g DM m⁻³]
-        - i_bm_lu: Amount of biomass ingested per livestock unit; default is
-          13 [kg DM LU⁻¹]
+        - i_bm_lu: Maximum amount of biomass ingested per livestock unit;
+          default is 13 [kg DM LU⁻¹]
         - omd_dv: Organic matter digestibility of the dead vegetative
           compartment; default is 0.45 [dimensionless]
         - omd_dr: Organic matter digestibility of the dead reproductive

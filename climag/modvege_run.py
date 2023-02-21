@@ -305,38 +305,27 @@ def run_modvege_nc(
             "creation_date": str(datetime.now(tz=timezone.utc)),
             "contact": "nstreethran@ucc.ie",
             "frequency": "day",
-            "references": "https://github.com/ClimAg"
+            "references": "https://github.com/ClimAg",
+            "input_dataset": tseries.attrs["dataset"]
         }
 
         # reassign CRS
         tseries_y.rio.write_crs(model_vals["data_crs"], inplace=True)
 
         # save as a NetCDF file
-        if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
-            model_vals["out_dir"] = os.path.join(
-                out_dir, "EURO-CORDEX",
-                tseries.attrs["experiment_id"],
-                tseries.attrs["driving_model_id"]
-            )
-            os.makedirs(model_vals["out_dir"], exist_ok=True)
-            tseries_y.to_netcdf(os.path.join(
+        model_vals["out_dir"] = os.path.join(
+            out_dir,
+            tseries.attrs["dataset"].split("_")[1],
+            tseries.attrs["dataset"].split("_")[4],
+            tseries.attrs["dataset"].split("_")[3]
+        )
+        os.makedirs(model_vals["out_dir"], exist_ok=True)
+        tseries_y.to_netcdf(
+            os.path.join(
                 model_vals["out_dir"],
-                f"modvege_IE_EURO-CORDEX_{tseries.attrs['model_id']}_"
-                f"{tseries.attrs['driving_model_id']}_"
-                f"{tseries.attrs['experiment_id']}_"
-                f"{tseries.attrs['CORDEX_domain']}_{year}.nc"
-            ))
-        else:
-            model_vals["out_dir"] = os.path.join(
-                out_dir, "HiResIreland",
-                tseries.attrs["title"].split("_")[2],
-                tseries.attrs["title"].split("_")[1]
+                f"modvege_{tseries.attrs['dataset']}_{year}.nc"
             )
-            os.makedirs(model_vals["out_dir"], exist_ok=True)
-            tseries_y.to_netcdf(os.path.join(
-                model_vals["out_dir"],
-                f"modvege_IE_HiResIreland_{tseries.attrs['title']}_{year}.nc"
-            ))
+        )
 
         print(f"{year} complete...", datetime.now(tz=timezone.utc))
 

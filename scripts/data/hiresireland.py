@@ -21,6 +21,7 @@ import os
 from datetime import datetime, timezone
 import geopandas as gpd
 import xarray as xr
+import pandas as pd
 
 DATA_DIR_BASE = os.path.join("data", "HiResIreland")
 
@@ -45,14 +46,14 @@ for exp, model in itertools.product(
                 "*mean_T_2M*.nc", "*ASOB_S*.nc", "*ET*.nc", "*TOT_PREC*.nc"
             ]
         ))),
-        # chunks="auto",
+        chunks="auto",
         decode_coords="all"
     )
-    # disable auto-rechunking; may cause NotImplementedError with object dtype
+    # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
 
     # copy time_bnds
-    data_time_bnds = data.coords["time_bnds"]
+    # data_time_bnds = data.coords["time_bnds"]
 
     # copy CRS
     data_crs = data.rio.crs
@@ -62,55 +63,54 @@ for exp, model in itertools.product(
     data = data.rio.clip(ie.buffer(1).to_crs(data_crs))
 
     # reassign time_bnds
-    data.coords["time_bnds"] = data_time_bnds
+    # data.coords["time_bnds"] = data_time_bnds
+
+    # ### Calculate downward shortwave radiation
+    # assume an albedo of 0.23 for grass (Allen et al., 1998)
+    data = data.assign(RS=data["ASOB_S"] / (1 - 0.23))
 
     # ### Calculate photosynthetically active radiation
     # Papaioannou et al. (1993) - irradiance ratio
-    data = data.assign(par=data["ASOB_S"] * 0.473)
+    data = data.assign(PAR=data["RS"] * 0.473)
 
     # ### Convert units and rename variables
     for v in data.data_vars:
         var_attrs = data[v].attrs  # extract attributes
         if v == "T_2M":
-            var_attrs["units"] = "°C"  # convert K to deg C
+            var_attrs["units"] = "°C"
             data[v] = data[v] - 273.15
-            var_attrs["note"] = (
-                f"Original name is '{v}'; converted from K to °C by "
-                "subtracting 273.15"
-            )
+            var_attrs["note"] = "Converted from K to °C by subtracting 273.15"
             var_attrs["long_name"] = "Near-Surface Air Temperature"
-        elif v in ("ASOB_S", "par"):
+        elif v in ("ASOB_S", "PAR", "RS"):
             var_attrs["units"] = "MJ m⁻² day⁻¹"
-            # convert W m-2 to MJ m-2 day-1
-            # Allen (1998) - FAO Irrigation and Drainage Paper No. 56 (p. 45)
-            # (per second to per day; then convert to mega)
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            if v == "par":
+            if v == "PAR":
                 var_attrs["long_name"] = (
                     "Surface Photosynthetically Active Radiation"
                 )
                 var_attrs["note"] = (
-                    "Calculated by multiplying 'rsds' with an irradiance "
-                    "ratio of 0.473 based on Papaioannou et al. (1993); "
-                    "converted from W m⁻² to MJ m⁻² day⁻¹ by multiplying "
-                    "0.0864 based on the FAO Irrigation and Drainage Paper "
-                    "No. 56 (Allen et al., 1998, p. 45)"
+                    "Calculated by dividing the surface net downward "
+                    "shortwave radiation with (1 - 0.23), where 0.23 is"
+                    " assumed to be the albedo of grass (Allen et al., 1998),"
+                    " then multiplying it with an irradiance ratio of 0.473"
+                    " based on Papaioannou et al. (1993); converted from "
+                    "W m⁻² to MJ m⁻² day⁻¹ by multiplying 0.0864 as "
+                    "documented in the FAO Irrigation and Drainage Paper No. "
+                    "56 (Allen et al., 1998, p. 45)"
                 )
-            else:
+            elif v == "RS":
                 var_attrs["long_name"] = (
                     "Surface Downwelling Shortwave Radiation"
                 )
-                var_attrs["note"] = (
-                    f"Original name is '{v}'; converted from W m⁻² to "
-                    "MJ m⁻² day⁻¹ by multiplying 0.0864 based on the FAO "
-                    "Irrigation and Drainage Paper No. 56 "
-                    "(Allen et al., 1998, p. 45)"
+            else:
+                var_attrs["long_name"] = (
+                    "Surface Net Downward Shortwave Radiation"
                 )
         elif v in ("TOT_PREC", "w"):
-            var_attrs["units"] = "mm day⁻¹"  # kg m-2 is the same as mm day-1
+            var_attrs["units"] = "mm day⁻¹"
             var_attrs["note"] = (
-                f"Original name is '{v}'; kg m⁻² is equivalent to mm day⁻¹, "
-                "assuming a water density of 1,000 kg m⁻³"
+                "kg m⁻² is equivalent to mm day⁻¹, assuming a water density "
+                "of 1,000 kg m⁻³"
             )
             if v == "w":
                 var_attrs["long_name"] = "Potential Evapotranspiration"
@@ -119,10 +119,7 @@ for exp, model in itertools.product(
         data[v].attrs = var_attrs  # reassign attributes
 
     # rename
-    data = data.rename({
-        "T_2M": "T", "ASOB_S": "RG", "TOT_PREC": "PP",
-        "w": "PET", "par": "PAR"
-    })
+    data = data.rename({"T_2M": "T", "TOT_PREC": "PP", "w": "PET"})
 
     # remove dataset history
     del data.attrs["history"]
@@ -130,10 +127,51 @@ for exp, model in itertools.product(
     # assign dataset name
     data.attrs["dataset"] = f"IE_HiResIreland_{data.attrs['title'][:-4]}"
 
-    # assign attributes for the data
+    # ### Extend data to a spin-up year
+    data_interp = data.interp(
+        time=pd.date_range(
+            f"{int(data['time'][0].dt.year) - 1}-01-01T10:30:00",
+            f"{int(data['time'][0].dt.year) - 1}-12-31T10:30:00",
+            freq="D"
+        ),
+        kwargs={"fill_value": None}
+    )
+
+    data_interp.rio.write_crs(data_crs, inplace=True)
+
+    # merge spin-up year with first two years of the main data
+    data_interp = xr.combine_by_coords([
+        data_interp,
+        data.sel(
+            time=slice(
+                str(int(data["time"][0].dt.year)),
+                str(int(data["time"][0].dt.year) + 1)
+            )
+        )
+    ])
+
+    # shift first year of the main data to the spin-up year
+    data_interp = data_interp.shift(
+        time=-data_interp.sel(
+            time=str(int(data_interp["time"][0].dt.year))
+        ).dims["time"]
+    )
+
+    # keep only spin-up year
+    data_interp = data_interp.sel(
+        time=str(int(data_interp["time"][0].dt.year))
+    )
+
+    # merge with main dataset
+    data = xr.combine_by_coords([data, data_interp])
+
+    # keep only relevant variables
+    data = data.drop_vars(["RS", "ASOB_S"])
+
+    # assign attributes to the data
     data.attrs["comment"] = (
-        "This dataset has been clipped with the Island of Ireland's boundary "
-        "and units have been converted. "
+        "This dataset has been clipped with the Island of Ireland's boundary"
+        " and units have been converted. "
         "Last updated: " + str(datetime.now(tz=timezone.utc)) +
         " by nstreethran@ucc.ie."
     )
@@ -142,5 +180,5 @@ for exp, model in itertools.product(
     # reassign CRS
     data.rio.write_crs(data_crs, inplace=True)
 
-    # export to NetCDF
+    # export to netCDF
     data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))

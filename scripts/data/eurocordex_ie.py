@@ -40,22 +40,22 @@ JSON_FILE_PATH = os.path.join(
 cordex_eur11_cat = intake.open_esm_datastore(JSON_FILE_PATH)
 
 # subset data for each experiment and driving model
-driving_model_id = list(cordex_eur11_cat.df["driving_model_id"].unique())
+driving_model = list(cordex_eur11_cat.df["driving_model"].unique())
 
 experiment_id = list(cordex_eur11_cat.df["experiment_id"].unique())
 
-for exp, model in itertools.product(experiment_id, driving_model_id):
+for exp, model in itertools.product(experiment_id, driving_model):
     cordex_eur11 = cordex_eur11_cat.search(
         experiment_id=exp,
-        driving_model_id=model
+        driving_model=model
     )
 
     data = xr.open_mfdataset(
         list(cordex_eur11.df["uri"]),
-        # chunks="auto",
+        chunks="auto",
         decode_coords="all"
     )
-    # disable auto-rechunking; may cause NotImplementedError with object dtype
+    # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
 
     # copy time_bnds coordinates
@@ -63,6 +63,12 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
 
     # copy CRS
     data_crs = data.rio.crs
+
+    # subset for reference period and spin-up year
+    if exp == "historical":
+        data = data.sel(time=slice("1975", "2005"))
+    else:
+        data = data.sel(time=slice("2040", "2070"))
 
     # clip to Ireland's boundary
     data = data.rio.clip(ie.buffer(500).to_crs(data.rio.crs))
@@ -72,25 +78,19 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
 
     # calculate photosynthetically active radiation (PAR)
     # Papaioannou et al. (1993) - irradiance ratio
-    data = data.assign(par=data["rsds"] * 0.473)
+    data = data.assign(PAR=data["rsds"] * 0.473)
 
     # convert variable units and assign attributes
     for v in data.data_vars:
         var_attrs = data[v].attrs  # extract attributes
         if v == "tas":
-            var_attrs["units"] = "°C"  # convert K to deg C
+            var_attrs["units"] = "°C"
             data[v] = data[v] - 273.15
-            var_attrs["note"] = (
-                f"Original name is '{v}'; converted from K to °C by "
-                "subtracting 273.15"
-            )
-        elif v in ("par", "rsds"):
-            # convert W m-2 to MJ m-2 day-1
+            var_attrs["note"] = "Converted from K to °C by subtracting 273.15"
+        elif v in ("PAR", "rsds"):
             var_attrs["units"] = "MJ m⁻² day⁻¹"
-            # Allen et al. (1998) - FAO Irrigation and Drainage Paper No. 56
-            # (p. 45) (per second to per day; then convert to mega)
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            if v == "par":
+            if v == "PAR":
                 var_attrs["long_name"] = (
                     "Surface Photosynthetically Active Radiation"
                 )
@@ -101,36 +101,25 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
                     "0.0864 based on the FAO Irrigation and Drainage Paper "
                     "No. 56 (Allen et al., 1998, p. 45)"
                 )
-            else:
-                var_attrs["note"] = (
-                    f"Original name is '{v}'; converted from W m⁻² to MJ m⁻² "
-                    "day⁻¹ by multiplying 0.0864 based on the FAO Irrigation "
-                    "and Drainage Paper No. 56 (Allen et al., 1998, p. 45)"
-                )
         elif v in ("pr", "evspsblpot"):
-            var_attrs["units"] = "mm day⁻¹"  # convert kg m-2 s-1 to mm day-1
-            data[v] = data[v] * 60 * 60 * 24  # (per second to per day)
+            var_attrs["units"] = "mm day⁻¹"
+            data[v] = data[v] * 60 * 60 * 24
             var_attrs["note"] = (
-                f"Original name is '{v}'; converted from kg m⁻² s⁻¹ to mm "
-                "day⁻¹ by multiplying 86,400, assuming a water density of "
-                "1,000 kg m⁻³"
+                "Converted from kg m⁻² s⁻¹ to mm day⁻¹ by multiplying 86,400,"
+                " assuming a water density of 1,000 kg m⁻³"
             )
         data[v].attrs = var_attrs  # reassign attributes
 
     # rename variables
-    data = data.rename({
-        "tas": "T", "rsds": "RG", "pr": "PP",
-        "evspsblpot": "PET", "par": "PAR"
-    })
+    data = data.rename({"tas": "T", "pr": "PP", "evspsblpot": "PET"})
 
     # assign dataset name
-    for x in ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]:
-        if x in data.attrs["driving_model_id"]:
-            data.attrs["dataset"] = (
-                f"IE_EURO-CORDEX_RCA4_{x}_{data.attrs['experiment_id']}"
-            )
+    data.attrs["dataset"] = f"IE_EURO-CORDEX_RCA4_{model}_{exp}"
 
-    # assign attributes for the data
+    # keep only relevant variables
+    data = data.drop_vars(["rsds"])
+
+    # assign attributes to the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
         "and units have been converted. "
@@ -140,5 +129,5 @@ for exp, model in itertools.product(experiment_id, driving_model_id):
 
     data.rio.write_crs(data_crs, inplace=True)
 
-    # export to NetCDF
+    # export to netCDF
     data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))
