@@ -37,6 +37,13 @@ for exp, model in itertools.product(
     ["historical", "rcp45", "rcp85"],
     ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 ):
+    # auto-rechunking may cause NotImplementedError with object dtype
+    # where it will not be able to estimate the size in bytes of object data
+    if model == "HadGEM2-ES":
+        chunks = 300
+    else:
+        chunks = "auto"
+
     data = xr.open_mfdataset(
         list(itertools.chain(*list(
             glob.glob(os.path.join(
@@ -46,17 +53,19 @@ for exp, model in itertools.product(
                 "*mean_T_2M*.nc", "*ASOB_S*.nc", "*ET*.nc", "*TOT_PREC*.nc"
             ]
         ))),
-        chunks="auto",
+        chunks=chunks,
         decode_coords="all"
     )
-    # auto-rechunking may cause NotImplementedError with object dtype
-    # where it will not be able to estimate the size in bytes of object data
-
-    # copy time_bnds
-    # data_time_bnds = data.coords["time_bnds"]
 
     # copy CRS
     data_crs = data.rio.crs
+
+    # adjustments for 360-day calendar
+    if model == "HadGEM2-ES":
+        data = data.convert_calendar("standard", align_on="year")
+
+    # copy time_bnds
+    # data_time_bnds = data.coords["time_bnds"]
 
     # ### Ireland subset
     # clip to Ireland's boundary
@@ -73,6 +82,9 @@ for exp, model in itertools.product(
     # Papaioannou et al. (1993) - irradiance ratio
     data = data.assign(PAR=data["RS"] * 0.473)
 
+    # keep only required variables
+    data = data.drop_vars(["RS", "ASOB_S"])
+
     # ### Convert units and rename variables
     for v in data.data_vars:
         var_attrs = data[v].attrs  # extract attributes
@@ -81,31 +93,22 @@ for exp, model in itertools.product(
             data[v] = data[v] - 273.15
             var_attrs["note"] = "Converted from K to °C by subtracting 273.15"
             var_attrs["long_name"] = "Near-Surface Air Temperature"
-        elif v in ("ASOB_S", "PAR", "RS"):
+        elif v == "PAR":
             var_attrs["units"] = "MJ m⁻² day⁻¹"
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            if v == "PAR":
-                var_attrs["long_name"] = (
-                    "Surface Photosynthetically Active Radiation"
-                )
-                var_attrs["note"] = (
-                    "Calculated by dividing the surface net downward "
-                    "shortwave radiation with (1 - 0.23), where 0.23 is"
-                    " assumed to be the albedo of grass (Allen et al., 1998),"
-                    " then multiplying it with an irradiance ratio of 0.473"
-                    " based on Papaioannou et al. (1993); converted from "
-                    "W m⁻² to MJ m⁻² day⁻¹ by multiplying 0.0864 as "
-                    "documented in the FAO Irrigation and Drainage Paper No. "
-                    "56 (Allen et al., 1998, p. 45)"
-                )
-            elif v == "RS":
-                var_attrs["long_name"] = (
-                    "Surface Downwelling Shortwave Radiation"
-                )
-            else:
-                var_attrs["long_name"] = (
-                    "Surface Net Downward Shortwave Radiation"
-                )
+            var_attrs["long_name"] = (
+                "Surface Photosynthetically Active Radiation"
+            )
+            var_attrs["note"] = (
+                "Calculated by dividing the surface net downward "
+                "shortwave radiation with (1 - 0.23), where 0.23 is"
+                " assumed to be the albedo of grass (Allen et al., 1998),"
+                " then multiplying it with an irradiance ratio of 0.473"
+                " based on Papaioannou et al. (1993); converted from "
+                "W m⁻² to MJ m⁻² day⁻¹ by multiplying 0.0864 as "
+                "documented in the FAO Irrigation and Drainage Paper No. "
+                "56 (Allen et al., 1998, p. 45)"
+            )
         elif v in ("TOT_PREC", "w"):
             var_attrs["units"] = "mm day⁻¹"
             var_attrs["note"] = (
@@ -164,9 +167,6 @@ for exp, model in itertools.product(
 
     # merge with main dataset
     data = xr.combine_by_coords([data, data_interp])
-
-    # keep only relevant variables
-    data = data.drop_vars(["RS", "ASOB_S"])
 
     # assign attributes to the data
     data.attrs["comment"] = (

@@ -124,10 +124,6 @@ def run_modvege_nc(
         #                # yet, so chunking must be disabled...
     )
 
-    # adjustments for 360-day calendar
-    if "HadGEM2-ES" in input_timeseries_file:
-        tseries = tseries.convert_calendar("standard", align_on="year")
-
     # site-specific characteristics that vary spatially
     site_specific_params_file(
         input_params_vector=input_params_vector,

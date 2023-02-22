@@ -17,10 +17,14 @@ exec(
 # import libraries
 import itertools
 import os
+import sys
 from datetime import datetime, timezone
 import geopandas as gpd
 import intake
 import xarray as xr
+from dask.distributed import Client
+
+client = Client(n_workers=3, threads_per_worker=4, memory_limit="2GB")
 
 DATA_DIR_BASE = os.path.join("data", "EURO-CORDEX")
 
@@ -50,19 +54,28 @@ for exp, model in itertools.product(experiment_id, driving_model):
         driving_model=model
     )
 
-    data = xr.open_mfdataset(
-        list(cordex_eur11.df["uri"]),
-        chunks="auto",
-        decode_coords="all"
-    )
     # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
+    if model == "HadGEM2-ES":
+        chunks = 300
+    else:
+        chunks = "auto"
 
-    # copy time_bnds coordinates
-    data_time_bnds = data.coords["time_bnds"]
+    data = xr.open_mfdataset(
+        list(cordex_eur11.df["uri"]),
+        chunks=chunks,
+        decode_coords="all"
+    )
 
     # copy CRS
     data_crs = data.rio.crs
+
+    # adjustments for 360-day calendar
+    if model == "HadGEM2-ES":
+        data = data.convert_calendar("standard", align_on="year")
+
+    # copy time_bnds coordinates
+    data_time_bnds = data.coords["time_bnds"]
 
     # subset for reference period and spin-up year
     if exp == "historical":
@@ -80,6 +93,9 @@ for exp, model in itertools.product(experiment_id, driving_model):
     # Papaioannou et al. (1993) - irradiance ratio
     data = data.assign(PAR=data["rsds"] * 0.473)
 
+    # keep only required variables
+    data = data.drop_vars(["rsds"])
+
     # convert variable units and assign attributes
     for v in data.data_vars:
         var_attrs = data[v].attrs  # extract attributes
@@ -87,20 +103,20 @@ for exp, model in itertools.product(experiment_id, driving_model):
             var_attrs["units"] = "°C"
             data[v] = data[v] - 273.15
             var_attrs["note"] = "Converted from K to °C by subtracting 273.15"
-        elif v in ("PAR", "rsds"):
+        elif v == "PAR":
             var_attrs["units"] = "MJ m⁻² day⁻¹"
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            if v == "PAR":
-                var_attrs["long_name"] = (
-                    "Surface Photosynthetically Active Radiation"
-                )
-                var_attrs["note"] = (
-                    "Calculated by multiplying 'rsds' with an irradiance "
-                    "ratio of 0.473 based on Papaioannou et al. (1993); "
-                    "converted from W m⁻² to MJ m⁻² day⁻¹ by multiplying "
-                    "0.0864 based on the FAO Irrigation and Drainage Paper "
-                    "No. 56 (Allen et al., 1998, p. 45)"
-                )
+            var_attrs["long_name"] = (
+                "Surface Photosynthetically Active Radiation"
+            )
+            var_attrs["note"] = (
+                "Calculated by multiplying the surface downwelling "
+                "shortwave radiation with an irradiance ratio of 0.473 "
+                "based on Papaioannou et al. (1993); converted from W m⁻²"
+                " to MJ m⁻² day⁻¹ by multiplying 0.0864 based on the FAO"
+                " Irrigation and Drainage Paper No. 56 (Allen et al., "
+                "1998, p. 45)"
+            )
         elif v in ("pr", "evspsblpot"):
             var_attrs["units"] = "mm day⁻¹"
             data[v] = data[v] * 60 * 60 * 24
@@ -116,9 +132,6 @@ for exp, model in itertools.product(experiment_id, driving_model):
     # assign dataset name
     data.attrs["dataset"] = f"IE_EURO-CORDEX_RCA4_{model}_{exp}"
 
-    # keep only relevant variables
-    data = data.drop_vars(["rsds"])
-
     # assign attributes to the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
@@ -127,7 +140,12 @@ for exp, model in itertools.product(experiment_id, driving_model):
         " by nstreethran@ucc.ie."
     )
 
+    # reassign CRS
     data.rio.write_crs(data_crs, inplace=True)
 
     # export to netCDF
     data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))
+
+    print(f"{data.attrs['dataset']} done!")
+
+sys.exit()
