@@ -168,7 +168,6 @@ def test_seasonal_effect():
     Test seasonal_effect
     """
 
-    ts_vals = {}
     params = {
         "min_sea": 0.8,
         "max_sea": 1.2,
@@ -177,7 +176,7 @@ def test_seasonal_effect():
 
     # st_1 <= 200.0
     params["st_1"] = 150.0
-    assert lm.seasonal_effect(ts_vals=ts_vals, params=params) == 1.0
+    assert lm.seasonal_effect(params=params) == 1.0
 
     # # st <= 200.0
     # params["st_1"] = 600.0

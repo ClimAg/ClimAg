@@ -94,7 +94,7 @@ import climag.modvege_consumption as cm
 np.seterr("raise")
 
 
-def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
+def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
     """
     Calculate sum of temperatures at:
         - the beginning of the reproductive period (ST₁) [°C d]
@@ -106,6 +106,7 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     Parameters
     ----------
     timeseries : Input meteorological time series data (Pandas dataframe)
+    params : A dictionary of input parameters
 
     Returns
     -------
@@ -138,9 +139,9 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     The beginning of the grazing season has a delay of 5-15 days after the
     start of the growing season based on Broad and Hough (1993).
     A delay of 10 days is used to allow sufficient reproductive growth.
-    The end date of the grazing season is determined using the Smith formula
+    ~The end date of the grazing season is determined using the Smith formula
     for calculating the grazing season length (Collins and Cummins, 1996;
-    based on Smith, 1976).
+    based on Smith, 1976).~
 
     The end date of the grazing season cannot exceed 1st December. Livestock
     are assumed to be fully housed by 22nd November based on Teagasc
@@ -164,25 +165,37 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
     st_thresholds = {}
 
     timeseries.sort_values(by=["time"], inplace=True)
-    timeseries = timeseries.reset_index().set_index("time")
+    timeseries.set_index("time", inplace=True)
 
-    # return only mean values above 4, and subtract by 4
-    timeseries.loc[(timeseries["T"] >= 4.0), "Tg"] = timeseries["T"] - 4.0
+    # generate index
+    try:
+        # for multi-year time series, this should correspond to the day
+        # of the year
+        timeseries["idx"] = timeseries["doy"] - 1
+    except KeyError:
+        # some datasets do not use standard calendars, so day of the year
+        # should not be used
+        timeseries["idx"] = range(len(timeseries))
+
+    # return only mean values above t_0, and subtract by t_0
+    timeseries.loc[(timeseries["T"] >= params["t_0"]), "Tg"] = (
+        timeseries["T"] - params["t_0"]
+    )
     # fill NaN values
     timeseries[["Tg"]] = timeseries[["Tg"]].fillna(value=0)
 
     for year in timeseries.index.year.unique():
         st_thresholds[year] = {}
 
-        # grazing season length using the Smith formula
-        grazing_season = round(
-            29.3 * np.mean(timeseries.loc[str(year)]["T"]) -
-            0.1 * np.sum(timeseries.loc[str(year)]["PP"]) +
-            19.5
-        )
-        # adjust the length if the dataset has 360 days/year
-        if len(timeseries.loc[str(year)]) == 360:
-            grazing_season -= 5
+        # # grazing season length using the Smith formula
+        # grazing_season = round(
+        #     29.3 * np.mean(timeseries.loc[str(year)]["T"]) -
+        #     0.1 * np.sum(timeseries.loc[str(year)]["PP"]) +
+        #     19.5
+        # )
+        # # adjust the length if the dataset has 360 days/year
+        # if len(timeseries.loc[str(year)]) == 360:
+        #     grazing_season -= 5
 
         # sum of temperatures at the start
         try:
@@ -198,37 +211,42 @@ def sum_of_temperature_thresholds(timeseries) -> dict[str, float]:
         except ValueError:
             # if the temperatures are too low for the start of the growing
             # season to be calculated, assume it is on 15th March
-            start = int(timeseries.loc[f"{year}-03-15"]["index"])
+            start = int(timeseries.loc[f"{year}-03-15"]["idx"])
 
         # beginning of the reproductive period
         st_thresholds[year]["st_1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[start]
         )
+
         # beginning of the grazing season
         st_thresholds[year]["st_g1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[start + 10]
         )
+
         # end of the reproductive period
         st_thresholds[year]["st_2"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[-1]
         )
+
         # end of the grazing and harvesting season
         # use the calculated grazing season length
         # if growing season continues in December, end grazing on 1st December
-        grazing_end = min(
-            int(timeseries.loc[f"{year}-12-01"]["index"]),
-            start + 10 + grazing_season
-        )
+        # grazing_end = min(
+        #     int(timeseries.loc[f"{year}-12-01"]["idx"]),
+        #     start + 10 + grazing_season
+        # )
+        grazing_end = int(timeseries.loc[f"{year}-12-01"]["idx"])
         st_thresholds[year]["st_g2"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end]
         )
+
         # beginning of harvest
         st_thresholds[year]["st_h1"] = (
             timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end - 1]
         )
 
     timeseries.reset_index(inplace=True)
-    timeseries.drop(columns=["Tg", "index"], inplace=True)
+    timeseries.drop(columns=["Tg", "idx"], inplace=True)
 
     return st_thresholds
 
@@ -266,7 +284,9 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
     - Reproductive function [dimensionless]
     """
 
-    st_thresholds = sum_of_temperature_thresholds(timeseries=tseries)
+    st_thresholds = sum_of_temperature_thresholds(
+        timeseries=tseries, params=params
+    )
 
     # dictionary of outputs
     outputs_dict = {
@@ -284,6 +304,7 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         "gro": [],
         "i_bm": [],
         "h_bm": [],
+        "c_bm": [],
         "env": [],
         "rep": [],
         "lai": [],
@@ -329,8 +350,7 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
 
         # sum of temperatures (ST)
         ts_vals["st"] = lm.sum_of_temperatures(
-            params=params, ts_vals=ts_vals,
-            t_ts=tseries["T"], day=(i + 1)
+            params=params, ts_vals=ts_vals, t_ts=tseries["T"], day=(i + 1)
         )
 
         # temperature function (f(T))
@@ -339,7 +359,7 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         )
 
         # seasonal effect (SEA)
-        ts_vals["sea"] = lm.seasonal_effect(ts_vals=ts_vals, params=params)
+        ts_vals["sea"] = lm.seasonal_effect(params=params)
 
         # leaf area index (LAI)
         ts_vals["lai"] = lm.leaf_area_index(ts_vals=ts_vals, params=params)
@@ -407,10 +427,18 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         # harvested biomass
         cm.biomass_harvest(ts_vals=ts_vals, params=params)
 
-        # total standing biomass
-        ts_vals["bm"] = (
-            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
-            ts_vals["bm_dv"] + ts_vals["bm_dr"]
+        # total standing biomass and cumulative total amount of biomass
+        # produced
+        ts_vals["bm"], ts_vals["c_bm"] = (
+            (
+                ts_vals["bm_gv"] + ts_vals["bm_gr"] +
+                ts_vals["bm_dv"] + ts_vals["bm_dr"]
+            ),
+            (
+                ts_vals["bm_gv"] + ts_vals["bm_gr"] +
+                ts_vals["bm_dv"] + ts_vals["bm_dr"] +
+                ts_vals["i_bm"] + ts_vals["h_bm"]
+            )
         )
 
         # recover output streams
@@ -425,6 +453,7 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         outputs_dict["age_dr"].append(ts_vals["age_dr"])
         outputs_dict["h_bm"].append(ts_vals["h_bm"])
         outputs_dict["i_bm"].append(ts_vals["i_bm"])
+        outputs_dict["c_bm"].append(ts_vals["c_bm"])
         outputs_dict["bm"].append(ts_vals["bm"])
         outputs_dict["pgro"].append(ts_vals["pgro"])
         outputs_dict["gro"].append(ts_vals["gro"])

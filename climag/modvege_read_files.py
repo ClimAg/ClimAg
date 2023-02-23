@@ -128,6 +128,7 @@ def read_timeseries(filename: str):
 
     timeseries = pd.read_csv(filename, parse_dates=["time"])
     timeseries.sort_values(by=["time"], inplace=True)
+    timeseries["doy"] = timeseries.set_index("time").index.dayofyear
     timeseries.reset_index(inplace=True)
     endday = len(timeseries)
     return timeseries, endday

@@ -22,15 +22,16 @@ output_vars = {
     "bm_dv": ["Dead vegetative biomass", "kg DM ha⁻¹"],
     "bm_dr": ["Dead reproductive biomass", "kg DM ha⁻¹"],
     "bm": ["Total standing biomass", "kg DM ha⁻¹"],
-    "pgro": ["Potential growth", "kg DM ha⁻¹"],
-    "gro": ["Total growth", "kg DM ha⁻¹"],
+    "pgro": ["Potential growth", "kg DM ha⁻¹ day⁻¹"],
+    "gro": ["Total growth", "kg DM ha⁻¹ day⁻¹"],
     "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
     "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
+    "c_bm": ["Total biomass production", "kg DM ha⁻¹"],
     "env": ["Environmental limitation of growth", "dimensionless"],
     "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
-    "aet": ["Actual evapotranspiration", "mm"],
-    "wr": ["Water reserves", "mm"]
+    "aet": ["Actual evapotranspiration", "mm day⁻¹"],
+    "wr": ["Water reserves", "mm day⁻¹"]
 }
 
 
@@ -88,7 +89,7 @@ def site_specific_params_file(input_params_vector, tseries, params):
 
     # site-specific characteristics that vary spatially
     if input_params_vector is not None:
-        if tseries.attrs["contact"] == "rossby.cordex@smhi.se":
+        if "EURO-CORDEX" in tseries.attrs["dataset"]:
             params["gpkg"] = gpd.read_file(
                 input_params_vector, layer="eurocordex"
             )
@@ -111,7 +112,10 @@ def run_modvege_nc(
         datetime.now(tz=timezone.utc)
     )
 
+    # dictionary to store parameters
     params = {}
+
+    # dictionary to store intermediate time series values
     model_vals = {}
 
     # read parameter file into a dataframe
@@ -138,6 +142,7 @@ def run_modvege_nc(
     model_vals["year_list"] = list(
         sorted(set(tseries["time"].dt.year.values))
     )
+
     for year in model_vals["year_list"]:
         tseries_y = tseries.sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
 

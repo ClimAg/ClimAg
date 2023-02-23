@@ -39,6 +39,11 @@ def leaf_area_index(
         (ts_vals["bm_gv"] + ts_vals["bm_gr"]) / 10.0 *
         params["pct_lam"]
     )
+    # return (
+    #     params["sla"] *
+    #     ts_vals["bm_gv"] / 10.0 *
+    #     params["pct_lam"]
+    # )
 
 
 def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
@@ -268,7 +273,8 @@ def temperature_function(
 
 
 def seasonal_effect(
-    ts_vals: dict[str, float], params: dict[str, float]
+    # ts_vals: dict[str, float],
+    params: dict[str, float]
 ) -> float:
     """
     Calculate seasonal effect (SEA) on growth, driven by the sum of
