@@ -4,3 +4,6 @@
 [submodule "jupyter-notebooks"]
 	path = jupyter-notebooks
 	url = git@github.com:ClimAg/jupyter-notebooks.git
+[submodule "pyeto"]
+	path = pyeto
+	url = https://github.com/woodcrafty/PyETo.git
