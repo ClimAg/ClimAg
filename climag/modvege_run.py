@@ -21,17 +21,30 @@ output_vars = {
     "bm_gr": ["Green reproductive biomass", "kg DM ha⁻¹"],
     "bm_dv": ["Dead vegetative biomass", "kg DM ha⁻¹"],
     "bm_dr": ["Dead reproductive biomass", "kg DM ha⁻¹"],
-    "bm": ["Total standing biomass", "kg DM ha⁻¹"],
+    "age_gv": ["Green vegetative biomass age", "kg DM ha⁻¹"],
+    "age_gr": ["Green reproductive biomass age", "kg DM ha⁻¹"],
+    "age_dv": ["Dead vegetative biomass age", "kg DM ha⁻¹"],
+    "age_dr": ["Dead reproductive biomass age", "kg DM ha⁻¹"],
+    "bm": ["Standing biomass", "kg DM ha⁻¹"],
     "pgro": ["Potential growth", "kg DM ha⁻¹ day⁻¹"],
     "gro": ["Total growth", "kg DM ha⁻¹ day⁻¹"],
     "i_bm": ["Ingested biomass", "kg DM ha⁻¹"],
     "h_bm": ["Harvested biomass", "kg DM ha⁻¹"],
-    "c_bm": ["Total biomass production", "kg DM ha⁻¹"],
+    "c_bm": ["Daily ingested biomass", "kg DM ha⁻¹ day⁻¹"],
     "env": ["Environmental limitation of growth", "dimensionless"],
-    "rep": ["Reproductive function", "dimensionless"],
     "lai": ["Leaf area index", "dimensionless"],
     "aet": ["Actual evapotranspiration", "mm day⁻¹"],
-    "wr": ["Water reserves", "mm day⁻¹"]
+    "wr": ["Water reserves", "mm day⁻¹"],
+    "sen_gv": ["Senescence of green vegetative biomass", "kg DM ha⁻¹"],
+    "sen_gr": ["Senescence of green reproductive biomass", "kg DM ha⁻¹"],
+    "abs_dv": ["Abscission of dead vegetative biomass", "kg DM ha⁻¹"],
+    "abs_dr": ["Abscission of dead reproductive biomass", "kg DM ha⁻¹"],
+    "omd_gv": [
+        "Green vegetative biomass organic matter digestibility", "kg DM ha⁻¹"
+    ],
+    "omd_gr": [
+        "Green reproductive biomass organic matter digestibility", "kg DM ha⁻¹"
+    ]
 }
 
 
@@ -56,10 +69,10 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     # convert output to dataframe
     data_df = pd.DataFrame(data_df)
 
-    # drop biomass age columns
-    data_df.drop(
-        columns=["age_gv", "age_gr", "age_dv", "age_dr"], inplace=True
-    )
+    # # drop biomass age columns
+    # data_df.drop(
+    #     columns=["age_gv", "age_gr", "age_dv", "age_dr"], inplace=True
+    # )
 
     # save as CSV
     data_df.to_csv(os.path.join(out_dir, "output.csv"), index=False)
@@ -75,7 +88,7 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     # plot data
     data_df.plot(
-        subplots=True, layout=(7, 3), figsize=(15, 14),
+        subplots=True, layout=(9, 3), figsize=(18, 18),
         xlabel="", title=plot_title, legend=False
     )
     plt.tight_layout()
@@ -284,11 +297,11 @@ def run_modvege_nc(
                     )
                 )
 
-                # drop biomass age columns
-                data_df[f"{rlon}_{rlat}_{year}"].drop(
-                    columns=["age_gv", "age_gr", "age_dv", "age_dr"],
-                    inplace=True
-                )
+                # # drop biomass age columns
+                # data_df[f"{rlon}_{rlat}_{year}"].drop(
+                #     columns=["age_gv", "age_gr", "age_dv", "age_dr"],
+                #     inplace=True
+                # )
 
                 # assign the output variables to the main Xarray dataset
                 for key in output_vars:

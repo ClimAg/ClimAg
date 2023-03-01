@@ -306,10 +306,15 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         "h_bm": [],
         "c_bm": [],
         "env": [],
-        "rep": [],
         "lai": [],
         "aet": [],
-        "wr": []
+        "wr": [],
+        "sen_gv": [],
+        "sen_gr": [],
+        "abs_dv": [],
+        "abs_dr": [],
+        "omd_gv": [],
+        "omd_gr": []
     }
 
     # dictionary to store intermediate time series values
@@ -427,40 +432,22 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         # harvested biomass
         cm.biomass_harvest(ts_vals=ts_vals, params=params)
 
-        # total standing biomass and cumulative total amount of biomass
-        # produced
-        ts_vals["bm"], ts_vals["c_bm"] = (
-            (
-                ts_vals["bm_gv"] + ts_vals["bm_gr"] +
-                ts_vals["bm_dv"] + ts_vals["bm_dr"]
-            ),
-            (
-                ts_vals["bm_gv"] + ts_vals["bm_gr"] +
-                ts_vals["bm_dv"] + ts_vals["bm_dr"] +
-                ts_vals["i_bm"] + ts_vals["h_bm"]
-            )
-        )
-
         # recover output streams
         outputs_dict["time"].append(tseries["time"][i])
-        outputs_dict["bm_gv"].append(ts_vals["bm_gv"])
-        outputs_dict["bm_gr"].append(ts_vals["bm_gr"])
-        outputs_dict["bm_dv"].append(ts_vals["bm_dv"])
-        outputs_dict["bm_dr"].append(ts_vals["bm_dr"])
-        outputs_dict["age_gv"].append(ts_vals["age_gv"])
-        outputs_dict["age_gr"].append(ts_vals["age_gr"])
-        outputs_dict["age_dv"].append(ts_vals["age_dv"])
-        outputs_dict["age_dr"].append(ts_vals["age_dr"])
-        outputs_dict["h_bm"].append(ts_vals["h_bm"])
-        outputs_dict["i_bm"].append(ts_vals["i_bm"])
-        outputs_dict["c_bm"].append(ts_vals["c_bm"])
-        outputs_dict["bm"].append(ts_vals["bm"])
-        outputs_dict["pgro"].append(ts_vals["pgro"])
-        outputs_dict["gro"].append(ts_vals["gro"])
-        outputs_dict["lai"].append(ts_vals["lai"])
-        outputs_dict["wr"].append(ts_vals["wr"])
-        outputs_dict["aet"].append(ts_vals["aet"])
-        outputs_dict["env"].append(ts_vals["env"])
-        outputs_dict["rep"].append(ts_vals["rep"])
+
+        # net standing biomass
+        outputs_dict["bm"].append(
+            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
+            ts_vals["bm_dv"] + ts_vals["bm_dr"]
+        )
+
+        for out in [
+            "bm_gv", "bm_gr", "bm_dv", "bm_dr",
+            "age_gv", "age_gr", "age_dv", "age_dr",
+            "pgro", "gro", "i_bm", "h_bm", "c_bm",
+            "env", "lai", "aet", "wr",
+            "sen_gv", "sen_gr", "abs_dv", "abs_dr", "omd_gv", "omd_gr"
+        ]:
+            outputs_dict[out].append(ts_vals[out])
 
     return outputs_dict

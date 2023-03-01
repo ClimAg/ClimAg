@@ -205,6 +205,15 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
             ingested["bm_dv"] + ingested["bm_dr"]
         )
 
+        # daily values
+        ts_vals["c_bm"] = (
+            ingested["bm_gv"] + ingested["bm_gr"] +
+            ingested["bm_dv"] + ingested["bm_dr"]
+        )
+
+    else:
+        ts_vals["c_bm"] = 0.0
+
 
 def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """

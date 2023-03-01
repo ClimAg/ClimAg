@@ -505,7 +505,8 @@ def reproductive_function(
 
     if (
         ts_vals["st"] < params["st_1"] or
-        ts_vals["i_bm"] > 0.0 or ts_vals["h_bm"] > 0.0
+        ts_vals["i_bm"] > 0.0 or
+        ts_vals["h_bm"] > 0.0
     ):
         val = 0.0
     else:
