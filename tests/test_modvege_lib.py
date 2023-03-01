@@ -88,13 +88,13 @@ def test_sum_of_temperatures():
     ts_vals["st"] = 4.1
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 8.7
+    ) == t_ts[day - 1] - params["t_0"] + ts_vals["st"]
 
     # resetting the sum to zero
     ts_vals["st"] = 0.0
     assert lm.sum_of_temperatures(
         params=params, ts_vals=ts_vals, t_ts=t_ts, day=day
-    ) == 4.6
+    ) == t_ts[day - 1] - params["t_0"] + ts_vals["st"]
 
     # using a day when the sum is less than t_0
     day = 9
