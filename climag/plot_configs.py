@@ -28,7 +28,29 @@ lambert_conformal = ccrs.LambertConformal(
 # seaborn colourmaps
 cmap_mako_r = sns.color_palette("mako_r", as_cmap=True)
 # cmap_crest = sns.color_palette("crest", as_cmap=True)
-# cmap_flare = sns.color_palette("flare", as_cmap=True)
+cmap_flare = sns.color_palette("flare", as_cmap=True)
+
+
+def colormap_configs(var):
+    """
+    Configure colourmap for each variable
+    """
+
+    if var in ("PP", "TOT_PREC", "pr"):
+        cmap = cmap_mako_r
+    elif var in ("wr", "env"):
+        cmap = "GnBu"
+    elif var in (
+        "T", "PAR",
+        "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
+        "rsds", "tas"
+    ):
+        cmap = "Spectral_r"
+    elif var in ("PET", "aet", "ALB_RAD", "w", "ET", "evspsblpot"):
+        cmap = cmap_flare
+    else:
+        cmap = "YlGn"
+    return cmap
 
 
 def longitude_tick_format(x, pos):
@@ -170,14 +192,7 @@ def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
         f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
     )  # colorbar label
 
-    if var == "PP":
-        cmap = cmap_mako_r
-    elif var in ("wr", "env"):
-        cmap = "GnBu"
-    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
-        cmap = "Spectral_r"
-    else:
-        cmap = "YlGn"
+    cmap = colormap_configs(var)
 
     if len(data["time"]) == 12:
         col_wrap = 4
@@ -255,14 +270,7 @@ def plot_map(data, var, cbar_levels=None, title="default"):
         f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
     )  # colorbar label
 
-    if var == "PP":
-        cmap = cmap_mako_r
-    elif var in ("wr", "env"):
-        cmap = "GnBu"
-    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
-        cmap = "Spectral_r"
-    else:
-        cmap = "YlGn"
+    cmap = colormap_configs(var)
 
     plt.figure(figsize=(7, 7))
 
@@ -338,14 +346,7 @@ def plot_averages(
 
     plot_transform = rotated_pole_transform(data)
 
-    if var == "PP":
-        cmap = cmap_mako_r
-    elif var in ("wr", "env"):
-        cmap = "GnBu"
-    elif var in ("T", "RS", "PAR", "PET", "RSN", "aet"):
-        cmap = "Spectral_r"
-    else:
-        cmap = "YlGn"
+    cmap = colormap_configs(var)
 
     if averages == "month":
         columns, cbar_aspect = 4, 25

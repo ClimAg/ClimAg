@@ -14,9 +14,9 @@ exec(
 )
 """
 
+import glob
 import os
 import sys
-import glob
 from climag.modvege_run import run_modvege
 
 DATA_DIR = os.path.join("data", "ModVege")

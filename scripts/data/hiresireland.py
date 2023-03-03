@@ -18,10 +18,14 @@ exec(
 import glob
 import itertools
 import os
+import sys
 from datetime import datetime, timezone
 import geopandas as gpd
+# import pandas as pd
 import xarray as xr
-import pandas as pd
+from dask.distributed import Client
+
+client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
 
 DATA_DIR_BASE = os.path.join("data", "HiResIreland")
 
@@ -44,15 +48,23 @@ for exp, model in itertools.product(
     else:
         chunks = "auto"
 
+    # data = xr.open_mfdataset(
+    #     list(itertools.chain(*list(
+    #         glob.glob(os.path.join(
+    #             DATA_DIR_BASE, "COSMO5-CLM", exp, model, e
+    #         ))
+    #         for e in [
+    #             "*mean_T_2M*.nc", "*ASOB_S*.nc", "*ET*.nc", "*TOT_PREC*.nc"
+    #         ]
+    #     ))),
+    #     chunks=chunks,
+    #     decode_coords="all"
+    # )
+
     data = xr.open_mfdataset(
-        list(itertools.chain(*list(
-            glob.glob(os.path.join(
-                DATA_DIR_BASE, "COSMO5-CLM", exp, model, e
-            ))
-            for e in [
-                "*mean_T_2M*.nc", "*ASOB_S*.nc", "*ET*.nc", "*TOT_PREC*.nc"
-            ]
-        ))),
+        glob.glob(
+            os.path.join(DATA_DIR_BASE, "COSMO5-CLM", exp, model, "*.nc")
+        ),
         chunks=chunks,
         decode_coords="all"
     )
@@ -65,25 +77,20 @@ for exp, model in itertools.product(
         data = data.convert_calendar("standard", align_on="year")
 
     # copy time_bnds
-    # data_time_bnds = data.coords["time_bnds"]
+    data_time_bnds = data.coords["time_bnds"]
 
     # ### Ireland subset
     # clip to Ireland's boundary
     data = data.rio.clip(ie.buffer(1).to_crs(data_crs))
 
-    # reassign time_bnds
-    # data.coords["time_bnds"] = data_time_bnds
-
-    # ### Calculate downward shortwave radiation
-    # assume an albedo of 0.23 for grass (Allen et al., 1998)
-    data = data.assign(RS=data["ASOB_S"] / (1 - 0.23))
-
     # ### Calculate photosynthetically active radiation
     # Papaioannou et al. (1993) - irradiance ratio
-    data = data.assign(PAR=data["RS"] * 0.473)
+    data = data.assign(PAR=(data["ASWDIR_S"] + data["ASWDIFD_S"]) * 0.473)
 
     # keep only required variables
-    data = data.drop_vars(["RS", "ASOB_S"])
+    data = data.drop_vars(
+        ["ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ALB_RAD", "ASOB_S"]
+    )
 
     # ### Convert units and rename variables
     for v in data.data_vars:
@@ -100,25 +107,24 @@ for exp, model in itertools.product(
                 "Surface Photosynthetically Active Radiation"
             )
             var_attrs["note"] = (
-                "Calculated by dividing the surface net downward "
-                "shortwave radiation with (1 - 0.23), where 0.23 is"
-                " assumed to be the albedo of grass (Allen et al., 1998),"
-                " then multiplying it with an irradiance ratio of 0.473"
-                " based on Papaioannou et al. (1993); converted from "
-                "W m⁻² to MJ m⁻² day⁻¹ by multiplying 0.0864 as "
-                "documented in the FAO Irrigation and Drainage Paper No. "
+                "Calculated by multiplying the surface downwelling shortwave "
+                "radiation (calculated by summing the direct and diffuse "
+                "downward shortwave radiation components) with an irradiance "
+                "ratio of 0.473 based on Papaioannou et al. (1993); "
+                "converted from W m⁻² to MJ m⁻² day⁻¹ by multiplying 0.0864 "
+                "as documented in the FAO Irrigation and Drainage Paper No. "
                 "56 (Allen et al., 1998, p. 45)"
             )
         elif v in ("TOT_PREC", "w"):
             var_attrs["units"] = "mm day⁻¹"
-            var_attrs["note"] = (
-                "kg m⁻² is equivalent to mm day⁻¹, assuming a water density "
-                "of 1,000 kg m⁻³"
-            )
             if v == "w":
                 var_attrs["long_name"] = "Potential Evapotranspiration"
             else:
                 var_attrs["long_name"] = "Precipitation"
+                var_attrs["note"] = (
+                    "kg m⁻² is equivalent to mm day⁻¹, assuming a water "
+                    "density of 1,000 kg m⁻³"
+                )
         data[v].attrs = var_attrs  # reassign attributes
 
     # rename
@@ -130,50 +136,56 @@ for exp, model in itertools.product(
     # assign dataset name
     data.attrs["dataset"] = f"IE_HiResIreland_{data.attrs['title'][:-4]}"
 
-    # ### Extend data to a spin-up year
-    data_interp = data.interp(
-        time=pd.date_range(
-            f"{int(data['time'][0].dt.year) - 1}-01-01T10:30:00",
-            f"{int(data['time'][0].dt.year) - 1}-12-31T10:30:00",
-            freq="D"
-        ),
-        kwargs={"fill_value": None}
-    )
+    # # drop spin-up year for historical data
+    # if exp == "historical":
+    #     data = data.sel(time=slice("1976", "2005"))
 
-    data_interp.rio.write_crs(data_crs, inplace=True)
+    #     # ### Extend data to a spin-up year
+    #     data_interp = data.interp(
+    #         time=pd.date_range(
+    #             f"{int(data['time'][0].dt.year) - 1}-01-01T10:30:00",
+    #             f"{int(data['time'][0].dt.year) - 1}-12-31T10:30:00",
+    #             freq="D"
+    #         ),
+    #         kwargs={"fill_value": None}
+    #     )
 
-    # merge spin-up year with first two years of the main data
-    data_interp = xr.combine_by_coords([
-        data_interp,
-        data.sel(
-            time=slice(
-                str(int(data["time"][0].dt.year)),
-                str(int(data["time"][0].dt.year) + 1)
-            )
-        )
-    ])
+    #     data_interp.rio.write_crs(data_crs, inplace=True)
 
-    # shift first year of the main data to the spin-up year
-    data_interp = data_interp.shift(
-        time=-data_interp.sel(
-            time=str(int(data_interp["time"][0].dt.year))
-        ).dims["time"]
-    )
+    #     # merge spin-up year with first two years of the main data
+    #     data_interp = xr.combine_by_coords([
+    #         data_interp,
+    #         data.sel(
+    #             time=slice(
+    #                 str(int(data["time"][0].dt.year)),
+    #                 str(int(data["time"][0].dt.year) + 1)
+    #             )
+    #         )
+    #     ])
 
-    # keep only spin-up year
-    data_interp = data_interp.sel(
-        time=str(int(data_interp["time"][0].dt.year))
-    )
+    #     # shift first year of the main data to the spin-up year
+    #     data_interp = data_interp.shift(
+    #         time=-data_interp.sel(
+    #             time=str(int(data_interp["time"][0].dt.year))
+    #         ).dims["time"]
+    #     )
 
-    # merge with main dataset
-    data = xr.combine_by_coords([data, data_interp])
+    #     # keep only spin-up year
+    #     data_interp = data_interp.sel(
+    #         time=str(int(data_interp["time"][0].dt.year))
+    #     )
+
+    #     # merge with main dataset
+    #     data = xr.combine_by_coords([data, data_interp])
+
+    # reassign time_bnds
+    data.coords["time_bnds"] = data_time_bnds
 
     # assign attributes to the data
     data.attrs["comment"] = (
-        "This dataset has been clipped with the Island of Ireland's boundary"
-        " and units have been converted. "
-        "Last updated: " + str(datetime.now(tz=timezone.utc)) +
-        " by nstreethran@ucc.ie."
+        "This dataset has been clipped with the Island of Ireland's boundary "
+        "and units have been converted. Last updated: " +
+        str(datetime.now(tz=timezone.utc)) + " by nstreethran@ucc.ie."
     )
 
     # ### Export data
@@ -182,3 +194,5 @@ for exp, model in itertools.product(
 
     # export to netCDF
     data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))
+
+sys.exit()

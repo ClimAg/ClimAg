@@ -6,10 +6,6 @@ under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
 ![ClimAg project logos](https://raw.githubusercontent.com/ClimAg/.github/main/images/logos.png)
 
-## Features
-
-WIP
-
 ## Licence
 
 Copyright 2022 N. M. Streethran
@@ -37,20 +33,6 @@ The original ModVege pasture model was developed by
 
 Some parts of this repository were created with [Cookiecutter] and the
 [`audreyr/cookiecutter-pypackage`][audreyr] project template.
-
-## References
-
-### Software
-
-- Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
-  <https://github.com/YannChemin/modvege> (Accessed 6 September 2022).
-
-### Publications
-
-- Jouven, M., Carrère, P. and Baumont, R. (2006). 'Model predicting dynamics
-  of biomass, structure and digestibility of herbage in managed permanent
-  pastures. 1. Model description', *Grass and Forage Science*, vol. 61, no. 2,
-  pp. 112-124. DOI: [10.1111/j.1365-2494.2006.00515.x][Jouven].
 
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/

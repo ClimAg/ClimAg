@@ -24,7 +24,7 @@ import intake
 import xarray as xr
 from dask.distributed import Client
 
-client = Client(n_workers=3, threads_per_worker=4, memory_limit="2GB")
+client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
 
 DATA_DIR_BASE = os.path.join("data", "EURO-CORDEX")
 
@@ -57,13 +57,13 @@ for exp, model in itertools.product(experiment_id, driving_model):
     # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
     if model == "HadGEM2-ES":
-        chunks = 300
+        CHUNKS = 300
     else:
-        chunks = "auto"
+        CHUNKS = "auto"
 
     data = xr.open_mfdataset(
         list(cordex_eur11.df["uri"]),
-        chunks=chunks,
+        chunks=CHUNKS,
         decode_coords="all"
     )
 
@@ -85,9 +85,6 @@ for exp, model in itertools.product(experiment_id, driving_model):
 
     # clip to Ireland's boundary
     data = data.rio.clip(ie.buffer(500).to_crs(data.rio.crs))
-
-    # reassign time_bnds
-    data.coords["time_bnds"] = data_time_bnds
 
     # calculate photosynthetically active radiation (PAR)
     # Papaioannou et al. (1993) - irradiance ratio
@@ -112,9 +109,9 @@ for exp, model in itertools.product(experiment_id, driving_model):
             var_attrs["note"] = (
                 "Calculated by multiplying the surface downwelling "
                 "shortwave radiation with an irradiance ratio of 0.473 "
-                "based on Papaioannou et al. (1993); converted from W m⁻²"
-                " to MJ m⁻² day⁻¹ by multiplying 0.0864 based on the FAO"
-                " Irrigation and Drainage Paper No. 56 (Allen et al., "
+                "based on Papaioannou et al. (1993); converted from W m⁻² "
+                "to MJ m⁻² day⁻¹ by multiplying 0.0864 based on the FAO "
+                "Irrigation and Drainage Paper No. 56 (Allen et al., "
                 "1998, p. 45)"
             )
         elif v in ("pr", "evspsblpot"):
@@ -132,12 +129,14 @@ for exp, model in itertools.product(experiment_id, driving_model):
     # assign dataset name
     data.attrs["dataset"] = f"IE_EURO-CORDEX_RCA4_{model}_{exp}"
 
+    # reassign time_bnds
+    data.coords["time_bnds"] = data_time_bnds
+
     # assign attributes to the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
-        "and units have been converted. "
-        "Last updated: " + str(datetime.now(tz=timezone.utc)) +
-        " by nstreethran@ucc.ie."
+        "and units have been converted. Last updated: " +
+        str(datetime.now(tz=timezone.utc)) + " by nstreethran@ucc.ie."
     )
 
     # reassign CRS
