@@ -23,9 +23,9 @@ from datetime import datetime, timezone
 import geopandas as gpd
 # import pandas as pd
 import xarray as xr
-from dask.distributed import Client
+# from dask.distributed import Client
 
-client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
+# client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
 
 DATA_DIR_BASE = os.path.join("data", "HiResIreland")
 
@@ -38,34 +38,44 @@ GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
 ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 for exp, model in itertools.product(
-    ["historical", "rcp45", "rcp85"],
+    # ["historical", "rcp45", "rcp85"],
+    ["historical", "rcp85"],
     ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 ):
     # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
     if model == "HadGEM2-ES":
-        chunks = 300
+        CHUNKS = 300
     else:
-        chunks = "auto"
+        CHUNKS = "auto"
 
-    # data = xr.open_mfdataset(
-    #     list(itertools.chain(*list(
-    #         glob.glob(os.path.join(
-    #             DATA_DIR_BASE, "COSMO5-CLM", exp, model, e
-    #         ))
-    #         for e in [
-    #             "*mean_T_2M*.nc", "*ASOB_S*.nc", "*ET*.nc", "*TOT_PREC*.nc"
-    #         ]
-    #     ))),
-    #     chunks=chunks,
-    #     decode_coords="all"
-    # )
+    # rename evapotranspiration field
+    et_file = os.path.join(
+        DATA_DIR_BASE, "COSMO5-CLM", exp, model,
+        f"day_sum_ET_COSMO5_{model}_{exp}_4km"
+    )
+
+    os.system(f"cdo -s chname,w,ET {et_file}.nc {et_file}_ref.nc")
 
     data = xr.open_mfdataset(
-        glob.glob(
-            os.path.join(DATA_DIR_BASE, "COSMO5-CLM", exp, model, "*.nc")
+        list(
+            itertools.chain(
+                *list(
+                    glob.glob(
+                        os.path.join(
+                            DATA_DIR_BASE, "COSMO5-CLM", exp, model, e
+                        )
+                    )
+                    for e in [
+                        f"*mean_T_2M*{model}*{exp}*.nc",
+                        f"S1_daymean*{model}*{exp}*.nc",
+                        f"*ET*{model}*{exp}*4km_*.nc",
+                        f"*TOT_PREC*{model}*{exp}*.nc"
+                    ]
+                )
+            )
         ),
-        chunks=chunks,
+        chunks=CHUNKS,
         decode_coords="all"
     )
 
@@ -89,7 +99,7 @@ for exp, model in itertools.product(
 
     # keep only required variables
     data = data.drop_vars(
-        ["ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ALB_RAD", "ASOB_S"]
+        ["ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ALB_RAD"]
     )
 
     # ### Convert units and rename variables
@@ -115,9 +125,9 @@ for exp, model in itertools.product(
                 "as documented in the FAO Irrigation and Drainage Paper No. "
                 "56 (Allen et al., 1998, p. 45)"
             )
-        elif v in ("TOT_PREC", "w"):
+        elif v in ("TOT_PREC", "ET"):
             var_attrs["units"] = "mm day⁻¹"
-            if v == "w":
+            if v == "ET":
                 var_attrs["long_name"] = "Potential Evapotranspiration"
             else:
                 var_attrs["long_name"] = "Precipitation"
@@ -127,8 +137,8 @@ for exp, model in itertools.product(
                 )
         data[v].attrs = var_attrs  # reassign attributes
 
-    # rename
-    data = data.rename({"T_2M": "T", "TOT_PREC": "PP", "w": "PET"})
+    # rename variables
+    data = data.rename({"T_2M": "T", "TOT_PREC": "PP", "ET": "PET"})
 
     # remove dataset history
     del data.attrs["history"]
@@ -194,5 +204,7 @@ for exp, model in itertools.product(
 
     # export to netCDF
     data.to_netcdf(os.path.join(DATA_DIR, f"{data.attrs['dataset']}.nc"))
+
+    print(f"{data.attrs['dataset']} done!")
 
 sys.exit()

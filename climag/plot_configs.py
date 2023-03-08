@@ -73,7 +73,6 @@ def latitude_tick_format(x, pos):
     return "{:.0f}°N".format(x)
 
 
-# convert lat/lon to rotated pole coordinates
 def rotated_pole_point(data, lon, lat):
     """
     Convert the longitude and latitude of a specific point to rotated pole
@@ -388,142 +387,69 @@ def plot_averages(
                     "%m"
                 ).strftime("%-b").upper()
             )
+        elif averages == "season":
+            seasons = {
+                "DJF": "Winter",
+                "MAM": "Spring",
+                "JJA": "Summer",
+                "SON": "Autumn"
+            }
+            season = str(data_weighted.isel({averages: i})[averages].values)
+            axs.set_title(
+                f"{seasons[season]} ({season})"
+            )
         else:
             axs.set_title(
                 str(data_weighted.isel({averages: i})[averages].values)
             )
 
+    # plt.suptitle(data.attrs["dataset"], y=1.02)
     plt.show()
 
 
-def boxplot_data(data, var, lonlat):
+def boxplot_data(datasets, varlist, lonlat):
     """
-    Boxplot data
+    Process time series data for a given location to create box plots
+
+    Parameters
+    ----------
+    data : Dictionary of Xarray climate model datasets
+    var : The variable to be plotted from the dataset
+    lonlat : A tuple of the location's coordinates (longitude, latitude)
+
+    Returns
+    -------
+    - A dictionary of dataframes (one for each variable) of the boxplot data
+      to be plotted
     """
 
-    # create dataframe to store time series
-    data_hist = pd.DataFrame(
-        {"time": data["eurocordex_historical"]["time"]}
-    )
-    data_future = pd.DataFrame({"time": data["eurocordex_rcp45"]["time"]})
+    data_all = {}
 
-    data_hist.set_index("time", inplace=True)
-    data_future.set_index("time", inplace=True)
+    for var in varlist:
+        data_all[var] = {}
 
-    cds_eurocordex = rotated_pole_point(
-        data=data["eurocordex_historical"], lon=lonlat[0], lat=lonlat[1]
-    )
+    for key in datasets.keys():
+        cds = rotated_pole_point(
+            data=datasets[key], lon=lonlat[0], lat=lonlat[1]
+        )
+        data_all[key] = datasets[key].sel(
+            {"rlon": cds[0], "rlat": cds[1]}, method="nearest"
+        )
 
-    cds_hiresireland = rotated_pole_point(
-        data=data["hiresireland_historical"], lon=lonlat[0], lat=lonlat[1]
-    )
+        for var in varlist:
+            data_all[var][key] = pd.DataFrame(
+                {var: data_all[key][var]}).assign(
+                    dataset=f"{key.split('_')[0]}\n{key.split('_')[1]}",
+                    exp=key.split("_")[2]
+            )
 
-    for key in data.keys():
-        if "historical" in key:
-            if "eurocordex_" in key:
-                data_hist[key] = data[key].sel(
-                    {
-                        "rlon": cds_eurocordex[0],
-                        "rlat": cds_eurocordex[1]
-                    },
-                    method="nearest"
-                )[var]
-            else:
-                data_hist[key] = data[key].sel(
-                    {
-                        "rlon": cds_hiresireland[0],
-                        "rlat": cds_hiresireland[1]
-                    },
-                    method="nearest"
-                )[var]
-        else:
-            if "eurocordex_" in key:
-                data_future[key] = data[key].sel(
-                    {
-                        "rlon": cds_eurocordex[0],
-                        "rlat": cds_eurocordex[1]
-                    },
-                    method="nearest"
-                )[var]
-            else:
-                data_future[key] = data[key].sel(
-                    {
-                        "rlon": cds_hiresireland[0],
-                        "rlat": cds_hiresireland[1]
-                    },
-                    method="nearest"
-                )[var]
-
-    # remove spin-up year
-    data_hist = data_hist.loc["1977":"2005"]
-    data_future = data_future.loc["2042":"2070"]
-
-    data_all = pd.concat(
-        [
-            data_hist.reset_index().drop(columns="time"),
-            data_future.reset_index().drop(columns="time")
-        ],
-        axis=1
-    )
+    for var in varlist:
+        data_all[var] = pd.concat([v for k, v in data_all[var].items()])
 
     return data_all
 
 
-def boxplot_configs(data, var, lonlat, axs, fliers):
-    """
-    Formatted boxplots
-    """
-
-    data_all = boxplot_data(data=data, var=var, lonlat=lonlat)
-
-    data_all.plot.box(
-        vert=False, patch_artist=True, showfliers=fliers,
-        showmeans=True, sharey=True, ax=axs,
-        color={
-            "medians": "Crimson",
-            "whiskers": "DarkSlateGrey",
-            "caps": "DarkSlateGrey"
-        },
-        boxprops={"facecolor": "Lavender", "color": "DarkSlateGrey"},
-        meanprops={
-            "markeredgecolor": "DarkSlateGrey",
-            "marker": "d",
-            "markerfacecolor": (1, 1, 0, 0)  # transparent
-        },
-        flierprops={
-            "alpha": .5, "markeredgecolor": "LightSteelBlue", "zorder": 1
-        },
-        title=(
-            f"{data['eurocordex_historical'][var].attrs['long_name']} "
-            f"[{data['eurocordex_historical'][var].attrs['units']}]"
-        )
-    )
-
-
-def plot_box(data, var, lonlat, figsize=(10, 4), fliers=False):
-    """
-    Generate a box plot for a varable from Xarray datasets stored in a
-    dictionary
-
-    Parameters
-    ----------
-    data : A dictionary of Xarray datasets
-    var : The variable from the Xarray dataset to plot
-    lonlat : A tuple of longitude and latitude values of the point of interest
-    figsize : Size of the plot figure
-    """
-
-    fig = plt.subplots(1, 1, figsize=figsize)
-
-    boxplot_configs(
-        data=data, var=var, lonlat=lonlat, axs=fig[1], fliers=fliers
-    )
-
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_box_multi(data, varlist, lonlat, figsize=(13.5, 6), fliers=False):
+def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
     """
     Generate box plots for Xarray datasets stored in a dictionary
 
@@ -531,16 +457,29 @@ def plot_box_multi(data, varlist, lonlat, figsize=(13.5, 6), fliers=False):
     ----------
     data : A dictionary of Xarray datasets
     var : The variable from the Xarray dataset to plot
-    lonlat : A tuple of longitude and latitude values of the point of interest
+    title : Plot title
+    showfliers : Show outliers (default is False)
     figsize : Size of the plot figure
     """
 
-    fig = plt.subplots(2, 2, figsize=figsize)
-
-    for var, axs in zip(varlist, fig[1].flat):
-        boxplot_configs(
-            data=data, var=var, lonlat=lonlat, axs=axs, fliers=fliers
-        )
-
+    plt.figure(figsize=figsize)
+    sns.boxplot(
+        data, x="dataset", y=var, hue="exp", showfliers=showfliers,
+        showmeans=True, notch=True, palette="viridis",
+        meanprops={
+            "markeredgecolor": "darkslategrey",
+            "marker": "d",
+            "markerfacecolor": "white",
+            "markersize": 7.5
+        },
+        boxprops={"edgecolor": "white"},
+        medianprops={"color": (1, 1, 0, 0)},  # transparent
+        # whiskerprops={"color": "darkslategrey"},
+        # capprops={"color": "darkslategrey"},
+    )
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.title(title)
+    plt.legend(title=None)
     plt.tight_layout()
     plt.show()

@@ -74,14 +74,14 @@ for exp, model in itertools.product(experiment_id, driving_model):
     if model == "HadGEM2-ES":
         data = data.convert_calendar("standard", align_on="year")
 
-    # copy time_bnds coordinates
-    data_time_bnds = data.coords["time_bnds"]
-
     # subset for reference period and spin-up year
     if exp == "historical":
         data = data.sel(time=slice("1975", "2005"))
     else:
         data = data.sel(time=slice("2040", "2070"))
+
+    # copy time_bnds coordinates
+    data_time_bnds = data.coords["time_bnds"]
 
     # clip to Ireland's boundary
     data = data.rio.clip(ie.buffer(500).to_crs(data.rio.crs))
