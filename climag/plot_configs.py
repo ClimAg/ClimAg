@@ -1,6 +1,6 @@
 """plot_configs.py
 
-Functions to plot climate model datasets, e.g. CORDEX
+Helper functions to plot datasets
 """
 
 from datetime import datetime
@@ -313,6 +313,36 @@ def plot_map(data, var, cbar_levels=None, title="default"):
     plt.show()
 
 
+def weighted_average(data, averages: str):
+    """
+    Calculate the weighted average
+
+    - https://docs.xarray.dev/en/stable/user-guide/computation.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2020/Time/
+    """
+
+    # calculate the weights by grouping month length by season or month
+    weights = (
+        data.time.dt.days_in_month.groupby(f"time.{averages}") /
+        data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
+    )
+
+    # test that the sum of weights for each year/season/month is one
+    np.testing.assert_allclose(
+        weights.groupby(f"time.{averages}").sum().values,
+        np.ones(len(set(weights[averages].values)))
+    )
+
+    # calculate the weighted average
+    data_weighted = (
+        (data * weights).groupby(f"time.{averages}").sum(dim="time")
+    )
+
+    return data_weighted
+
+
 def plot_averages(
     data, var: str, averages: str, boundary_data, cbar_levels=None
 ):
@@ -334,22 +364,8 @@ def plot_averages(
     title : Main plot title
     """
 
-    # calculate the weights by grouping month length by year/season/month
-    weights = (
-        data.time.dt.days_in_month.groupby(f"time.{averages}") /
-        data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
-    )
-
-    # test that the sum of weights for each year/season/month is one
-    np.testing.assert_allclose(
-        weights.groupby(f"time.{averages}").sum().values,
-        np.ones(len(set(weights[averages].values)))
-    )
-
     # calculate the weighted average
-    data_weighted = (
-        (data * weights).groupby(f"time.{averages}").sum(dim="time")
-    )
+    data_weighted = weighted_average(data=data, averages=averages)
 
     plot_transform = rotated_pole_transform(data)
 
@@ -412,6 +428,101 @@ def plot_averages(
                 str(data_weighted.isel({averages: i})[averages].values)
             )
 
+    plt.show()
+
+
+def plot_season_diff(data, var, boundary_data, stat="mean"):
+    """
+    Plot differences between weighted/unweighted mean and unbiased/biased
+    standard deviation
+
+    Parameters
+    ----------
+    data : Xarray dataset
+    var : Variable to plot
+    boundary_data : Boundary data; GeoPandas geodataframe
+    stat : Statistic; either "mean" (default) or "std" for standard deviation
+
+    - https://docs.xarray.dev/en/stable/user-guide/computation.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2020/Time/
+    """
+
+    notnull = pd.notnull(data[var][0])
+
+    if stat == "mean":
+        # weighted average
+        data_1 = weighted_average(data=data, averages="season")
+        # unweighted average
+        data_2 = data.groupby("time.season").mean(dim="time")
+        titles = "Weighted mean", "Unweighted mean"
+    elif stat == "std":
+        data_1 = data.groupby("time.season").std(dim="time", ddof=1)
+        data_2 = data.groupby("time.season").std(dim="time")
+        titles = "Unbiased SD", "Biased SD"
+    data_diff = data_1 - data_2  # difference between the stats
+
+    cmap = colormap_configs(var)
+
+    fig, axs = plt.subplots(
+        nrows=4, ncols=3, figsize=(10, 10),
+        subplot_kw={"projection": plot_projection}
+    )
+
+    for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
+        data_1[var].sel(season=season).where(notnull).plot(
+            ax=axs[i, 0],
+            cmap=cmap,
+            # extend="both",
+            robust=True,
+            transform=rotated_pole_transform(data),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        data_2[var].sel(season=season).where(notnull).plot(
+            ax=axs[i, 1],
+            cmap=cmap,
+            # extend="both",
+            robust=True,
+            transform=rotated_pole_transform(data),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        data_diff[var].sel(season=season).where(notnull).plot(
+            ax=axs[i, 2],
+            cmap="RdBu_r",
+            # extend="both",
+            robust=True,
+            transform=rotated_pole_transform(data),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        axs[i, 0].set_ylabel(season)
+        axs[i, 0].set_yticks([])
+
+    for ax in axs.flat:
+        boundary_data.to_crs(plot_projection).plot(
+            ax=ax, edgecolor="darkslategrey", color="white", linewidth=.5
+        )
+        ax.set_title(None)
+
+    axs[0, 0].set_title(titles[0])
+    axs[0, 1].set_title(titles[1])
+    axs[0, 2].set_title("Difference")
+
+    plt.tight_layout()
+
+    fig.suptitle(
+        f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]",
+        fontsize=16, y=1.02
+    )
     plt.show()
 
 
