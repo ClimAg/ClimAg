@@ -6,9 +6,10 @@ Functions to plot climate model datasets, e.g. CORDEX
 from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from dateutil.parser import parse
 import seaborn as sns
+from dateutil.parser import parse
 
 # set plot projection to the projection of the HiResIreland dataset
 plot_projection = ccrs.RotatedPole(
@@ -318,24 +319,31 @@ def plot_averages(
     """
     Monthly or seasonal averages plots
 
-    https://docs.xarray.dev/en/stable/examples/monthly-means.html
-    https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
 
     Parameters
     ----------
     data : Xarray dataset
     var : The variable to plot (e.g. "T")
     boundary_data : GeoPandas boundary vector data
-    averages : Seasonal ("season") or monthly ("month") averages
+    averages : Seasonal ("season"), annual ("year"), or monthly ("month")
+        averages
     cbar_levels : Number of discrete colour bar levels; if None, use a
         continuous colour bar
     title : Main plot title
     """
 
-    # calculate the weights by grouping month length by season or month
+    # calculate the weights by grouping month length by year/season/month
     weights = (
         data.time.dt.days_in_month.groupby(f"time.{averages}") /
         data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
+    )
+
+    # test that the sum of weights for each year/season/month is one
+    np.testing.assert_allclose(
+        weights.groupby(f"time.{averages}").sum().values,
+        np.ones(len(set(weights[averages].values)))
     )
 
     # calculate the weighted average
@@ -347,20 +355,21 @@ def plot_averages(
 
     cmap = colormap_configs(var)
 
+    # configure number of columns of the plot and aspect of the colour bar
     if averages == "month":
-        columns, cbar_aspect = 4, 25
+        columns_cbar_aspect = 4, 25
     elif averages == "year":
-        columns, cbar_aspect = 6, 35
+        columns_cbar_aspect = 6, 35
     else:
-        columns, cbar_aspect = 2, 20
+        columns_cbar_aspect = 2, 20
 
     fig = data_weighted[var].where(pd.notnull(data[var][0])).plot(
         x="rlon", y="rlat", col=averages,
-        col_wrap=columns,
+        col_wrap=columns_cbar_aspect[0],
         cmap=cmap,
         robust=True,
         cbar_kwargs={
-            "aspect": cbar_aspect,
+            "aspect": columns_cbar_aspect[1],
             "label": (
                 f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
             )
@@ -403,7 +412,6 @@ def plot_averages(
                 str(data_weighted.isel({averages: i})[averages].values)
             )
 
-    # plt.suptitle(data.attrs["dataset"], y=1.02)
     plt.show()
 
 
