@@ -251,17 +251,20 @@ def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
     plt.show()
 
 
-def plot_map(data, var, cbar_levels=None, title="default"):
+def plot_map(
+    data, var, cbar_levels=None, contour=False, boundary_data=None
+):
     """
     Create an individual plot of a climate data variable covering the Island
     of Ireland.
 
     Parameters
     ----------
-    data : climate model dataset (loaded using xarray)
+    data : climate model dataset (loaded using Xarray)
     var : The variable to plot
     cbar_levels : Number of colour bar levels
     title : Plot title; if "default", use the default plot title
+    contour : Create a filled contour plot
     """
 
     plot_transform = rotated_pole_transform(data)
@@ -277,22 +280,40 @@ def plot_map(data, var, cbar_levels=None, title="default"):
     axs = plt.axes(projection=plot_projection)
 
     # plot data for the variable
-    data[var].plot(
-        ax=axs,
-        cmap=cmap,
-        x="rlon",
-        y="rlat",
-        robust=True,
-        cbar_kwargs={"label": cbar_label},
-        transform=plot_transform,
-        levels=cbar_levels
-    )
+    if contour:
+        data[var].plot.contourf(
+            ax=axs,
+            cmap=cmap,
+            x="rlon",
+            y="rlat",
+            robust=True,
+            cbar_kwargs={"label": cbar_label},
+            transform=plot_transform,
+            levels=cbar_levels
+        )
+    else:
+        data[var].plot(
+            ax=axs,
+            cmap=cmap,
+            x="rlon",
+            y="rlat",
+            robust=True,
+            cbar_kwargs={"label": cbar_label},
+            transform=plot_transform,
+            levels=cbar_levels
+        )
 
     # add boundaries
-    axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+    if boundary_data is None:
+        axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+    else:
+        boundary_data.to_crs(plot_projection).plot(
+            ax=axs, edgecolor="darkslategrey", color="white", linewidth=.75
+        )
 
-    if title != "default":
-        axs.set_title(title)
+    # if title != "default":
+    #     axs.set_title(title)
+    axs.set_title(None)
 
     plt.axis("equal")
     plt.tight_layout()
@@ -431,7 +452,7 @@ def plot_averages(
     plt.show()
 
 
-def plot_season_diff(data, var, boundary_data, stat="mean"):
+def plot_season_diff(data, var, boundary_data=None, stat="mean"):
     """
     Plot differences between weighted/unweighted mean and unbiased/biased
     standard deviation
@@ -440,7 +461,8 @@ def plot_season_diff(data, var, boundary_data, stat="mean"):
     ----------
     data : Xarray dataset
     var : Variable to plot
-    boundary_data : Boundary data; GeoPandas geodataframe
+    boundary_data : Boundary data as a GeoPandas geodataframe; if None,
+        Cartopy's coastlines are used
     stat : Statistic; either "mean" (default) or "std" for standard deviation
 
     - https://docs.xarray.dev/en/stable/user-guide/computation.html
@@ -508,9 +530,15 @@ def plot_season_diff(data, var, boundary_data, stat="mean"):
         axs[i, 0].set_yticks([])
 
     for ax in axs.flat:
-        boundary_data.to_crs(plot_projection).plot(
-            ax=ax, edgecolor="darkslategrey", color="white", linewidth=.5
-        )
+        if boundary_data is None:
+            ax.coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+        else:
+            boundary_data.to_crs(plot_projection).plot(
+                ax=ax, edgecolor="darkslategrey", color="white", linewidth=.5
+            )
+
         ax.set_title(None)
 
     axs[0, 0].set_title(titles[0])
