@@ -39,7 +39,7 @@ ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 for exp, model in itertools.product(
     # ["historical", "rcp45", "rcp85"],
-    ["historical", "rcp85"],
+    ["rcp45", "rcp85"],
     ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 ):
     # auto-rechunking may cause NotImplementedError with object dtype
@@ -91,16 +91,14 @@ for exp, model in itertools.product(
 
     # ### Ireland subset
     # clip to Ireland's boundary
-    data = data.rio.clip(ie.buffer(1).to_crs(data_crs))
+    data = data.rio.clip(ie.buffer(1).to_crs(data_crs), all_touched=True)
 
     # ### Calculate photosynthetically active radiation
     # Papaioannou et al. (1993) - irradiance ratio
     data = data.assign(PAR=(data["ASWDIR_S"] + data["ASWDIFD_S"]) * 0.473)
 
     # keep only required variables
-    data = data.drop_vars(
-        ["ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ALB_RAD"]
-    )
+    data = data.drop_vars(["ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ALB_RAD"])
 
     # ### Convert units and rename variables
     for v in data.data_vars:

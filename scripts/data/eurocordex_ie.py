@@ -15,6 +15,7 @@ exec(
 """
 
 # import libraries
+# import glob
 import itertools
 import os
 import sys
@@ -22,9 +23,9 @@ from datetime import datetime, timezone
 import geopandas as gpd
 import intake
 import xarray as xr
-from dask.distributed import Client
+# from dask.distributed import Client
 
-client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
+# client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
 
 DATA_DIR_BASE = os.path.join("data", "EURO-CORDEX")
 
@@ -45,8 +46,10 @@ cordex_eur11_cat = intake.open_esm_datastore(JSON_FILE_PATH)
 
 # subset data for each experiment and driving model
 driving_model = list(cordex_eur11_cat.df["driving_model"].unique())
+# driving_model = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
 experiment_id = list(cordex_eur11_cat.df["experiment_id"].unique())
+# experiment_id = ["historical", "rcp45", "rcp85"]
 
 for exp, model in itertools.product(experiment_id, driving_model):
     cordex_eur11 = cordex_eur11_cat.search(
@@ -67,6 +70,15 @@ for exp, model in itertools.product(experiment_id, driving_model):
         decode_coords="all"
     )
 
+    # data = xr.open_mfdataset(
+    #     glob.glob(
+    #         f"/run/media/nms/MyPassport/EURO-CORDEX/RCA4/{exp}/{model}/*.nc"
+    #         # f"data/EURO-CORDEX/RCA4/{exp}/{model}/*.nc"
+    #     ),
+    #     chunks=CHUNKS,
+    #     decode_coords="all"
+    # )
+
     # copy CRS
     data_crs = data.rio.crs
 
@@ -84,7 +96,7 @@ for exp, model in itertools.product(experiment_id, driving_model):
     data_time_bnds = data.coords["time_bnds"]
 
     # clip to Ireland's boundary
-    data = data.rio.clip(ie.buffer(500).to_crs(data.rio.crs))
+    data = data.rio.clip(ie.buffer(6500).to_crs(data_crs), all_touched=True)
 
     # calculate photosynthetically active radiation (PAR)
     # Papaioannou et al. (1993) - irradiance ratio
