@@ -171,7 +171,9 @@ def hiresireland_date_format(data):
 #     return date
 
 
-def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
+def plot_facet_map(
+    data, var, boundary_data=None, cbar_levels=None, ticks=False
+):
     """
     Create a facet plot of a variable from an xarray dataset covering the
     Island of Ireland.
@@ -222,9 +224,16 @@ def plot_facet_map(data, var, boundary_data, cbar_levels=None, ticks=False):
     fig.set_ylabels("")
 
     for i, axs in enumerate(fig.axs.flat):
-        boundary_data.to_crs(plot_projection).boundary.plot(
-            ax=axs, color="darkslategrey", linewidth=.5
-        )
+        if boundary_data is None:
+            axs.coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+        else:
+            boundary_data.to_crs(plot_projection).plot(
+                ax=axs, edgecolor="darkslategrey", color="white",
+                linewidth=.5
+            )
+
         # axs.set_title(cordex_date_format(data.isel(time=i)))
         axs.set_xlim(-1.9, 1.6)
         axs.set_ylim(-2.1, 2.1)
@@ -365,7 +374,7 @@ def weighted_average(data, averages: str):
 
 
 def plot_averages(
-    data, var: str, averages: str, boundary_data, cbar_levels=None
+    data, var: str, averages: str, boundary_data=None, cbar_levels=None
 ):
     """
     Monthly or seasonal averages plots
@@ -423,9 +432,15 @@ def plot_averages(
         # boundary_data.to_crs(plot_projection).boundary.plot(
         #     ax=axs, color="darkslategrey", linewidth=.5
         # )
-        boundary_data.to_crs(plot_projection).plot(
-            ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
-        )
+        if boundary_data is None:
+            axs.coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+        else:
+            boundary_data.to_crs(plot_projection).plot(
+                ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
+            )
+
         if averages == "month":
             axs.set_title(
                 datetime.strptime(
