@@ -15,6 +15,46 @@ https://github.com/woodcrafty/PyETo (Accessed 8 November 2022).
 
 PyETo documentation:
 https://pyeto.readthedocs.io/en/latest/fao56_penman_monteith.html
+
+MÉRA variables:
+- t_max [K]
+- t_min [K]
+- r_ns [J m⁻²]
+- r_nl [J m⁻²]
+- p_atm [Pa]
+- u_10 [m s⁻¹]
+- rh_mean
+
+Overall equation:
+
+```py
+import math
+
+t_mean = (t_max + t_min) / 2 - 273.15
+
+e_s = (
+    0.6108 * math.exp((17.27 * t_max - 273.15) / (t_max - 273.15 + 237.3)) +
+    0.6108 * math.exp((17.27 * t_min - 273.15) / (t_min - 273.15 + 237.3))
+) / 2
+
+delta = (4098 * e_s) / math.pow((t_mean + 273.3), 2)
+
+r_n = (r_ns - r_nl) / 10e6
+
+gamma = 0.665 * p_atm / 10e6
+
+u_2 = u_10 * (4.87 / math.log((67.8 * 10) - 5.42))
+
+e_deficit = e_s - rh_mean / 100 * e_s
+
+ETo = (
+    (
+        (0.408 * delta * r_n) +
+        (gamma * (900 / (t_mean + 273)) * u_2 * e_deficit)
+    ) /
+    (delta + (gamma * (1 + 0.34 * u_2)))
+)
+```
 """
 
 import math
@@ -48,20 +88,17 @@ def mean_air_temperature(t_min: float, t_max: float) -> float:
     - T_max: maximum air temperature at 2 m height [°C]
     - T_min: minimum air temperature at 2 m height [°C]
 
-    Since MÉRA temperature fields are in K, the value is converted to °C by
-    subtracting 273.15.
-
     Parameters
     ----------
-    t_min : Minimum air temperature at 2 m height [K]
-    t_max : Maximum air temperature at 2 m height [K]
+    t_min : Minimum air temperature at 2 m height [°C]
+    t_max : Maximum air temperature at 2 m height [°C]
 
     Returns
     -------
     - Mean air temperature at 2 m height [°C]
     """
 
-    return ((t_max + t_min) / 2) - 273.15
+    return (t_max + t_min) / 2
 
 
 def saturation_vapour_pressure_temp(t_air: float) -> float:
@@ -99,8 +136,8 @@ def saturation_vapour_pressure(t_max: float, t_min: float) -> float:
 
     Parameters
     ----------
-    t_min : Minimum air temperature at 2 m height [K]
-    t_max : Maximum air temperature at 2 m height [K]
+    t_min : Minimum air temperature at 2 m height [°C]
+    t_max : Maximum air temperature at 2 m height [°C]
 
     Returns
     -------
@@ -108,8 +145,8 @@ def saturation_vapour_pressure(t_max: float, t_min: float) -> float:
     """
 
     return (
-        saturation_vapour_pressure_temp(t_air=t_max - 273.15) +
-        saturation_vapour_pressure_temp(t_air=t_min - 273.15)
+        saturation_vapour_pressure_temp(t_air=t_max) +
+        saturation_vapour_pressure_temp(t_air=t_min)
     ) / 2
 
 
@@ -157,20 +194,17 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
     - R_ns: incoming net shortwave radiation [MJ m⁻² day⁻¹]
     - R_nl: outgoing net longwave radiation [MJ m⁻² day⁻¹]
 
-    Since MÉRA radiation data is available in J m⁻², the value should be
-    divided by 10^6.
-
     Parameters
     ----------
-    r_ns : Incoming net shortwave radiation [J m⁻² day⁻¹]
-    r_nl : Outgoing net longwave radiation [J m⁻² day⁻¹]
+    r_ns : Incoming net shortwave radiation [MJ m⁻² day⁻¹]
+    r_nl : Outgoing net longwave radiation [MJ m⁻² day⁻¹]
 
     Returns
     -------
     - Net radiation at the crop surface [MJ m⁻² day⁻¹]
     """
 
-    return (r_ns - r_nl) / 10e6
+    return r_ns - r_nl
 
 
 # def soil_heat_flux_density(shf: float) -> float:
@@ -188,11 +222,6 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
 
 #     - G: soil heat flux density [MJ m⁻² day⁻¹]
 #     - SH: mean surface sensible heat flux [W m⁻²]
-
-#     Since the sensible heat flux provided by MÉRA is in J m⁻², the following
-#     equation should be used instead:
-
-#     G = SH / 10^6
 
 #     Parameters
 #     ----------
@@ -243,18 +272,16 @@ def psychrometric_constant(p_atm: float) -> float:
     - γ: psychrometric constant [kPa °C⁻¹]
     - P: atmospheric pressure [kPa]
 
-    Since MÉRA pressure data is in Pa, the value is divided by 1,000.
-
     Parameters
     ----------
-    p_atm : Atmospheric pressure [Pa]
+    p_atm : Atmospheric pressure [kPa]
 
     Returns
     -------
     - Psychrometric constant [kPa °C⁻¹]
     """
 
-    return 0.000000665 * p_atm
+    return 0.665 / 10e3 * p_atm
 
 
 def wind_speed(u_z: float, h_z: float) -> float:
@@ -333,7 +360,10 @@ def saturation_vapour_pressure_deficit(e_s: float, e_a: float) -> float:
     return e_s - e_a
 
 
-def fao_penman_monteith(r_n, t_mean, u_2, e_deficit, delta, gamma):
+def fao_penman_monteith(
+    r_n: float, t_mean: float, u_2: float, e_deficit: float,
+    delta: float, gamma: float
+) -> float:
     """
     The FAO Penman-Monteith equation.
 
@@ -380,3 +410,68 @@ def fao_penman_monteith(r_n, t_mean, u_2, e_deficit, delta, gamma):
         ) /
         (delta + (gamma * (1 + 0.34 * u_2)))
     )
+
+
+def fao_penman_monteith_mera(data):
+    """
+    Apply the FAO Penman-Monteith equation on the MÉRA dataset.
+
+    Parameters
+    ----------
+    data : Xarray dataset
+    """
+
+    data = data.assign(
+        t_mean=mean_air_temperature(
+            t_min=data["t_min"] - 273.15, t_max=data["t_max"] - 273.15
+        )
+    )
+
+    data = data.assign(
+        e_s=saturation_vapour_pressure(
+            t_max=data["t_max"] - 273.15, t_min=data["t_min"] - 273.15
+        )
+    )
+
+    data = data.assign(
+        delta=slope_vapour_pressure_curve(
+            t_mean=data["t_mean"], e_s=data["e_s"]
+        )
+    )
+
+    data = data.assign(
+        r_n=net_radiation(r_ns=data["r_ns"] / 10e6, r_nl=data["r_nl"] / 10e6)
+    )
+
+    data = data.assign(
+        gamma=psychrometric_constant(p_atm=data["p_atm"] / 10e3)
+    )
+
+    data = data.assign(u_2=wind_speed(u_z=data["u_10"], h_z=10))
+
+    data = data.assign(
+        e_a=actual_vapour_pressure(rh_mean=data["rh_mean"], e_s=data["e_s"])
+    )
+
+    data = data.assign(
+        e_deficit=saturation_vapour_pressure_deficit(
+            e_s=data["e_s"], e_a=data["e_a"]
+        )
+    )
+
+    data = data.assign(
+        PET=fao_penman_monteith(
+            delta=data["delta"], gamma=data["gamma"], r_n=data["r_n"],
+            t_mean=data["t_mean"], u_2=data["u_2"],
+            e_deficit=data["e_deficit"]
+        )
+    )
+
+    data = data.drop_vars(
+        [
+            "t_min", "t_max", "t_mean", "e_s", "delta", "r_ns", "r_nl", "r_n",
+            "gamma", "p_atm", "u_10", "u_2", "e_a", "rh_mean", "e_deficit"
+        ]
+    )
+
+    return data
