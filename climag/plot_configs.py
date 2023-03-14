@@ -3,13 +3,11 @@
 Helper functions to plot datasets
 """
 
-import os
 # from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 import seaborn as sns
 # from dateutil.parser import parse
 
@@ -26,12 +24,6 @@ lambert_conformal = ccrs.LambertConformal(
     standard_parallels=[53.5],
     central_longitude=5.0,
     central_latitude=53.5
-)
-
-# boundry data
-ie_ne_bbox = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="ne_10m_land_2157_IE_BBOX_DIFF"
 )
 
 # seaborn colourmaps

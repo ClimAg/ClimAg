@@ -398,3 +398,138 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
         fontsize=16, y=1.02
     )
     plt.show()
+
+
+def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
+    """
+    Plot differences between historical and rcp45/rcp8.5 data
+
+    Parameters
+    ----------
+    data : a tuple of two Xarray datasets to compare
+    var : Variable to plot
+    boundary_data : Boundary data as a GeoPandas geodataframe; if None,
+        Cartopy's coastlines are used
+    stat : Statistic to plot; default is "mean" (weighted mean); other options
+        are "std" (standard deviation), "0.9q" (90th percentile), "0.1q"
+        (10th percentile), "min" (minimum), "max" (maximum), and "median"
+        (median). Note that only the mean is weighted, i.e. the number of days
+        in each month have been taken into account. The standard deviation is
+        unbiased (using Delta Degrees of Freedom of 1). See the Xarray API
+        docs for "DatasetGroupBy" for more info.
+
+    - https://docs.xarray.dev/en/stable/user-guide/computation.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2020/Time/
+    """
+
+    notnull = pd.notnull(data[0][var][0])
+
+    if stat == "mean":
+        data_h = cplt.weighted_average(data=data[0], averages="season")
+        data_f = cplt.weighted_average(data=data[1], averages="season")
+    elif stat == "std":
+        data_h = data[0].groupby("time.season").std(dim="time", ddof=1)
+        data_f = data[1].groupby("time.season").std(dim="time", ddof=1)
+    # elif stat == "0.9q":
+    #     data_h = data[0].groupby("time.season").quantile(.9, dim="time")
+    #     data_f = data[1].groupby("time.season").quantile(.9, dim="time")
+    # elif stat == "0.1q":
+    #     data_h = data[0].groupby("time.season").quantile(.1, dim="time")
+    #     data_f = data[1].groupby("time.season").quantile(.1, dim="time")
+    elif stat == "min":
+        data_h = data[0].groupby("time.season").min(dim="time")
+        data_f = data[1].groupby("time.season").min(dim="time")
+    elif stat == "max":
+        data_h = data[0].groupby("time.season").max(dim="time")
+        data_f = data[1].groupby("time.season").max(dim="time")
+    elif stat == "median":
+        data_h = data[0].groupby("time.season").median(dim="time")
+        data_f = data[1].groupby("time.season").median(dim="time")
+    data_diff = data_f - data_h
+
+    cmap = cplt.colormap_configs(var)
+
+    fig, axs = plt.subplots(
+        nrows=4, ncols=3, figsize=(10, 10),
+        subplot_kw={"projection": cplt.plot_projection}
+    )
+
+    for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
+        data_h[var].sel(season=season).where(notnull).plot.contourf(
+            ax=axs[i, 0],
+            cmap=cmap,
+            # extend="both",
+            robust=True,
+            transform=cplt.rotated_pole_transform(data[0]),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        data_f[var].sel(season=season).where(notnull).plot.contourf(
+            ax=axs[i, 1],
+            cmap=cmap,
+            robust=True,
+            transform=cplt.rotated_pole_transform(data[0]),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        data_diff[var].sel(season=season).where(notnull).plot.contourf(
+            ax=axs[i, 2],
+            cmap=cmap,
+            robust=True,
+            transform=cplt.rotated_pole_transform(data[0]),
+            cbar_kwargs={"label": None},
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1)
+        )
+
+        axs[i, 0].set_ylabel(season, fontweight="semibold")
+        axs[i, 0].set_yticks([])
+
+    for axis in axs.flat:
+        if boundary_data is None:
+            axis.coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+        else:
+            boundary_data.to_crs(cplt.plot_projection).plot(
+                ax=axis, edgecolor="darkslategrey", color="white",
+                linewidth=.5
+            )
+
+        axis.set_title(None)
+
+    try:
+        axs[0, 0].set_title(data[0].attrs["dataset"].split("_")[4])
+        axs[0, 1].set_title(data[1].attrs["dataset"].split("_")[4])
+    except KeyError:
+        axs[0, 0].set_title(data[0].attrs["input_dataset"].split("_")[4])
+        axs[0, 1].set_title(data[1].attrs["input_dataset"].split("_")[4])
+    axs[0, 2].set_title("difference")
+
+    plt.tight_layout()
+
+    # try:
+    #     suptitle = (
+    #         f"{data[0][var].attrs['long_name']} "
+    #         f"[{data[0][var].attrs['units']}] ("
+    #         + ", ".join(data[0].attrs["dataset"].split("_")[1:4]) + ")"
+    #     )
+    # except KeyError:
+    #     suptitle = (
+    #         f"{data[0][var].attrs['long_name']} "
+    #         f"[{data[0][var].attrs['units']}] ("
+    #         + ", ".join(data[0].attrs["input_dataset"].split("_")[1:4]) + ")"
+    #     )
+
+    suptitle = (
+        f"{data[0][var].attrs['long_name']} [{data[0][var].attrs['units']}]"
+    )
+
+    fig.suptitle(suptitle, fontsize=16, y=1.02)
+    plt.show()
