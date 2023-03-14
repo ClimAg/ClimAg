@@ -3,13 +3,15 @@
 Helper functions to plot datasets
 """
 
+import os
 from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import seaborn as sns
-from dateutil.parser import parse
+# from dateutil.parser import parse
 
 # set plot projection to the projection of the HiResIreland dataset
 plot_projection = ccrs.RotatedPole(
@@ -24,6 +26,12 @@ lambert_conformal = ccrs.LambertConformal(
     standard_parallels=[53.5],
     central_longitude=5.0,
     central_latitude=53.5
+)
+
+# boundry data
+ie_ne_bbox = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries.gpkg"),
+    layer="ne_10m_land_2157_IE_BBOX_DIFF"
 )
 
 # seaborn colourmaps
@@ -147,13 +155,13 @@ def rotated_pole_transform(data):
     return transform
 
 
-def hiresireland_date_format(data):
-    """
-    Format date
-    """
+# def hiresireland_date_format(data):
+#     """
+#     Format date
+#     """
 
-    date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
-    return date
+#     date = datetime.strftime(parse(str(data["time"].values)), "%-d %b %Y")
+#     return date
 
 
 # def cordex_date_format(data):
@@ -172,7 +180,7 @@ def hiresireland_date_format(data):
 
 
 def plot_facet_map(
-    data, var, boundary_data=None, cbar_levels=None, ticks=False
+    data, var, boundary_data=None, cbar_levels=None,  # ticks=False
 ):
     """
     Create a facet plot of a variable from an xarray dataset covering the
@@ -198,16 +206,16 @@ def plot_facet_map(
 
     if len(data["time"]) == 12:
         col_wrap = 4
-        y_ticks = [0, 4, 8]  # index of subplots with y tick labels
-        x_ticks = [8, 9, 10, 11]  # index of subplots with x tick labels
+        # y_ticks = [0, 4, 8]  # index of subplots with y tick labels
+        # x_ticks = [8, 9, 10, 11]  # index of subplots with x tick labels
     elif len(data["time"]) == 30:
         col_wrap = 5
-        y_ticks = [0, 5, 10, 15, 20, 25]
-        x_ticks = [25, 26, 27, 28, 29]
+        # y_ticks = [0, 5, 10, 15, 20, 25]
+        # x_ticks = [25, 26, 27, 28, 29]
     else:
         col_wrap = None
-        y_ticks = []
-        x_ticks = []
+        # y_ticks = []
+        # x_ticks = []
 
     fig = data[var].plot(
         x="rlon", y="rlat", col="time",
@@ -223,7 +231,8 @@ def plot_facet_map(
     fig.set_xlabels("")
     fig.set_ylabels("")
 
-    for i, axs in enumerate(fig.axs.flat):
+    # for i, axs in enumerate(fig.axs.flat):
+    for axs in fig.axs.flat:
         if boundary_data is None:
             axs.coastlines(
                 resolution="10m", color="darkslategrey", linewidth=.5
@@ -234,28 +243,29 @@ def plot_facet_map(
                 linewidth=.5
             )
 
-        # axs.set_title(cordex_date_format(data.isel(time=i)))
         axs.set_xlim(-1.9, 1.6)
         axs.set_ylim(-2.1, 2.1)
-        # use gridlines to add tick labels (lon/lat)
-        if ticks and i in y_ticks:
-            axs.gridlines(
-                draw_labels=["y", "left"],
-                ylocs=range(-90, 90, 1),
-                color="None",
-                linewidth=.5,
-                x_inline=False,
-                y_inline=False
-            )
-        if ticks and i in x_ticks:
-            axs.gridlines(
-                draw_labels=["x", "bottom"],
-                xlocs=range(-180, 180, 2),
-                color="None",
-                linewidth=.5,
-                x_inline=False,
-                y_inline=False
-            )
+
+        # axs.set_title(cordex_date_format(data.isel(time=i)))
+        # # use gridlines to add tick labels (lon/lat)
+        # if ticks and i in y_ticks:
+        #     axs.gridlines(
+        #         draw_labels=["y", "left"],
+        #         ylocs=range(-90, 90, 1),
+        #         color="None",
+        #         linewidth=.5,
+        #         x_inline=False,
+        #         y_inline=False
+        #     )
+        # if ticks and i in x_ticks:
+        #     axs.gridlines(
+        #         draw_labels=["x", "bottom"],
+        #         xlocs=range(-180, 180, 2),
+        #         color="None",
+        #         linewidth=.5,
+        #         x_inline=False,
+        #         y_inline=False
+        #     )
 
     plt.show()
 
@@ -377,7 +387,7 @@ def plot_averages(
     data, var: str, averages: str, boundary_data=None, cbar_levels=None
 ):
     """
-    Monthly or seasonal averages plots
+    Monthly, yearly, or seasonal averages plots
 
     - https://docs.xarray.dev/en/stable/examples/monthly-means.html
     - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
@@ -391,7 +401,6 @@ def plot_averages(
         averages
     cbar_levels : Number of discrete colour bar levels; if None, use a
         continuous colour bar
-    title : Main plot title
     """
 
     # calculate the weighted average
@@ -456,15 +465,114 @@ def plot_averages(
                 "SON": "Autumn"
             }
             season = str(data_weighted.isel({averages: i})[averages].values)
-            axs.set_title(
-                f"{seasons[season]} ({season})"
-            )
+            axs.set_title(f"{seasons[season]} ({season})")
         else:
             axs.set_title(
                 str(data_weighted.isel({averages: i})[averages].values)
             )
 
     plt.show()
+
+
+def plot_seasonal(
+    data, var: str, stat="mean", cbar_levels=None, contour=False
+):
+    """
+    Seasonal plots
+
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+
+    Parameters
+    ----------
+    data : Xarray dataset
+    var : The variable to plot (e.g. "T")
+    stat : Statistic to plot; default is "mean" (weighted mean); other options
+        are "std" (standard deviation), "0.9q" (90th percentile), "0.1q"
+        (10th percentile), "min" (minimum), "max" (maximum), and "median"
+        (median). Note that only the mean is weighted, i.e. the number of days
+        in each month have been taken into account. The standard deviation is
+        unbiased (using Delta Degrees of Freedom of 1). See the Xarray API
+        docs for "DatasetGroupBy" for more info.
+    cbar_levels : Number of discrete colour bar levels; if None, use a
+        continuous colour bar
+    """
+
+    if stat == "mean":
+        data_stat = weighted_average(data=data, averages="season")
+    elif stat == "std":
+        data_stat = data.groupby("time.season").std(dim="time", ddof=1)
+    elif stat == "0.9q":
+        data_stat = data.groupby("time.season").quantile(.9, dim="time")
+    elif stat == "0.1q":
+        data_stat = data.groupby("time.season").quantile(.1, dim="time")
+    elif stat == "min":
+        data_stat = data.groupby("time.season").min(dim="time")
+    elif stat == "max":
+        data_stat = data.groupby("time.season").max(dim="time")
+    elif stat == "median":
+        data_stat = data.groupby("time.season").median(dim="time")
+    # elif stat == "sum":
+    #     data_stat = data.groupby("time.season").sum(dim="time")
+
+    plot_transform = rotated_pole_transform(data)
+
+    cmap = colormap_configs(var)
+
+    if contour:
+        fig = data_stat[var].where(pd.notnull(data[var][0])).plot.contourf(
+            x="rlon", y="rlat", col="season",
+            col_wrap=2,
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs={
+                "aspect": 20,
+                "label": (
+                    f"{data[var].attrs['long_name']} "
+                    f"[{data[var].attrs['units']}]"
+                )
+            },
+            transform=plot_transform,
+            subplot_kws={"projection": plot_projection},
+            levels=cbar_levels,
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1),
+            aspect=.9
+        )
+    else:
+        fig = data_stat[var].where(pd.notnull(data[var][0])).plot(
+            x="rlon", y="rlat", col="season",
+            col_wrap=2,
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs={
+                "aspect": 20,
+                "label": (
+                    f"{data[var].attrs['long_name']} "
+                    f"[{data[var].attrs['units']}]"
+                )
+            },
+            transform=plot_transform,
+            subplot_kws={"projection": plot_projection},
+            levels=cbar_levels,
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1),
+            aspect=.9
+        )
+
+    for i, axs in enumerate(fig.axs.flat):
+        # add boundary
+        try:
+            ie_ne_bbox.to_crs(plot_projection).plot(
+                ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
+            )
+        except NameError:
+            axs.coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+
+        # specify subplot titles
+        axs.set_title(str(data_stat.isel({"season": i})["season"].values))
 
 
 def plot_season_diff(data, var, boundary_data=None, stat="mean"):
@@ -495,7 +603,9 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
         data_2 = data.groupby("time.season").mean(dim="time")
         titles = "Weighted mean", "Unweighted mean"
     elif stat == "std":
+        # unbiased SD
         data_1 = data.groupby("time.season").std(dim="time", ddof=1)
+        # biased SD
         data_2 = data.groupby("time.season").std(dim="time")
         titles = "Unbiased SD", "Biased SD"
     data_diff = data_1 - data_2  # difference between the stats
