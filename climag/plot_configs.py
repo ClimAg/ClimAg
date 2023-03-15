@@ -315,9 +315,14 @@ def boxplot_data(datasets, varlist, lonlat):
 
         for var in varlist:
             data_all[var][key] = pd.DataFrame(
-                {var: data_all[key][var]}).assign(
-                    dataset=f"{key.split('_')[0]}\n{key.split('_')[1]}",
-                    exp=key.split("_")[2]
+                {var: data_all[key][var]}
+            ).assign(
+                dataset=f"{key.split('_')[0]}\n{key.split('_')[1]}",
+                exp=key.split("_")[2],
+                legend=(
+                    f"{key.split('_')[0]}\n{key.split('_')[1]}\n"
+                    f"{key.split('_')[2]}"
+                )
             )
 
     for var in varlist:
