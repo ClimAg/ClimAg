@@ -39,9 +39,9 @@ e_s = (
 
 delta = (4098 * e_s) / math.pow((t_mean + 273.3), 2)
 
-r_n = (r_ns - r_nl) / 10e6
+r_n = (r_ns - r_nl) / 1e6
 
-gamma = 0.665 * p_atm / 10e6
+gamma = 0.665 * p_atm / 1e6
 
 u_2 = u_10 * (4.87 / math.log((67.8 * 10) - 5.42))
 
@@ -232,7 +232,7 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
 #     - Soil heat flux density [MJ m⁻² day⁻¹]
 #     """
 
-#     return shf / 10e6
+#     return shf / 1e6
 
 
 # def atmospheric_pressure(elevation: float) -> float:
@@ -281,7 +281,7 @@ def psychrometric_constant(p_atm: float) -> float:
     - Psychrometric constant [kPa °C⁻¹]
     """
 
-    return 0.665 / 10e3 * p_atm
+    return 0.665 / 1e3 * p_atm
 
 
 def wind_speed(u_z: float, h_z: float) -> float:
@@ -440,11 +440,11 @@ def fao_penman_monteith_mera(data):
     )
 
     data = data.assign(
-        r_n=net_radiation(r_ns=data["r_ns"] / 10e6, r_nl=data["r_nl"] / 10e6)
+        r_n=net_radiation(r_ns=data["r_ns"] / 1e6, r_nl=data["r_nl"] / 1e6)
     )
 
     data = data.assign(
-        gamma=psychrometric_constant(p_atm=data["p_atm"] / 10e3)
+        gamma=psychrometric_constant(p_atm=data["p_atm"] / 1e3)
     )
 
     data = data.assign(u_2=wind_speed(u_z=data["u_10"], h_z=10))

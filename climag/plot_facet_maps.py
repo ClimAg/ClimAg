@@ -371,7 +371,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
             ylim=(-2.1, 2.1)
         )
 
-        axs[i, 0].set_ylabel(season)
+        axs[i, 0].set_ylabel(season, fontweight="semibold")
         axs[i, 0].set_yticks([])
 
     for axis in axs.flat:
