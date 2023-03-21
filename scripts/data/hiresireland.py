@@ -38,8 +38,7 @@ GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
 ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 for exp, model in itertools.product(
-    # ["historical", "rcp45", "rcp85"],
-    ["rcp45", "rcp85"],
+    ["historical", "rcp45", "rcp85"],
     ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 ):
     # auto-rechunking may cause NotImplementedError with object dtype

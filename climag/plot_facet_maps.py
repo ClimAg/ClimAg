@@ -6,7 +6,11 @@ Helper functions to plot facet maps
 from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
+import xarray as xr
 import climag.plot_configs as cplt
+
+season_list = ["DJF", "MAM", "JJA", "SON"]
+exp_list = ["historical", "rcp45", "rcp85"]
 
 
 def plot_facet_map(
@@ -134,6 +138,8 @@ def plot_averages(
         columns_cbar_aspect = 6, 35
     else:
         columns_cbar_aspect = 2, 20
+        # sort seasons
+        data = data.reindex(season=["DJF", "MAM", "JJA", "SON"])
 
     fig = data_weighted[var].where(pd.notnull(data[var][0])).plot(
         x="rlon", y="rlat", col=averages,
@@ -174,19 +180,21 @@ def plot_averages(
                     "%m"
                 ).strftime("%-b").upper()
             )
-        elif averages == "season":
-            seasons = {
-                "DJF": "Winter",
-                "MAM": "Spring",
-                "JJA": "Summer",
-                "SON": "Autumn"
-            }
-            season = str(data_weighted.isel({averages: i})[averages].values)
-            axs.set_title(f"{seasons[season]} ({season})")
         else:
-            axs.set_title(
-                str(data_weighted.isel({averages: i})[averages].values)
-            )
+            axs.set_title(data[averages][i].values)
+        # elif averages == "season":
+        #     seasons = {
+        #         "DJF": "Winter",
+        #         "MAM": "Spring",
+        #         "JJA": "Summer",
+        #         "SON": "Autumn"
+        #     }
+        #     season = str(data_weighted.isel({averages: i})[averages].values)
+        #     axs.set_title(f"{seasons[season]} ({season})")
+        # else:
+        #     axs.set_title(
+        #         str(data_weighted.isel({averages: i})[averages].values)
+        #     )
 
     plt.show()
 
@@ -533,3 +541,136 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
 
     fig.suptitle(suptitle, fontsize=16, y=1.02)
     plt.show()
+
+############################################################################
+
+
+def weighted_average_season_exp(driving_model_data: dict):
+    """
+    Calculate the weighted average for each experiment of a dataset for a
+    particular driving model. Also calculate the differences between the
+    values for each experiment.
+    """
+
+    data_all = {}
+    data_diff = {}
+
+    for key in exp_list:
+        # calculate weighted average for each experiment
+        data_all[key] = cplt.weighted_average(
+            data=driving_model_data[key], averages="season"
+        )
+
+        # sort seasons in the correct order
+        data_all[key] = data_all[key].reindex(season=season_list)
+
+        # assign experiment as a new coordinate and dimension
+        data_all[key] = data_all[key].assign_coords(exp=key)
+        data_all[key] = data_all[key].expand_dims(dim="exp")
+
+    # concatenate
+    data_all = xr.combine_by_coords(
+        [data_all["historical"], data_all["rcp45"], data_all["rcp85"]]
+    )
+
+    # reassign attributes
+    for var in data_all.data_vars:
+        data_all[var].attrs = driving_model_data[key][var].attrs
+
+    # reassign CRS
+    data_all.rio.write_crs(driving_model_data[key].rio.crs, inplace=True)
+
+    # calculate difference
+    data_diff["rcp45 - historical"] = (
+        data_all.sel(exp="rcp45") - data_all.sel(exp="historical")
+    )
+    data_diff["rcp85 - historical"] = (
+        data_all.sel(exp="rcp85") - data_all.sel(exp="historical")
+    )
+    # data_diff["rcp85 - rcp45"] = (
+    #     data_all.sel(exp="rcp85") - data_all.sel(exp="rcp45")
+    # )
+
+    for key in data_diff:
+        data_diff[key] = data_diff[key].assign_coords(exp=key)
+        data_diff[key] = data_diff[key].expand_dims(dim="exp")
+
+    data_diff = xr.combine_by_coords(
+        [
+            data_diff["rcp45 - historical"],
+            data_diff["rcp85 - historical"],
+            # data_diff["rcp85 - rcp45"]
+        ]
+    )
+
+    plotting_data = {}
+    plotting_data["all"], plotting_data["diff"] = data_all, data_diff
+
+    return plotting_data
+
+
+def plot_weighted_average_season_exp(
+    driving_model_data: dict, plotting_data: dict, var: str,
+    boundary_data=None, levels=(None, None), ticks=(None, None)
+):
+    """
+    Plot weighted averages and the difference between each experiment results
+    for a particular variable
+    """
+
+    notnull = pd.notnull(driving_model_data["rcp45"][var].isel(time=0))
+
+    cbar_kwargs = {
+        "label": (
+            f"{plotting_data['all'][var].attrs['long_name']} "
+            f"[{plotting_data['all'][var].attrs['units']}]"
+        )
+    }
+
+    plot_transform = cplt.rotated_pole_transform(plotting_data["all"])
+
+    for n, data in enumerate(("all", "diff")):
+        # configure colormap and figure
+        if data == "all":
+            cmap = cplt.colormap_configs(var)
+            cbar_kwargs["aspect"] = 30
+            figsize = (12.45, 9.25)
+            # aspect = .9
+        else:
+            cmap = "BrBG"
+            cbar_kwargs["aspect"] = 19
+            figsize = (12.35, 6.25)
+            # aspect = .85
+        if ticks[n] is not None:
+            cbar_kwargs["ticks"] = ticks[n]
+        # main plot
+        fig = plotting_data[data][var].where(notnull).plot.contourf(
+            x="rlon", y="rlat", col="season", row="exp",
+            cmap=cmap,
+            # robust=True,
+            # extend="both",
+            cbar_kwargs=cbar_kwargs,
+            transform=plot_transform,
+            subplot_kws={"projection": cplt.plot_projection},
+            levels=levels[n],
+            xlim=(-1.775, 1.6),
+            ylim=(-2.1, 2.1),
+            figsize=figsize
+            # aspect=aspect
+        )
+
+        fig.set_titles("{value}", weight="semibold", fontsize=14)
+
+        # add boundary
+        for axis in fig.axs.flat:
+            if boundary_data is None:
+                axis.coastlines(
+                    resolution="10m", color="darkslategrey", linewidth=.5
+                )
+            else:
+                boundary_data.to_crs(cplt.plot_projection).plot(
+                    ax=axis, edgecolor="darkslategrey", color="white",
+                    linewidth=.5
+                )
+
+        plt.show()
