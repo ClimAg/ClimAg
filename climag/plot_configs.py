@@ -44,10 +44,11 @@ def colormap_configs(var):
     elif var in (
         "T", "PAR",
         "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
-        "rsds", "tas"
+        "rsds", "tas",
+        "t", "pres", "grad"
     ):
         cmap = "Spectral_r"
-    elif var in ("PET", "aet", "ALB_RAD", "w", "ET", "evspsblpot"):
+    elif var in ("PET", "aet", "ALB_RAD", "ET", "evspsblpot"):
         cmap = cmap_flare
     else:
         cmap = "YlGn"
