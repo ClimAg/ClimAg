@@ -25,21 +25,28 @@ MÉRA variables:
 - u_10 [m s⁻¹]
 - rh_mean
 
+Data resampled to daily resolution and units converted during preprocessing:
+- t_max [°C]
+- t_min [°C]
+- r_ns [MJ m⁻² day⁻¹]
+- r_nl [MJ m⁻² day⁻¹]
+- p_atm [kPa]
+
 Overall equation:
 
 ```py
 import math
 
-t_mean = (t_max + t_min) / 2 - 273.15
+t_mean = (t_max + t_min) / 2
 
 e_s = (
-    0.6108 * math.exp((17.27 * t_max - 273.15) / (t_max - 273.15 + 237.3)) +
-    0.6108 * math.exp((17.27 * t_min - 273.15) / (t_min - 273.15 + 237.3))
+    0.6108 * math.exp((17.27 * t_max) / (t_max + 237.3)) +
+    0.6108 * math.exp((17.27 * t_min) / (t_min + 237.3))
 ) / 2
 
 delta = (4098 * e_s) / math.pow((t_mean + 273.3), 2)
 
-r_n = (r_ns - r_nl) / 1e6
+r_n = r_ns - r_nl
 
 gamma = 0.665 * p_atm / 1e6
 
@@ -170,7 +177,7 @@ def slope_vapour_pressure_curve(t_mean: float, e_s: float) -> float:
 
     Parameters
     ----------
-    mean_t : Mean air temperature at 2 m height [°C]
+    t_mean : Mean air temperature at 2 m height [°C]
     e_s : Mean saturation vapour pressure [kPa]
 
     Returns

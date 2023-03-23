@@ -37,15 +37,15 @@ def colormap_configs(var):
     Configure colourmap for each variable
     """
 
-    if var in ("PP", "TOT_PREC", "pr"):
+    if var in ("PP", "TOT_PREC", "pr", "tp", "u"):
         cmap = cmap_mako_r
-    elif var in ("wr", "env"):
+    elif var in ("wr", "env", "r"):
         cmap = "GnBu"
     elif var in (
         "T", "PAR",
         "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
         "rsds", "tas",
-        "t", "pres", "grad"
+        "t", "pres", "grad", "tmax", "tmin", "nswrs", "nlwrs"
     ):
         cmap = "Spectral_r"
     elif var in ("PET", "aet", "ALB_RAD", "ET", "evspsblpot"):
