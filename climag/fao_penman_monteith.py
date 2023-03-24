@@ -23,6 +23,7 @@ MÉRA variables:
 - r_nl [J m⁻²]
 - p_atm [Pa]
 - u_10 [m s⁻¹]
+- v_10 [m s⁻¹]
 - rh_mean
 
 Data resampled to daily resolution and units converted during preprocessing:
@@ -31,40 +32,9 @@ Data resampled to daily resolution and units converted during preprocessing:
 - r_ns [MJ m⁻² day⁻¹]
 - r_nl [MJ m⁻² day⁻¹]
 - p_atm [kPa]
-
-Overall equation:
-
-```py
-import math
-
-t_mean = (t_max + t_min) / 2
-
-e_s = (
-    0.6108 * math.exp((17.27 * t_max) / (t_max + 237.3)) +
-    0.6108 * math.exp((17.27 * t_min) / (t_min + 237.3))
-) / 2
-
-delta = (4098 * e_s) / math.pow((t_mean + 273.3), 2)
-
-r_n = r_ns - r_nl
-
-gamma = 0.665 * p_atm / 1e6
-
-u_2 = u_10 * (4.87 / math.log((67.8 * 10) - 5.42))
-
-e_deficit = e_s - rh_mean / 100 * e_s
-
-ETo = (
-    (
-        (0.408 * delta * r_n) +
-        (gamma * (900 / (t_mean + 273)) * u_2 * e_deficit)
-    ) /
-    (delta + (gamma * (1 + 0.34 * u_2)))
-)
-```
 """
 
-import math
+import numpy as np
 
 
 def mean_air_temperature(t_min: float, t_max: float) -> float:
@@ -87,7 +57,7 @@ def mean_air_temperature(t_min: float, t_max: float) -> float:
     as the mean of the daily maximum and minimum temperatures rather than as
     the average of hourly temperature measurements.
 
-    Equation (9) in Allen et al. (1998).
+    Equation (9) in Allen et al. (1998), p. 33
 
     T_mean = (T_max + T_min) / 2
 
@@ -110,7 +80,7 @@ def mean_air_temperature(t_min: float, t_max: float) -> float:
 
 def saturation_vapour_pressure_temp(t_air: float) -> float:
     """
-    Equation (11) in Allen et al. (1998).
+    Equation (11) in Allen et al. (1998), p. 36
 
     e^o(T) = 0.6108exp(17.27T / (T + 237.3))
 
@@ -126,12 +96,12 @@ def saturation_vapour_pressure_temp(t_air: float) -> float:
     - Saturation vapour pressure at the given air temperature [kPa]
     """
 
-    return 0.6108 * math.exp((17.27 * t_air) / (t_air + 237.3))
+    return 0.6108 * np.exp((17.27 * t_air) / (t_air + 237.3))
 
 
 def saturation_vapour_pressure(t_max: float, t_min: float) -> float:
     """
-    Equation (12) in Allen et al. (1998).
+    Equation (12) in Allen et al. (1998), p. 36
 
     e_s = (e^o(T_max) + e^o(T_min)) / 2
 
@@ -157,19 +127,17 @@ def saturation_vapour_pressure(t_max: float, t_min: float) -> float:
     ) / 2
 
 
-def slope_vapour_pressure_curve(t_mean: float, e_s: float) -> float:
+def slope_vapour_pressure_curve_temp(t_air: float) -> float:
     """
     The slope of the relationship between saturation vapour pressure and
     temperature.
 
-    Equation (13) in Allen et al. (1998).
+    Equation (13) in Allen et al. (1998), p. 37
 
     Δ = (4098(0.6108exp(17.27T / (T + 237.3)))) / (T + 237.3)²
-      = (4098e_s) / (T + 237.3)²
 
     - Δ: slope vapour pressure curve [kPa °C⁻¹]
-    - T: mean air temperature at 2 m height [°C]
-    - e_s: mean saturation vapour pressure [kPa]
+    - T: air temperature at 2 m height [°C]
 
     For standardisation, the mean temperature for 24-hour periods is defined
     as the mean of the daily maximum and minimum temperatures rather than as
@@ -177,7 +145,7 @@ def slope_vapour_pressure_curve(t_mean: float, e_s: float) -> float:
 
     Parameters
     ----------
-    t_mean : Mean air temperature at 2 m height [°C]
+    t_air : Air temperature at 2 m height [°C]
     e_s : Mean saturation vapour pressure [kPa]
 
     Returns
@@ -185,7 +153,24 @@ def slope_vapour_pressure_curve(t_mean: float, e_s: float) -> float:
     - Slope vapour pressure curve [kPa °C⁻¹]
     """
 
-    return (4098 * e_s) / math.pow((t_mean + 273.3), 2)
+    return (
+        4098 *
+        (0.6108 * np.exp((17.27 * t_air) / (t_air + 237.3))) /
+        np.power((t_air + 273.3), 2)
+    )
+
+
+def slope_vapour_pressure_curve(t_max: float, t_min: float) -> float:
+    """
+    Slope vapour pressure curve using T_max and T_min
+
+    Equation (13) in Allen et al. (1998), p. 37
+    """
+
+    return (
+        slope_vapour_pressure_curve_temp(t_air=t_max) +
+        slope_vapour_pressure_curve_temp(t_air=t_min)
+    ) / 2
 
 
 def net_radiation(r_ns: float, r_nl: float) -> float:
@@ -193,7 +178,7 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
     The net radiation is the difference between the incoming net shortwave
     radiation and the outgoing net longwave radiation.
 
-    Equation (40) in Allen et al. (1998)
+    Equation (40) in Allen et al. (1998), p. 53
 
     R_n = R_ns - R_nl
 
@@ -219,7 +204,8 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
 #     The soil heat flux is small compared to net radiation, particularly when
 #     the surface is covered by vegetation. As the magnitude of the day heat
 #     flux beneath the grass reference surface is relatively small, it may be
-#     ignored. This is shown in Equation (42) in Allen et al. (1998).
+#     ignored.
+#     Equation (42) in Allen et al. (1998), p. 54
 
 #     Based on Nolan and Flanagan (2020)'s derivation of evapotranspiration
 #     using the FAO Penman-Monteith equation, the soil heat flux density is
@@ -244,7 +230,9 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
 
 # def atmospheric_pressure(elevation: float) -> float:
 #     """
-#     The atmospheric pressure based on Equation (7) in Allen et al. (1998).
+#     The atmospheric pressure.
+#
+#     Equation (7) in Allen et al. (1998), p. 31
 
 #     P = 101.3((293 - 0.0065z) / 293)^5.26
 
@@ -260,7 +248,7 @@ def net_radiation(r_ns: float, r_nl: float) -> float:
 #     - Atmospheric pressure [kPa]
 #     """
 
-#     return 101.3 * math.pow(((293 - 0.0065 * elevation) / 293), 5.26)
+#     return 101.3 * np.power(((293 - 0.0065 * elevation) / 293), 5.26)
 
 
 def psychrometric_constant(p_atm: float) -> float:
@@ -272,7 +260,7 @@ def psychrometric_constant(p_atm: float) -> float:
     This method assumes that the air is saturated with water vapour at the
     minimum daily temperature.
 
-    Equation (8) in Allen et al (1998).
+    Equation (8) in Allen et al (1998), p. 32
 
     γ = 0.000665P
 
@@ -291,23 +279,48 @@ def psychrometric_constant(p_atm: float) -> float:
     return 0.665 / 1e3 * p_atm
 
 
-def wind_speed(u_z: float, h_z: float) -> float:
+def wind_speed_from_components(u: float, v: float) -> float:
+    """
+    Calculate the wind speed using u- and v-components.
+
+    http://colaweb.gmu.edu/dev/clim301/lectures/wind/wind-uv
+
+    w = sqrt(u_z^2 + v_z^2)
+
+    - w: wind speed [m s⁻¹]
+    - u: u-component of wind speed [m s⁻¹]
+    - v: v-component of wind speed [m s⁻¹]
+
+    Parameters
+    ----------
+    u : u-component of wind speed [m s⁻¹]
+    v : v-component of wind speed [m s⁻¹]
+
+    Returns
+    -------
+    - Wind speed [m s⁻¹]
+    """
+
+    return np.hypot(u, v)
+
+
+def wind_speed(w_z: float, h_z: float) -> float:
     """
     If not measured at 2 m height, convert wind speed measured at different
     heights above the soil surface to wind speed at 2 m above the surface,
     assuming a short grass surface.
 
-    Equation (47) in Allen et al (1998).
+    Equation (47) in Allen et al (1998), p. 56
 
-    u₂ = u_z * (4.87 / ln(67.8z - 5.42))
+    w₂ = w_z * (4.87 / ln(67.8z - 5.42))
 
-    - u₂: wind speed at 2 m height [m s⁻¹]
-    - u_z: measured wind speed at z m above ground surface [m s⁻¹]
+    - w₂: wind speed at 2 m height [m s⁻¹]
+    - w_z: measured wind speed at z m above ground surface [m s⁻¹]
     - z: height of measurement above ground surface [m]
 
     Parameters
     ----------
-    u_z : Measured wind speed at z m above ground surface [m s⁻¹]
+    w_z : wind speed at z m above ground surface [m s⁻¹]
     h_z : Height of measurement above ground surface [m]
 
     Returns
@@ -315,7 +328,7 @@ def wind_speed(u_z: float, h_z: float) -> float:
     - Wind speed at 2 m height [m s⁻¹]
     """
 
-    return u_z * (4.87 / math.log((67.8 * h_z) - 5.42))
+    return w_z * (4.87 / np.log((67.8 * h_z) - 5.42))
 
 
 def actual_vapour_pressure(rh_mean: float, e_s: float) -> float:
@@ -325,18 +338,18 @@ def actual_vapour_pressure(rh_mean: float, e_s: float) -> float:
     the mean relative humidity is used to calculate the actual vapour
     pressure.
 
-    Equation (19) in Allen et al. (1998).
+    Equation (19) in Allen et al. (1998), p. 39
 
     e_a = (RH_mean / 100)((e^o(T_max) + e^o(T_min)) / 2)
         = (RH_mean / 100)e_s
 
     - e_a: actual vapour pressure [kPa]
-    - RH_mean: mean relative humidity
+    - RH_mean: mean relative humidity [%]
     - e_s: saturation vapour pressure [kPa]
 
     Parameters
     ----------
-    rh_mean : Relative humidity at 2 m height
+    rh_mean : Relative humidity at 2 m height [%]
     e_s : Saturation vapour pressure [kPa]
 
     Returns
@@ -368,41 +381,41 @@ def saturation_vapour_pressure_deficit(e_s: float, e_a: float) -> float:
 
 
 def fao_penman_monteith(
-    r_n: float, t_mean: float, u_2: float, e_deficit: float,
+    r_n: float, t_mean: float, w_2: float, e_deficit: float,
     delta: float, gamma: float
 ) -> float:
     """
     The FAO Penman-Monteith equation.
 
-    Equation (6) in Allen et al. (1998)
+    Equation (6) in Allen et al. (1998), p. 24
 
     ETo = (
-        (0.408Δ(R_n - G) + γ(900 / (T + 273))u₂(e_s - e_a)) /
-        (Δ + γ(1 + 0.34u₂))
+        (0.408Δ(R_n - G) + γ(900 / (T + 273))w₂(e_s - e_a)) /
+        (Δ + γ(1 + 0.34w₂))
     )
 
-    ETo: reference evapotranspiration [mm day⁻¹]
-    Δ: slope vapour pressure curve [kPa °C⁻¹]
-    R_n: net radiation at the crop surface [MJ m⁻² day⁻¹]
-    G: soil heat flux density [MJ m⁻² day⁻¹]
-    γ: psychrometric constant [kPa °C⁻¹]
-    T: mean daily air temperature at 2 m height [°C]
-    u₂: wind speed at 2 m height [m s⁻¹]
-    e_s: saturation vapour pressure [kPa]
-    e_a: actual vapour pressure [kPa]
+    - ETo: reference evapotranspiration [mm day⁻¹]
+    - Δ: slope vapour pressure curve [kPa °C⁻¹]
+    - R_n: net radiation at the crop surface [MJ m⁻² day⁻¹]
+    - G: soil heat flux density [MJ m⁻² day⁻¹]
+    - γ: psychrometric constant [kPa °C⁻¹]
+    - T: mean daily air temperature at 2 m height [°C]
+    - w₂: wind speed at 2 m height [m s⁻¹]
+    - e_s: saturation vapour pressure [kPa]
+    - e_a: actual vapour pressure [kPa]
 
     The soil heat flux is small compared to net radiation, particularly when
     the surface is covered by vegetation. As the magnitude of the day heat
     flux beneath the grass reference surface is relatively small, it may be
-    ignored. This is shown in Equation (42) in Allen et al. (1998).
+    ignored. This is shown in Equation (42) in Allen et al. (1998), p. 54.
 
     Parameters
     ----------
-    gamma : Slope vapour pressure curve [kPa °C⁻¹]
+    delta : Slope vapour pressure curve [kPa °C⁻¹]
     r_n : Net radiation at the crop surface [MJ m⁻² day⁻¹]
     gamma : Psychrometric constant [kPa °C⁻¹]
     t_mean : Mean daily air temperature at 2 m height [°C]
-    u_2 : Wind speed at 2 m height [m s⁻¹]
+    w_2 : Wind speed at 2 m height [m s⁻¹]
     e_deficit : Saturation vapour pressure deficit [kPa]
 
     Returns
@@ -413,72 +426,7 @@ def fao_penman_monteith(
     return (
         (
             (0.408 * delta * r_n) +
-            (gamma * (900 / (t_mean + 273)) * u_2 * e_deficit)
+            (gamma * (900 / (t_mean + 273)) * w_2 * e_deficit)
         ) /
-        (delta + (gamma * (1 + 0.34 * u_2)))
+        (delta + (gamma * (1 + 0.34 * w_2)))
     )
-
-
-def fao_penman_monteith_mera(data):
-    """
-    Apply the FAO Penman-Monteith equation on the MÉRA dataset.
-
-    Parameters
-    ----------
-    data : Xarray dataset
-    """
-
-    data = data.assign(
-        t_mean=mean_air_temperature(
-            t_min=data["t_min"] - 273.15, t_max=data["t_max"] - 273.15
-        )
-    )
-
-    data = data.assign(
-        e_s=saturation_vapour_pressure(
-            t_max=data["t_max"] - 273.15, t_min=data["t_min"] - 273.15
-        )
-    )
-
-    data = data.assign(
-        delta=slope_vapour_pressure_curve(
-            t_mean=data["t_mean"], e_s=data["e_s"]
-        )
-    )
-
-    data = data.assign(
-        r_n=net_radiation(r_ns=data["r_ns"] / 1e6, r_nl=data["r_nl"] / 1e6)
-    )
-
-    data = data.assign(
-        gamma=psychrometric_constant(p_atm=data["p_atm"] / 1e3)
-    )
-
-    data = data.assign(u_2=wind_speed(u_z=data["u_10"], h_z=10))
-
-    data = data.assign(
-        e_a=actual_vapour_pressure(rh_mean=data["rh_mean"], e_s=data["e_s"])
-    )
-
-    data = data.assign(
-        e_deficit=saturation_vapour_pressure_deficit(
-            e_s=data["e_s"], e_a=data["e_a"]
-        )
-    )
-
-    data = data.assign(
-        PET=fao_penman_monteith(
-            delta=data["delta"], gamma=data["gamma"], r_n=data["r_n"],
-            t_mean=data["t_mean"], u_2=data["u_2"],
-            e_deficit=data["e_deficit"]
-        )
-    )
-
-    data = data.drop_vars(
-        [
-            "t_min", "t_max", "t_mean", "e_s", "delta", "r_ns", "r_nl", "r_n",
-            "gamma", "p_atm", "u_10", "u_2", "e_a", "rh_mean", "e_deficit"
-        ]
-    )
-
-    return data

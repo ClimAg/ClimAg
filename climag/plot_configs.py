@@ -37,19 +37,21 @@ def colormap_configs(var):
     Configure colourmap for each variable
     """
 
-    if var in ("PP", "TOT_PREC", "pr", "tp", "u"):
-        cmap = cmap_mako_r
-    elif var in ("wr", "env", "r"):
-        cmap = "GnBu"
+    if var in ("PP", "TOT_PREC", "pr", "tp"):
+        cmap = cmap_mako_r  # precipitation
+    elif var in ("wr", "r", "u", "v"):
+        cmap = "GnBu"  # wind speed, humidity, water reserves
     elif var in (
         "T", "PAR",
         "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
         "rsds", "tas",
-        "t", "pres", "grad", "tmax", "tmin", "nswrs", "nlwrs"
+        "t", "grad", "tmax", "tmin", "nswrs", "nlwrs"
     ):
-        cmap = "Spectral_r"
-    elif var in ("PET", "aet", "ALB_RAD", "ET", "evspsblpot"):
-        cmap = cmap_flare
+        cmap = "Spectral_r"  # temperature and radiation
+    elif var in ("PET", "aet", "ET", "evspsblpot"):
+        cmap = "BrBG"  # evapotranspiration
+    elif var in ("ALB_RAD", "pres", "env"):
+        cmap = cmap_flare  # albedo, pressure, environmental limitation
     else:
         cmap = "YlGn"
     return cmap

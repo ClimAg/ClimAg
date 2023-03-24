@@ -34,6 +34,7 @@ var_dirs = [
     "15_105_2_2",   # max temperature
     "16_105_2_2",   # min temperature
     "33_105_10_0",  # u-component of 10 m wind
+    "34_105_10_0",  # v-component of 10 m wind
     "52_105_2_0",   # 2 m relative humidity
     "61_105_0_4",   # total precipitation
     "111_105_0_4",  # net shortwave irradiance
