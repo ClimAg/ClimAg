@@ -17,7 +17,7 @@ plot_projection = ccrs.RotatedPole(
 )
 
 # define Lambert Conformal Conic projection for plots and transformations
-# using MERA GRIB metadata
+# using MÉRA GRIB metadata
 lambert_conformal = ccrs.LambertConformal(
     false_easting=1481641.6769636814,
     false_northing=537326.0638850163,

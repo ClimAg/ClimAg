@@ -16,7 +16,7 @@ import climag.plot_configs as cplt
 
 print("Started MÉRA data processing...", datetime.now(tz=timezone.utc))
 
-# directory of MERA netCDF files
+# directory of MÉRA netCDF files
 DATA_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf")
 
 # directory to store outputs
@@ -101,6 +101,8 @@ for var in var_dirs:
         data[varname].attrs["units"] = "m s⁻¹"
     elif var == "1_105_0_0":
         data[varname].attrs["units"] = "kPa"
+    elif var == "52_105_2_0":  # ranges from 0 - 1
+        data[varname].attrs["units"] = "1"
 
     # save data
     data.to_netcdf(os.path.join(OUT_DIR, f"MERA_{var}_day.nc"))

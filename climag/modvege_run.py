@@ -106,9 +106,13 @@ def site_specific_params_file(input_params_vector, tseries, params):
             params["gpkg"] = gpd.read_file(
                 input_params_vector, layer="eurocordex"
             )
-        else:
+        elif "HiResIreland" in tseries.attrs["dataset"]:
             params["gpkg"] = gpd.read_file(
                 input_params_vector, layer="hiresireland"
+            )
+        else:
+            params["gpkg"] = gpd.read_file(
+                input_params_vector, layer="mera"
             )
 
 
@@ -133,6 +137,12 @@ def run_modvege_nc(
 
     # read parameter file into a dataframe
     params["csv"] = read_params(filename=input_params_file)
+
+    # use x and y coordinates depending on the dataset
+    if "MERA" in input_timeseries_file:
+        xcoord, ycoord = "x", "y"
+    else:
+        xcoord, ycoord = "rlon", "rlat"
 
     tseries = xr.open_dataset(
         input_timeseries_file,
@@ -175,8 +185,8 @@ def run_modvege_nc(
 
         # loop through each grid cell
         for rlon, rlat in itertools.product(
-            range(len(tseries_y.coords["rlon"])),
-            range(len(tseries_y.coords["rlat"]))
+            range(len(tseries_y.coords[xcoord])),
+            range(len(tseries_y.coords[ycoord]))
         ):
             tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
@@ -199,13 +209,13 @@ def run_modvege_nc(
                         params["csv"][key] = float(
                             params["gpkg"][
                                 (
-                                    params["gpkg"]["rlon"] == float(
-                                        tseries_l["rlon"].values
+                                    params["gpkg"][xcoord] == float(
+                                        tseries_l[xcoord].values
                                     )
                                 ) &
                                 (
-                                    params["gpkg"]["rlat"] == float(
-                                        tseries_l["rlat"].values
+                                    params["gpkg"][ycoord] == float(
+                                        tseries_l[ycoord].values
                                     )
                                 )
                             ][key]
@@ -306,8 +316,8 @@ def run_modvege_nc(
                 # assign the output variables to the main Xarray dataset
                 for key in output_vars:
                     tseries_y[key].loc[{
-                        "rlon": tseries_l.coords["rlon"],
-                        "rlat": tseries_l.coords["rlat"],
+                        xcoord: tseries_l.coords[xcoord],
+                        ycoord: tseries_l.coords[ycoord],
                         "time": tseries_l.coords["time"]
                     }] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
@@ -327,12 +337,15 @@ def run_modvege_nc(
         tseries_y.rio.write_crs(model_vals["data_crs"], inplace=True)
 
         # save as a NetCDF file
-        model_vals["out_dir"] = os.path.join(
-            out_dir,
-            tseries.attrs["dataset"].split("_")[1],
-            tseries.attrs["dataset"].split("_")[4],
-            tseries.attrs["dataset"].split("_")[3]
-        )
+        if "MERA" in input_timeseries_file:
+            model_vals["out_dir"] = os.path.join(out_dir, "MERA")
+        else:
+            model_vals["out_dir"] = os.path.join(
+                out_dir,
+                tseries.attrs["dataset"].split("_")[1],
+                tseries.attrs["dataset"].split("_")[4],
+                tseries.attrs["dataset"].split("_")[3]
+            )
         os.makedirs(model_vals["out_dir"], exist_ok=True)
         tseries_y.to_netcdf(
             os.path.join(

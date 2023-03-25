@@ -279,13 +279,13 @@ def psychrometric_constant(p_atm: float) -> float:
     return 0.665 / 1e3 * p_atm
 
 
-def wind_speed_from_components(u: float, v: float) -> float:
+def wind_speed_from_components(u_z: float, v_z: float) -> float:
     """
     Calculate the wind speed using u- and v-components.
 
     http://colaweb.gmu.edu/dev/clim301/lectures/wind/wind-uv
 
-    w = sqrt(u_z^2 + v_z^2)
+    w = sqrt(u^2 + v^2)
 
     - w: wind speed [m s⁻¹]
     - u: u-component of wind speed [m s⁻¹]
@@ -293,15 +293,15 @@ def wind_speed_from_components(u: float, v: float) -> float:
 
     Parameters
     ----------
-    u : u-component of wind speed [m s⁻¹]
-    v : v-component of wind speed [m s⁻¹]
+    u_z : u-component of wind speed [m s⁻¹]
+    v_z : v-component of wind speed [m s⁻¹]
 
     Returns
     -------
     - Wind speed [m s⁻¹]
     """
 
-    return np.hypot(u, v)
+    return np.hypot(u_z, v_z)
 
 
 def wind_speed(w_z: float, h_z: float) -> float:

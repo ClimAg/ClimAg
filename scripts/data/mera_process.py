@@ -23,7 +23,7 @@ print("Started MÉRA data processing...", datetime.now(tz=timezone.utc))
 GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
 ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
-# directory of MERA GRIB files
+# directory of MÉRA GRIB files
 DATA_DIR = os.path.join("/run/media/nms/Elements", "MERA", "grib")
 NC_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf")
 
