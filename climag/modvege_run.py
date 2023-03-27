@@ -188,7 +188,10 @@ def run_modvege_nc(
             range(len(tseries_y.coords[xcoord])),
             range(len(tseries_y.coords[ycoord]))
         ):
-            tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
+            if "MERA" in input_timeseries_file:
+                tseries_l = tseries_y.isel(x=rlon, y=rlat)
+            else:
+                tseries_l = tseries_y.isel(rlon=rlon, rlat=rlat)
 
             # ignore null cells
             if not tseries_l["PP"].isnull().all():

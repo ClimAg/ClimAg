@@ -21,7 +21,7 @@ import os
 import sys
 from datetime import datetime, timezone
 import geopandas as gpd
-# import pandas as pd
+import pandas as pd
 import xarray as xr
 # from dask.distributed import Client
 
@@ -143,47 +143,46 @@ for exp, model in itertools.product(
     # assign dataset name
     data.attrs["dataset"] = f"IE_HiResIreland_{data.attrs['title'][:-4]}"
 
-    # # drop spin-up year for historical data
-    # if exp == "historical":
-    #     data = data.sel(time=slice("1976", "2005"))
+    # create spin-up year for PET for the historical data
+    if exp == "historical":
+        data_et = data.drop_vars(["T", "PP", "PAR"]).sel(
+            time=slice("1976", "2005")
+        )
+        data = data.drop_vars(["PET"])
 
-    #     # ### Extend data to a spin-up year
-    #     data_interp = data.interp(
-    #         time=pd.date_range(
-    #             f"{int(data['time'][0].dt.year) - 1}-01-01T10:30:00",
-    #             f"{int(data['time'][0].dt.year) - 1}-12-31T10:30:00",
-    #             freq="D"
-    #         ),
-    #         kwargs={"fill_value": None}
-    #     )
+        # ### Extend data to a spin-up year
+        data_interp = data_et.interp(
+            time=pd.date_range(
+                "1975-01-01T10:30:00", "1975-12-31T10:30:00", freq="D"
+            ),
+            kwargs={"fill_value": None}
+        )
 
-    #     data_interp.rio.write_crs(data_crs, inplace=True)
+        # adjustments for 360-day calendar
+        if model == "HadGEM2-ES":
+            data_interp = data_interp.convert_calendar(
+                "360_day", align_on="year"
+            )
+            data_interp = data_interp.convert_calendar(
+                "standard", align_on="year"
+            )
 
-    #     # merge spin-up year with first two years of the main data
-    #     data_interp = xr.combine_by_coords([
-    #         data_interp,
-    #         data.sel(
-    #             time=slice(
-    #                 str(int(data["time"][0].dt.year)),
-    #                 str(int(data["time"][0].dt.year) + 1)
-    #             )
-    #         )
-    #     ])
+        # merge spin-up year with first two years of PET of the main data
+        data_interp = xr.combine_by_coords(
+            [data_interp, data_et.sel(time=slice("1976", "1977"))]
+        )
 
-    #     # shift first year of the main data to the spin-up year
-    #     data_interp = data_interp.shift(
-    #         time=-data_interp.sel(
-    #             time=str(int(data_interp["time"][0].dt.year))
-    #         ).dims["time"]
-    #     )
+        # shift first year of the main data to the spin-up year
+        data_interp = data_interp.shift(
+            time=-data_interp.sel(time="1975").dims["time"]
+        )
 
-    #     # keep only spin-up year
-    #     data_interp = data_interp.sel(
-    #         time=str(int(data_interp["time"][0].dt.year))
-    #     )
+        # keep only spin-up year
+        data_interp = data_interp.sel(time="1975")
 
-    #     # merge with main dataset
-    #     data = xr.combine_by_coords([data, data_interp])
+        # merge with main dataset
+        data_et = xr.combine_by_coords([data_et, data_interp])
+        data = xr.combine_by_coords([data, data_et])
 
     # reassign time_bnds
     data.coords["time_bnds"] = data_time_bnds

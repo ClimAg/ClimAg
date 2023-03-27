@@ -637,7 +637,7 @@ def plot_weighted_average_season_exp(
             figsize = (12.45, 9.25)
             # aspect = .9
         else:
-            cmap = "BrBG"
+            cmap = "RdBu"
             cbar_kwargs["aspect"] = 19
             figsize = (12.35, 6.25)
             # aspect = .85

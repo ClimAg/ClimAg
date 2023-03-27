@@ -26,6 +26,10 @@ lambert_conformal = ccrs.LambertConformal(
     central_latitude=53.5
 )
 
+eurocordex_projection = ccrs.RotatedPole(
+    pole_longitude=-162.0, pole_latitude=39.25
+)
+
 # seaborn colourmaps
 cmap_mako_r = sns.color_palette("mako_r", as_cmap=True)
 # cmap_crest = sns.color_palette("crest", as_cmap=True)

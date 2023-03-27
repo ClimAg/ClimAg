@@ -16,6 +16,12 @@ dependencies:
   - seaborn
   - cfgrib
   - pooch
-  - cdo  # unavailable on Windows; use Conda with Windows Subsystem for Linux
-  - pytest
   - rasterstats
+  - cdo  # unavailable on Windows; use Conda with WSL
+  - xesmf  # unavailable on Windows; use Conda with WSL
+  - esmpy=8.3.1  # module name change compatibility for xesmf
+  - cf_xarray
+  - sparse
+  - numba
+  - mpi
+  - pytest
