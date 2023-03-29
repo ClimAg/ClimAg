@@ -11,6 +11,7 @@ import climag.plot_configs as cplt
 
 season_list = ["DJF", "MAM", "JJA", "SON"]
 exp_list = ["historical", "rcp45", "rcp85"]
+model_list = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
 
 def plot_facet_map(

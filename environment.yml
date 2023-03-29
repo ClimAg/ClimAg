@@ -5,23 +5,17 @@ channels:
 dependencies:
   - python=3.10
   - dask
-  - matplotlib
   - rioxarray
   - geopandas
   - intake-esm
   - cartopy
-  - nc-time-axis
   - aiohttp
   - odfpy
-  - seaborn
   - cfgrib
+  - netcdf4
   - pooch
   - rasterstats
   - cdo  # unavailable on Windows; use Conda with WSL
-  - xesmf  # unavailable on Windows; use Conda with WSL
-  - esmpy=8.3.1  # module name change compatibility for xesmf
-  - cf_xarray
-  - sparse
-  - numba
-  - mpi
-  - pytest
+  - matplotlib
+  - nc-time-axis
+  - seaborn
