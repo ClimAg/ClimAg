@@ -43,13 +43,16 @@ def manage_season_vars(data):
     """
 
     # manage variables
+    # daily ingested biomass
     data["c_bm"].attrs["long_name"] = "Ingested biomass"
-    data = data.assign(sen=data["sen_gv"] + data["sen_gr"])
-    data["sen"].attrs["long_name"] = "Senescence"
-    data["sen"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
-    data = data.assign(abs=data["abs_dv"] + data["abs_dr"])
-    data["abs"].attrs["long_name"] = "Abscission"
-    data["abs"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
+    # total defoliation
+    data = data.assign(
+        sen_abs=(
+            data["sen_gv"] + data["sen_gr"] + data["abs_dv"] + data["abs_dr"]
+            )
+        )
+    data["sen_abs"].attrs["long_name"] = "Defoliation"
+    data["sen_abs"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
     data = data.drop_vars([
         "sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm"
     ])
@@ -62,8 +65,15 @@ def manage_cumulative_vars(data):
     Cumulative variables
     """
 
+    data = data.assign(c_bm_all=data["h_bm"] + data["i_bm"])
+    data["c_bm_all"].attrs["long_name"] = (
+        "Yearly ingested and harvested biomass"
+    )
+    data["c_bm_all"].attrs["units"] = "kg DM ha⁻¹ year⁻¹"
+
     data = data.drop_vars([
-        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "bm", "c_bm", "pgro", "gro"
+        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "bm", "c_bm", "pgro", "gro",
+        "h_bm", "i_bm"
     ])
 
     return data

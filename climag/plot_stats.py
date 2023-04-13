@@ -7,9 +7,11 @@ import glob
 import os
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import rasterio as rio
 import xarray as xr
+from matplotlib import patheffects
 import climag.plot_configs as cplt
 
 # Ireland boundary
@@ -153,35 +155,37 @@ def hist_obs_diff(stat, dataset):
             ie.buffer(1).to_crs(cplt.lambert_conformal), all_touched=True
         )
 
-        for model in model_list:
-            # calculate difference
-            data[model] = data[f"{dataset}_{x[0]}"].sel(model=model)
-            data[model] = data[model] - data[f"MERA_{x[0]}"]
+        # calculate difference
+        data[f"MERA_{x[0]}_diff"] = np.subtract(
+            data[f"{dataset}_{x[0]}"], data[f"MERA_{x[0]}"]
+        )
 
-        # combine
-        data[f"MERA_{x[0]}_diff"] = xr.combine_by_coords([
-            data["CNRM-CM5"].expand_dims(dim="model"),
-            data["EC-EARTH"].expand_dims(dim="model"),
-            data["HadGEM2-ES"].expand_dims(dim="model"),
-            data["MPI-ESM-LR"].expand_dims(dim="model")
-        ])
-
-        # # calculate difference
-        # data[f"MERA_{x[0]}_diff"] = (
-        #     data[f"{dataset}_{x[0]}"] - data[f"MERA_{x[0]}"]
-        # )
+        # percentage difference (issues w/ values close to zero)
+        data[f"MERA_{x[0]}_diff_pct"] = np.divide(
+            data[f"MERA_{x[0]}_diff"], data[f"MERA_{x[0]}"]
+        )
 
         # reassign attributes
         for var in data[f"MERA_{x[0]}_diff"].data_vars:
             data[f"MERA_{x[0]}_diff"][var].attrs = (
                 data[f"MERA_{x[0]}"][var].attrs
             )
+            data[f"MERA_{x[0]}_diff_pct"][var].attrs = (
+                data[f"MERA_{x[0]}"][var].attrs
+            )
+            data[f"MERA_{x[0]}_diff_pct"][var].attrs["units"] = "%"
         data[f"MERA_{x[0]}_diff"].attrs["dataset"] = dataset
+        data[f"MERA_{x[0]}_diff_pct"].attrs["dataset"] = dataset
 
         if x == "season":
             # sort seasons in the correct order
             data[f"MERA_{x[0]}_diff"] = data[f"MERA_{x[0]}_diff"].reindex(
                 season=season_list
+            )
+            data[f"MERA_{x[0]}_diff_pct"] = (
+                data[f"MERA_{x[0]}_diff_pct"].reindex(
+                    season=season_list
+                )
             )
 
     return data
@@ -273,8 +277,6 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     Helper function to plot facet maps
     """
 
-    plot_transform = cplt.lambert_conformal
-
     cbar_kwargs = {
         "label": f"Difference [{data[var].attrs['units']}]",
         "aspect": 30,
@@ -297,7 +299,7 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         extend="both",
         robust=True,
         cbar_kwargs=cbar_kwargs,
-        transform=plot_transform,
+        transform=cplt.lambert_conformal,
         subplot_kws={"projection": cplt.plot_projection},
         levels=levels,
         xlim=(-1.775, 1.6),
@@ -319,7 +321,7 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     # plt.suptitle(title_print, size=16, y=0.8)
 
     # add boundary
-    for axis in fig.axs.flat:
+    for axis, model in zip(fig.axs.flat, model_list):
         try:
             ie_bbox.to_crs(cplt.plot_projection).plot(
                 ax=axis, edgecolor="darkslategrey", color="white",
@@ -330,17 +332,70 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
 
+        # add max/min values as annotations
+        da = data.sel(model=model)[var]
+        da_max = da.isel(da.compute().argmax(dim=["x", "y"]))
+        da_min = da.isel(da.compute().argmin(dim=["x", "y"]))
+        da = gpd.GeoDataFrame(
+            {
+                "name": ["max", "min"],
+                "value": [da_max.values, da_min.values],
+                "geometry": gpd.GeoSeries.from_wkt([
+                    f"POINT ({da_max['x'].values} {da_max['y'].values})",
+                    f"POINT ({da_min['x'].values} {da_min['y'].values})"
+                ])
+            },
+            crs=cplt.lambert_conformal
+        )
+
+        da = da.to_crs(cplt.plot_projection)
+        da_max = da.loc[[0]]
+        da_min = da.loc[[1]]
+        da_max.plot(ax=axis, color="#01665e", marker="o", edgecolor="white")
+        da_min.plot(ax=axis, color="#8c510a", marker="o", edgecolor="white")
+        da_max["value"] = da_max["value"].astype(float).round(1)
+        da_min["value"] = da_min["value"].astype(float).round(1)
+
+        # min/max annotations
+        for xy, lab in zip(
+            zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
+            da_max["value"]
+        ):
+            axis.annotate(
+                text=lab, xy=xy, ha="center", va="center", size=12.5,
+                weight="semibold", color="#01665e",
+                path_effects=[
+                    patheffects.withStroke(linewidth=3, foreground="white")
+                ]
+            )
+        for xy, lab in zip(
+            zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
+            da_min["value"]
+        ):
+            axis.annotate(
+                text=lab, xy=xy, ha="center", va="center", size=12.5,
+                weight="semibold", color="#8c510a",
+                path_effects=[
+                    patheffects.withStroke(linewidth=3, foreground="white")
+                ]
+            )
+
     plt.show()
 
 
-def colorbar_levels(maximum, num=26):
-    levels = [-maximum + maximum / ((num - 1) / 2) * n for n in range(num)]
+def colorbar_levels(maximum, num):
+    """
+    Create a list of diverging colorbar levels based on the maximum value and
+    number of levels
+    """
+
+    # levels = [-maximum + maximum / ((num - 1) / 2) * n for n in range(num)]
+    levels = [
+        i for i in [
+            -maximum + num * n for n in range(int(maximum / num * 2 + 1))
+        ] if i != 0
+    ]
     return levels
-
-
-def colorbar_ticks(maximum):
-    ticks = [-maximum + maximum / 3 * n for n in range(7)]
-    return ticks
 
 
 # def plot_obs_diff_all_new(data, var, season, levels=None, ticks=None):
