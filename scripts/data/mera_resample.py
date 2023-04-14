@@ -1,6 +1,8 @@
 """mera_process.py
 
-Resample Met Éireann Reanalysis data to a daily frequency
+Resample Met Éireann Reanalysis data to a daily frequency.
+This is script 2 out of 4 to be run.
+This script also converts units of certain variables.
 
 https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790
 """

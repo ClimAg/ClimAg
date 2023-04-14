@@ -8,7 +8,7 @@ under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
 
 ## Licence
 
-Copyright 2022 N. M. Streethran
+Copyright 2022-2023 N. M. Streethran
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,12 +31,7 @@ for the original Python implementation.
 The original ModVege pasture model was developed by
 [Jouven et al. (2006)][Jouven].
 
-Some parts of this repository were created with [Cookiecutter] and the
-[`audreyr/cookiecutter-pypackage`][audreyr] project template.
-
 [EPA]: https://www.epa.ie/
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/
 [ModVege]: https://github.com/YannChemin/modvege
 [Jouven]: https://doi.org/10.1111/j.1365-2494.2006.00515.x
-[Cookiecutter]: https://github.com/audreyr/cookiecutter
-[audreyr]: https://github.com/audreyr/cookiecutter-pypackage

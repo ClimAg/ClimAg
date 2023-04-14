@@ -2,6 +2,10 @@
 
 Process Met Éireann Reanalysis data
 
+This is script 1 out of 4 to be run. This converts the GRIB files to netCDF
+while keeping only the third time step of the FC3hr data. It also clips the
+data to the boundary of the Island of Ireland.
+
 https://confluence.ecmwf.int/pages/viewpage.action?pageId=197702790
 """
 

@@ -1,6 +1,8 @@
 """mera_modvege_input.py
 
-Met Éireann Reanalysis - generate ModVege input data
+Met Éireann Reanalysis - generate ModVege input data.
+
+This is script 4 out of 4 to be run.
 """
 
 # import libraries

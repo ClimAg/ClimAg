@@ -1,7 +1,7 @@
 """mera_data_et.py
-Met Éireann Reanalysis - Evapotranspiration
 
-Derive evapotranspiration using the FAO Penman-Monteith equation
+Derive evapotranspiration using the FAO Penman-Monteith equation.
+This is script 3 out of 4 to be run.
 """
 
 # import libraries

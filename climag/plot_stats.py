@@ -383,19 +383,26 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     plt.show()
 
 
-def colorbar_levels(maximum, num):
+def colorbar_levels(maximum, levels=12):
     """
-    Create a list of diverging colorbar levels based on the maximum value and
+    Create a list of diverging colourbar levels based on the maximum value and
     number of levels
     """
 
-    # levels = [-maximum + maximum / ((num - 1) / 2) * n for n in range(num)]
-    levels = [
-        i for i in [
-            -maximum + num * n for n in range(int(maximum / num * 2 + 1))
-        ] if i != 0
-    ]
-    return levels
+    # levels = [
+    #     i for i in [
+    #         -maximum + num * n for n in range(int(maximum / num * 2 + 1))
+    #     ] if i != 0
+    # ]
+    return [-maximum + maximum / ((levels - 1) / 2) * n for n in range(levels)]
+
+
+def colorbar_ticks(maximum):
+    """
+    Colourbar tick labels
+    """
+
+    return [-maximum, 0, maximum]
 
 
 # def plot_obs_diff_all_new(data, var, season, levels=None, ticks=None):
