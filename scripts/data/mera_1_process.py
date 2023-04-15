@@ -21,7 +21,7 @@ import geopandas as gpd
 import xarray as xr
 import climag.plot_configs as cplt
 
-print("Started MÉRA data processing...", datetime.now(tz=timezone.utc))
+print("Begin MÉRA data processing...", datetime.now(tz=timezone.utc))
 
 # Ireland boundary (derived from NUTS 2021)
 GPKG_BOUNDARY = os.path.join("data", "boundaries", "boundaries.gpkg")
@@ -53,10 +53,10 @@ for var in var_dirs:
     # directory to store netCDFs
     os.makedirs(os.path.join(NC_DIR, f"{var}_FC3hr"), exist_ok=True)
 
-    # list of files; 1981 to 2005
+    # list of files; 1981 to 2020
     file_list = list(chain(*list(
         glob.glob(os.path.join(DATA_DIR, f"{var}_FC3hr", e))
-        for e in [f"*{i}*{var}_FC3hr*" for i in range(1981, 2006)]
+        for e in [f"*{i}*{var}_FC3hr*" for i in range(1981, 2020)]
     )))
 
     for f in file_list:
@@ -102,6 +102,7 @@ for var in var_dirs:
 
         # delete intermediate files
         os.system(f"rm -r {os.path.join(TEMP_DIR, '*')}")
+        print(f, "done!")
 
     print(f"{var} done!", datetime.now(tz=timezone.utc))
 

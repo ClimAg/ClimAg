@@ -8,8 +8,11 @@ This is script 3 out of 4 to be run.
 import glob
 import os
 import sys
+from datetime import datetime, timezone
 import numpy as np
 import xarray as xr
+
+print("Begin MÉRA data processing...", datetime.now(tz=timezone.utc))
 
 # directory of processed MÉRA netCDF files
 DATA_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf_day")
@@ -312,5 +315,7 @@ eto = eto.drop_vars(["delta", "gamma", "e_a", "e_s", "r_n", "t_mean", "w_2"])
 eto.rio.write_crs(data_crs, inplace=True)
 
 eto.to_netcdf(os.path.join(DATA_DIR, "MERA_PET_day.nc"))
+
+print("Done!", datetime.now(tz=timezone.utc))
 
 sys.exit()

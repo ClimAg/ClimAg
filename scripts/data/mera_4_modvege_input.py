@@ -9,8 +9,11 @@ This is script 4 out of 4 to be run.
 import glob
 import os
 import sys
+from datetime import datetime, timezone
 import pandas as pd
 import xarray as xr
+
+print("Begin MÉRA data processing...", datetime.now(tz=timezone.utc))
 
 # directory of processed MÉRA netCDF files
 DATA_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf_day")
@@ -101,5 +104,7 @@ ds.rio.write_crs(data_crs, inplace=True)
 # ## Save data
 
 ds.to_netcdf(os.path.join("data", "MERA", ds.attrs["dataset"] + ".nc"))
+
+print("Done!", datetime.now(tz=timezone.utc))
 
 sys.exit()

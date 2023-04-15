@@ -5,6 +5,7 @@ Helper functions to plot statistics
 
 import glob
 import os
+from itertools import product
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,13 +22,37 @@ ie_bbox = gpd.read_file(
 )
 ie = gpd.read_file(
     os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="ne_10m_land_2157_IE"
+    layer="NUTS_RG_01M_2021_2157_IE"
 )
 
 season_list = ["DJF", "MAM", "JJA", "SON"]
 model_list = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
 
+##########################################################################
+def colorbar_levels(maximum, levels=22):
+    """
+    Create a list of diverging colourbar levels based on the maximum value and
+    number of levels
+    """
+
+    # levels = [
+    #     i for i in [
+    #         -maximum + num * n for n in range(int(maximum / num * 2 + 1))
+    #     ] if i != 0
+    # ]
+    return [-maximum + maximum / ((levels - 1) / 2) * n for n in range(levels)]
+
+
+def colorbar_ticks(maximum):
+    """
+    Colourbar tick labels
+    """
+
+    return [-maximum, 0, maximum]
+
+
+##########################################################################
 def hist_rcp_diff(data):
     """
     Calculate difference between historical and rcp45/rcp85
@@ -75,9 +100,163 @@ def hist_rcp_stats_data(dataset, stat, diff=True):
     return data
 
 
+def plot_all(data, var, season, levels=None, ticks=None):
+    """
+    Helper function to plot facet maps
+    """
+
+    # dummy data to crop out null grid cells
+    if round(data.rio.resolution()[0], 2) == 0.11:
+        notnull = xr.open_dataset(
+            os.path.join(
+                "data", "ModVege", "EURO-CORDEX", "historical", "CNRM-CM5",
+                "modvege_IE_EURO-CORDEX_RCA4_CNRM-CM5_historical_1976.nc"
+            ),
+            decode_coords="all", chunks="auto"
+        )
+    else:
+        notnull = xr.open_dataset(
+            os.path.join(
+                "data", "ModVege", "HiResIreland", "historical", "CNRM-CM5",
+                "modvege_IE_HiResIreland_COSMO5_CNRM-CM5_historical_1976.nc"
+            ),
+            decode_coords="all", chunks="auto"
+        )
+    notnull = pd.notnull(notnull["gro"].isel(time=0))
+
+    plot_transform = cplt.rotated_pole_transform(data)
+
+    cbar_kwargs = {
+        "label": f"Difference [{data[var].attrs['units']}]",
+        "aspect": 30,
+        "location": "bottom",
+        "fraction": 0.085,
+        "shrink": 0.85,
+        "pad": 0.05,
+        "extendfrac": "auto"
+    }
+
+    if ticks is not None:
+        cbar_kwargs["ticks"] = ticks
+
+    if len(data["exp"]) == 3:
+        cmap = cplt.colormap_configs(var)
+        figsize = (12, 13.75)
+        extend = "max"
+        robust = False
+    else:
+        cmap = "BrBG"
+        figsize = (12, 9.25)
+        extend = "both"
+        robust = True
+
+    if season is not None:
+        data = data.sel(season=season)
+
+    fig = data[var].where(notnull).plot.contourf(
+        x="rlon", y="rlat", col="model", row="exp",
+        cmap=cmap,
+        extend=extend,
+        robust=robust,
+        cbar_kwargs=cbar_kwargs,
+        transform=plot_transform,
+        subplot_kws={"projection": cplt.plot_projection},
+        levels=levels,
+        xlim=(-1.775, 1.6),
+        ylim=(-2.1, 2.1),
+        figsize=figsize
+    )
+
+    fig.set_titles("{value}", weight="semibold", fontsize=14)
+
+    title_print = (
+        "_" * 80 +
+        f"\nDifference in average {data[var].attrs['long_name'].lower()}"
+    )
+    if season is not None:
+        print(title_print + f" in {season}\n" + "_" * 80)
+    else:
+        print(title_print + "\n" + "_" * 80)
+    # plt.suptitle(title_print, size=16, y=0.8)
+
+    # add boundary
+    for (col, model), (row, exp) in product(
+        enumerate(model_list), enumerate(data["exp"].values)
+    ):
+        try:
+            ie_bbox.to_crs(cplt.plot_projection).plot(
+                ax=fig.axs[row][col], edgecolor="darkslategrey", color="white",
+                linewidth=.5
+            )
+        except NameError:
+            fig.axs[row][col].coastlines(
+                resolution="10m", color="darkslategrey", linewidth=.5
+            )
+
+        # add max/min values as annotations
+        da = data.sel(model=model, exp=exp)[var]
+        # clip to remove cells over the coastline
+        da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
+        da_max = da.isel(da.compute().argmax(dim=["rlon", "rlat"]))
+        da_min = da.isel(da.compute().argmin(dim=["rlon", "rlat"]))
+        da = gpd.GeoDataFrame(
+            {
+                "name": ["max", "min"],
+                "value": [da_max.values, da_min.values],
+                "geometry": gpd.GeoSeries.from_wkt([
+                    f"POINT ({da_max['rlon'].values} {da_max['rlat'].values})",
+                    f"POINT ({da_min['rlon'].values} {da_min['rlat'].values})"
+                ])
+            },
+            crs=data.rio.crs
+        )
+
+        da = da.to_crs(cplt.plot_projection)
+        da_max = da.loc[[0]]
+        da_min = da.loc[[1]]
+        da_max.plot(
+            ax=fig.axs[row][col],
+            color="#01665e", marker="o", edgecolor="white"
+        )
+        da_min.plot(
+            ax=fig.axs[row][col],
+            color="#8c510a", marker="o", edgecolor="white"
+        )
+        da_max["value"] = da_max["value"].astype(float).round(1)
+        da_min["value"] = da_min["value"].astype(float).round(1)
+
+        for xy, lab in zip(
+            zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
+            da_max["value"]
+        ):
+            fig.axs[row][col].annotate(
+                text=lab, xy=xy, ha="center", va="center", size=12.5,
+                weight="semibold", color="#01665e",
+                path_effects=[
+                    patheffects.withStroke(linewidth=3, foreground="white")
+                ]
+            )
+        for xy, lab in zip(
+            zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
+            da_min["value"]
+        ):
+            fig.axs[row][col].annotate(
+                text=lab, xy=xy, ha="center", va="center", size=12.5,
+                weight="semibold", color="#8c510a",
+                path_effects=[
+                    patheffects.withStroke(linewidth=3, foreground="white")
+                ]
+            )
+
+    plt.show()
+
+
+##########################################################################
 def hist_obs_diff(stat, dataset):
     """
-    Difference between historical and observational data
+    Prepare data for plotting difference between simulation results for MERA
+    (observations) and climate model datasets for the historical period
+    (1981-2005)
     """
 
     data = {}
@@ -191,87 +370,6 @@ def hist_obs_diff(stat, dataset):
     return data
 
 
-def plot_all(data, var, season, levels=None, ticks=None):
-    """
-    Helper function to plot facet maps
-    """
-
-    # dummy data to crop out null grid cells
-    if round(data.rio.resolution()[0], 2) == 0.11:
-        notnull = xr.open_dataset(
-            os.path.join(
-                "data", "ModVege", "EURO-CORDEX", "historical", "CNRM-CM5",
-                "modvege_IE_EURO-CORDEX_RCA4_CNRM-CM5_historical_1976.nc"
-            ),
-            decode_coords="all", chunks="auto"
-        )
-    else:
-        notnull = xr.open_dataset(
-            os.path.join(
-                "data", "ModVege", "HiResIreland", "historical", "CNRM-CM5",
-                "modvege_IE_HiResIreland_COSMO5_CNRM-CM5_historical_1976.nc"
-            ),
-            decode_coords="all", chunks="auto"
-        )
-    notnull = pd.notnull(notnull["gro"].isel(time=0))
-
-    plot_transform = cplt.rotated_pole_transform(data)
-
-    cbar_kwargs = {
-        "label": (
-            f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
-        )
-    }
-
-    if ticks is not None:
-        cbar_kwargs["ticks"] = ticks
-
-    if len(data["exp"]) == 3:
-        cmap = cplt.colormap_configs(var)
-        cbar_kwargs["aspect"] = 30
-        figsize = (12.45, 9.25)
-        extend = "max"
-        robust = False
-    else:
-        cmap = "BrBG"
-        cbar_kwargs["aspect"] = 19
-        figsize = (12.35, 6.25)
-        extend = "both"
-        robust = True
-
-    if season is not None:
-        data = data.sel(season=season)
-    fig = data[var].where(notnull).plot.contourf(
-        x="rlon", y="rlat", col="model", row="exp",
-        cmap=cmap,
-        extend=extend,
-        robust=robust,
-        cbar_kwargs=cbar_kwargs,
-        transform=plot_transform,
-        subplot_kws={"projection": cplt.plot_projection},
-        levels=levels,
-        xlim=(-1.775, 1.6),
-        ylim=(-2.1, 2.1),
-        figsize=figsize
-    )
-
-    fig.set_titles("{value}", weight="semibold", fontsize=14)
-
-    # add boundary
-    for axis in fig.axs.flat:
-        try:
-            ie_bbox.to_crs(cplt.plot_projection).plot(
-                ax=axis, edgecolor="darkslategrey", color="white",
-                linewidth=.5
-            )
-        except NameError:
-            axis.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
-            )
-
-    plt.show()
-
-
 def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     """
     Helper function to plot facet maps
@@ -334,6 +432,8 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
 
         # add max/min values as annotations
         da = data.sel(model=model)[var]
+        # clip to remove cells over the coastline
+        da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
         da_max = da.isel(da.compute().argmax(dim=["x", "y"]))
         da_min = da.isel(da.compute().argmin(dim=["x", "y"]))
         da = gpd.GeoDataFrame(
@@ -356,7 +456,6 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         da_max["value"] = da_max["value"].astype(float).round(1)
         da_min["value"] = da_min["value"].astype(float).round(1)
 
-        # min/max annotations
         for xy, lab in zip(
             zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
             da_max["value"]
@@ -381,35 +480,3 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
             )
 
     plt.show()
-
-
-def colorbar_levels(maximum, levels=12):
-    """
-    Create a list of diverging colourbar levels based on the maximum value and
-    number of levels
-    """
-
-    # levels = [
-    #     i for i in [
-    #         -maximum + num * n for n in range(int(maximum / num * 2 + 1))
-    #     ] if i != 0
-    # ]
-    return [-maximum + maximum / ((levels - 1) / 2) * n for n in range(levels)]
-
-
-def colorbar_ticks(maximum):
-    """
-    Colourbar tick labels
-    """
-
-    return [-maximum, 0, maximum]
-
-
-# def plot_obs_diff_all_new(data, var, season, levels=None, ticks=None):
-
-# def mera_climate_stats_data():
-#     """
-#     Prepare data for plotting difference between simulation results for MERA
-#     (observations) and climate model datasets for the historical period
-#     (1981-2005)
-#     """

@@ -16,7 +16,7 @@ import geopandas as gpd
 import xarray as xr
 import climag.plot_configs as cplt
 
-print("Started MÉRA data processing...", datetime.now(tz=timezone.utc))
+print("Begin MÉRA data processing...", datetime.now(tz=timezone.utc))
 
 # directory of MÉRA netCDF files
 DATA_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf")
