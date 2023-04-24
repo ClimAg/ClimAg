@@ -80,6 +80,14 @@ for var in var_dirs:
             ie.buffer(1).to_crs(cplt.lambert_conformal), all_touched=True
         )
 
+    # fix missing May 2013 global radiation data
+    if var == "111_105_0_4":
+        data_temp = data.copy()
+        data_temp[varname] = data[varname] * 1.2155399
+        data_temp = data_temp.rename({varname: "grad"})
+    if var == "117_105_0_4":
+        data = data.fillna(data_temp)
+
     # convert units
     if var in ("111_105_0_4", "112_105_0_4", "117_105_0_4"):
         data[varname] = data[varname] * (60 * 60 * 24 / 1e6)  # MJ m-2 day-1

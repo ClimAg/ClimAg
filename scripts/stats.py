@@ -39,7 +39,7 @@ def drop_unneeded_vars(data):
 
 def manage_season_vars(data):
     """
-    Keep only relevant variables
+    Variables for seasonal (and overall) statistics
     """
 
     # manage variables
@@ -53,6 +53,7 @@ def manage_season_vars(data):
         )
     data["sen_abs"].attrs["long_name"] = "Defoliation"
     data["sen_abs"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
+    data["bm"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
     data = data.drop_vars([
         "sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm"
     ])
@@ -62,18 +63,18 @@ def manage_season_vars(data):
 
 def manage_cumulative_vars(data):
     """
-    Cumulative variables
+    Variables for cumulative statistics
     """
 
+    # total consumption
     data = data.assign(c_bm_all=data["h_bm"] + data["i_bm"])
     data["c_bm_all"].attrs["long_name"] = (
         "Yearly ingested and harvested biomass"
     )
     data["c_bm_all"].attrs["units"] = "kg DM ha⁻¹ year⁻¹"
-
     data = data.drop_vars([
-        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "bm", "c_bm", "pgro", "gro",
-        "h_bm", "i_bm"
+        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm",
+        "c_bm", "pgro", "gro", "bm"
     ])
 
     return data
@@ -188,8 +189,8 @@ for exp, model, dataset in itertools.product(
 
     ds = drop_unneeded_vars(data=ds)
 
-    # seasonal stats
     for s in stat_list:
+        # seasonal stats
         ds_sub = manage_season_vars(data=ds)
         ds_sub = generate_season_stats(data=ds_sub, stat=s)
         # save as a new file

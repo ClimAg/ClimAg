@@ -99,6 +99,29 @@ ds_interp = ds_interp.sel(time="1980")
 # merge with main dataset
 ds = xr.combine_by_coords([ds, ds_interp])
 
+# ## Extend 2019 data
+
+ds_interp = ds.interp(
+    time=pd.date_range("2019-09-01", "2019-12-31", freq="D"),
+    kwargs={"fill_value": None},
+)
+
+ds_interp.rio.write_crs(data_crs, inplace=True)
+
+# merge with available data
+ds_interp = xr.combine_by_coords(
+    [ds_interp, ds.sel(time=slice("2018", "2019"))]
+)
+
+# shift available data to fill 2019 time series
+ds_interp = ds_interp.shift(time=ds_interp.sel(time="2019").dims["time"])
+
+# keep only extended data
+ds_interp = ds_interp.sel(time=slice("2019-09-01", "2019-12-31"))
+
+# merge with main dataset
+ds = xr.combine_by_coords([ds, ds_interp])
+
 ds.rio.write_crs(data_crs, inplace=True)
 
 # ## Save data
