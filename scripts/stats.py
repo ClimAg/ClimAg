@@ -80,7 +80,7 @@ def manage_cumulative_vars(data):
     return data
 
 
-def generate_season_stats(data, stat):
+def generate_season_stats(data, stat, annual=False):
     """
     Generate stats with seasonal groupings
     """
@@ -102,6 +102,9 @@ def generate_season_stats(data, stat):
         data_st = (
             (data * weights).groupby("time.season").sum(dim="time")
         )
+
+    elif stat == "std" and annual:
+        data_st = data.std(dim="time", ddof=1)
 
     elif stat == "std":  # unbiased standard deviation
         data_st = data.groupby("time.season").std(dim="time", ddof=1)
@@ -211,6 +214,18 @@ for exp, model, dataset in itertools.product(
             )
         )
         print(f"{ds.attrs['input_dataset']}_{s}_cumulative done!")
+
+        if s == "std":
+            # annual stats
+            ds_sub = manage_season_vars(data=ds)
+            ds_sub = generate_season_stats(data=ds_sub, stat=s, annual=True)
+            # save as a new file
+            ds_sub.to_netcdf(
+                os.path.join(
+                    STATS_DIR, f"{ds.attrs['input_dataset']}_{s}_annual.nc"
+                )
+            )
+            print(f"{ds.attrs['input_dataset']}_{s}_annual done!")
 
     # second set of outputs for comparison with MERA data
     if exp == "historical":

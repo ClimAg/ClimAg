@@ -354,17 +354,17 @@ def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
     plt.figure(figsize=figsize)
     sns.boxplot(
         data, x="dataset", y=var, hue="exp", showfliers=showfliers,
-        showmeans=True, notch=True, palette="viridis",
+        showmeans=True, palette="Pastel1",
         meanprops={
             "markeredgecolor": "darkslategrey",
             "marker": "d",
             "markerfacecolor": "white",
             "markersize": 7.5
         },
-        boxprops={"edgecolor": "white"},
-        medianprops={"color": (1, 1, 0, 0)},  # transparent
-        # whiskerprops={"color": "darkslategrey"},
-        # capprops={"color": "darkslategrey"},
+        boxprops={"edgecolor": "darkslategrey"},
+        medianprops={"color": "darkslategrey"},
+        whiskerprops={"color": "darkslategrey"},
+        capprops={"color": "darkslategrey"}
     )
     plt.xlabel("")
     plt.ylabel("")

@@ -611,7 +611,7 @@ def weighted_average_season_exp(driving_model_data: dict):
 
 
 def plot_weighted_average_season_exp(
-    driving_model_data: dict, plotting_data: dict, var: str,
+    data, var: str,
     boundary_data=None, levels=(None, None), ticks=(None, None)
 ):
     """
@@ -623,12 +623,11 @@ def plot_weighted_average_season_exp(
 
     cbar_kwargs = {
         "label": (
-            f"{plotting_data['all'][var].attrs['long_name']} "
-            f"[{plotting_data['all'][var].attrs['units']}]"
+            f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
         )
     }
 
-    plot_transform = cplt.rotated_pole_transform(plotting_data["all"])
+    plot_transform = cplt.rotated_pole_transform(data)
 
     for n, data in enumerate(("all", "diff")):
         # configure colormap and figure

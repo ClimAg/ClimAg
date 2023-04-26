@@ -5,6 +5,7 @@ Helper functions to plot statistics
 
 import glob
 import os
+import warnings
 from itertools import product
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -14,6 +15,10 @@ import rasterio as rio
 import xarray as xr
 from matplotlib import patheffects
 import climag.plot_configs as cplt
+
+warnings.filterwarnings(
+    action="ignore", category=RuntimeWarning, module="dask"
+)
 
 # Ireland boundary
 ie_bbox = gpd.read_file(
@@ -74,7 +79,7 @@ def hist_rcp_diff(data):
     return data_out
 
 
-def hist_rcp_stats_data(dataset, stat, diff=True):
+def hist_rcp_stats_data(dataset, stat, diff=True, annual=False):
     """
     Prepare simulation results from climate model datasets for plotting
     differences between historical and rcp45/rcp85
@@ -91,6 +96,32 @@ def hist_rcp_stats_data(dataset, stat, diff=True):
             ),
             decode_coords="all", chunks="auto"
         )
+        if annual and x == "season":
+            # copy attributes
+            data_attrs = data[f"{dataset}_{x[0]}"].copy()
+            # calculate
+            if stat == "mean":
+                data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].mean(
+                    dim="season", skipna=True
+                )
+            elif stat == "std":  # unbiased standard deviation
+                data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].std(
+                    dim="season", skipna=True, ddof=1
+                )
+            elif stat == "min":  # minimum
+                data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].min(
+                    dim="season", skipna=True
+                )
+            elif stat == "max":  # maximum
+                data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].max(
+                    dim="season", skipna=True
+                )
+            # reassign attributes
+            data[f"{dataset}_{x[0]}"].rio.write_crs(
+                data_attrs.rio.crs, inplace=True
+            )
+            for var in data[f"{dataset}_{x[0]}"].data_vars:
+                data[f"{dataset}_{x[0]}"][var].attrs = data_attrs[var].attrs
         if diff:
             # difference between hist and rcp45/rcp85
             data[f"{dataset}_{x[0]}"] = hist_rcp_diff(
@@ -252,7 +283,7 @@ def plot_all(data, var, season, levels=None, ticks=None):
 
 
 ##########################################################################
-def hist_obs_diff(stat, dataset):
+def hist_obs_diff(stat, dataset, annual=False):
     """
     Prepare data for plotting difference between simulation results for MERA
     (observations) and climate model datasets for the historical period
@@ -271,11 +302,6 @@ def hist_obs_diff(stat, dataset):
             decode_coords="all", chunks="auto"
         )
 
-        # reassign projection
-        data[f"MERA_{x[0]}"].rio.write_crs(
-            cplt.lambert_conformal, inplace=True
-        )
-
         data[f"{dataset}_{x[0]}"] = xr.open_mfdataset(
             glob.glob(
                 os.path.join(
@@ -284,6 +310,29 @@ def hist_obs_diff(stat, dataset):
                 )
             ),
             decode_coords="all", chunks="auto"
+        )
+
+        # if annual and x == "season":
+        #     for d in [f"{dataset}_{x[0]}", f"MERA_{x[0]}"]:
+        #         # copy attributes
+        #         data_attrs = data[d].copy()
+        #         # calculate
+        #         if stat == "mean":
+        #             data[d] = data[d].mean(dim="season", skipna=True)
+        #         elif stat == "std":  # unbiased standard deviation
+        #             data[d] = data[d].std(dim="season", skipna=True, ddof=1)
+        #         elif stat == "min":  # minimum
+        #             data[d] = data[d].min(dim="season", skipna=True)
+        #         elif stat == "max":  # maximum
+        #             data[d] = data[d].max(dim="season", skipna=True)
+        #         # reassign attributes
+        #         data[d].rio.write_crs(data_attrs.rio.crs, inplace=True)
+        #         for var in data[d].data_vars:
+        #             data[d][var].attrs = data_attrs[var].attrs
+
+        # reassign projection
+        data[f"MERA_{x[0]}"].rio.write_crs(
+            cplt.lambert_conformal, inplace=True
         )
 
         data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].isel(exp=0)
