@@ -1,10 +1,19 @@
-# ClimAg
-
-This research was funded by the [Environmental Protection Agency (EPA), Ireland][EPA]
-project ["ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change"][ClimAg]
-under the Climate Change Research Programme grant number 2018-CCRP-MS.50.
+# ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change
 
 ![ClimAg project logos](https://raw.githubusercontent.com/ClimAg/.github/main/images/logos.png)
+
+[ClimAg] is a three-year research project funded by the [Irish Environmental Protection Agency (EPA)][EPA] under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority][HEA].
+
+ClimAg is examining past fodder crises such as the 2018 dry summer and placing them in the context of long-term climate change.
+
+ClimAg seeks to identify the multifactorial drivers of fodder crises by:
+
+- developing a detailed understanding of the multiple interlinked drivers of previous fodder crises affecting the Irish agricultural sector
+- combining datasets from 21st century climate simulations with grass growth models to predict the frequency and severity of fodder crisis events under future climate change scenarios
+
+## Repositories
+
+[This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis. Separate repositories host [Jupyter notebooks](https://github.com/ClimAg/jupyter-notebooks) and [information about the datasets used](https://github.com/ClimAg/data).
 
 ## Licence
 
@@ -35,3 +44,4 @@ The original ModVege pasture model was developed by
 [ClimAg]: https://www.ucc.ie/en/eel/projects/climag/
 [ModVege]: https://github.com/YannChemin/modvege
 [Jouven]: https://doi.org/10.1111/j.1365-2494.2006.00515.x
+[HEA]: https://hea.ie/

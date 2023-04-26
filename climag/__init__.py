@@ -10,4 +10,4 @@ https://github.com/ClimAg
 __author__ = """Nithiya M. Streethran"""
 __email__ = "nmstreethran@gmail.com"
 __version__ = "0.1.0"
-__copyright__ = "Copyright (C) 2022 N. M. Streethran"
+__copyright__ = "Copyright (C) 2022-2023 N. M. Streethran"
