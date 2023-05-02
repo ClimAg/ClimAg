@@ -369,6 +369,6 @@ def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
     plt.xlabel("")
     plt.ylabel("")
     plt.title(title)
-    plt.legend(title=None)
+    plt.legend(title=None, loc="upper right")
     plt.tight_layout()
     plt.show()
