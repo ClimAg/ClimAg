@@ -258,9 +258,7 @@ for exp, model, dataset in itertools.product(
 
 # MERA
 ds = xr.open_mfdataset(
-    glob.glob(
-        os.path.join("data", "ModVege", "MERA", "*MERA*FC3hr*day*.nc")
-    ),
+    glob.glob(os.path.join("data", "ModVege", "MERA", "*MERA*FC3hr*day*.nc")),
     chunks="auto", decode_coords="all"
 )
 
@@ -275,9 +273,7 @@ for s in stat_list:
     ds_sub = generate_season_stats(data=ds_sub, stat=s)
     # save as a new file
     ds_sub.to_netcdf(
-        os.path.join(
-            STATS_DIR, f"{ds.attrs['input_dataset']}_{s}_season.nc"
-        )
+        os.path.join(STATS_DIR, f"{ds.attrs['input_dataset']}_{s}_season.nc")
     )
     print(f"{ds.attrs['input_dataset']}_{s}_season done!")
 

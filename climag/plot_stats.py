@@ -30,6 +30,12 @@ ie = gpd.read_file(
     layer="NUTS_RG_01M_2021_2157_IE"
 )
 
+# mask out non-pasture areas
+mask = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries.gpkg"),
+    layer="CLC_2018_MASK_PASTURE_2157_IE"
+)
+
 season_list = ["DJF", "MAM", "JJA", "SON"]
 model_list = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
@@ -215,6 +221,9 @@ def plot_all(data, var, season, levels=None, ticks=None):
         enumerate(model_list), enumerate(data["exp"].values)
     ):
         try:
+            mask.to_crs(cplt.plot_projection).plot(
+                ax=fig.axs[row][col], color="white", linewidth=0
+            )
             ie_bbox.to_crs(cplt.plot_projection).plot(
                 ax=fig.axs[row][col], edgecolor="darkslategrey", color="white",
                 linewidth=.5
@@ -224,66 +233,66 @@ def plot_all(data, var, season, levels=None, ticks=None):
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
 
-        # add max/min values as annotations
-        da = data.sel(model=model, exp=exp)[var]
-        # clip to remove cells over the coastline
-        da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
-        da_max = da.isel(da.compute().argmax(dim=["rlon", "rlat"]))
-        da_min = da.isel(da.compute().argmin(dim=["rlon", "rlat"]))
-        da = gpd.GeoDataFrame(
-            {
-                "name": ["max", "min"],
-                "value": [da_max.values, da_min.values],
-                "geometry": gpd.GeoSeries.from_wkt([
-                    f"POINT ({da_max['rlon'].values} {da_max['rlat'].values})",
-                    f"POINT ({da_min['rlon'].values} {da_min['rlat'].values})"
-                ])
-            },
-            crs=data.rio.crs
-        )
+        # # add max/min values as annotations
+        # da = data.sel(model=model, exp=exp)[var]
+        # # clip to remove cells over the coastline
+        # da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
+        # da_max = da.isel(da.compute().argmax(dim=["rlon", "rlat"]))
+        # da_min = da.isel(da.compute().argmin(dim=["rlon", "rlat"]))
+        # da = gpd.GeoDataFrame(
+        #     {
+        #         "name": ["max", "min"],
+        #         "value": [da_max.values, da_min.values],
+        #         "geometry": gpd.GeoSeries.from_wkt([
+        #             f"POINT ({da_max['rlon'].values} {da_max['rlat'].values})",
+        #             f"POINT ({da_min['rlon'].values} {da_min['rlat'].values})"
+        #         ])
+        #     },
+        #     crs=data.rio.crs
+        # )
 
-        da = da.to_crs(cplt.plot_projection)
-        da_max = da.loc[[0]]
-        da_min = da.loc[[1]]
-        da_max.plot(
-            ax=fig.axs[row][col],
-            color="#01665e", marker="o", edgecolor="white"
-        )
-        da_min.plot(
-            ax=fig.axs[row][col],
-            color="#8c510a", marker="o", edgecolor="white"
-        )
-        da_max["value"] = da_max["value"].astype(float).round(1)
-        da_min["value"] = da_min["value"].astype(float).round(1)
+        # da = da.to_crs(cplt.plot_projection)
+        # da_max = da.loc[[0]]
+        # da_min = da.loc[[1]]
+        # da_max.plot(
+        #     ax=fig.axs[row][col],
+        #     color="#01665e", marker="o", edgecolor="white"
+        # )
+        # da_min.plot(
+        #     ax=fig.axs[row][col],
+        #     color="#8c510a", marker="o", edgecolor="white"
+        # )
+        # da_max["value"] = da_max["value"].astype(float).round(1)
+        # da_min["value"] = da_min["value"].astype(float).round(1)
 
-        for xy, lab in zip(
-            zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
-            da_max["value"]
-        ):
-            fig.axs[row][col].annotate(
-                text=lab, xy=xy, ha="center", va="center", size=12.5,
-                weight="semibold", color="#01665e",
-                path_effects=[
-                    patheffects.withStroke(linewidth=3, foreground="white")
-                ]
-            )
-        for xy, lab in zip(
-            zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
-            da_min["value"]
-        ):
-            fig.axs[row][col].annotate(
-                text=lab, xy=xy, ha="center", va="center", size=12.5,
-                weight="semibold", color="#8c510a",
-                path_effects=[
-                    patheffects.withStroke(linewidth=3, foreground="white")
-                ]
-            )
+        # for xy, lab in zip(
+        #     zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
+        #     da_max["value"]
+        # ):
+        #     fig.axs[row][col].annotate(
+        #         text=lab, xy=xy, ha="center", va="center", size=12.5,
+        #         weight="semibold", color="#01665e",
+        #         path_effects=[
+        #             patheffects.withStroke(linewidth=3, foreground="white")
+        #         ]
+        #     )
+        # for xy, lab in zip(
+        #     zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
+        #     da_min["value"]
+        # ):
+        #     fig.axs[row][col].annotate(
+        #         text=lab, xy=xy, ha="center", va="center", size=12.5,
+        #         weight="semibold", color="#8c510a",
+        #         path_effects=[
+        #             patheffects.withStroke(linewidth=3, foreground="white")
+        #         ]
+        #     )
 
     plt.show()
 
 
 ##########################################################################
-def hist_obs_diff(stat, dataset, annual=False):
+def hist_obs_diff(stat, dataset):
     """
     Prepare data for plotting difference between simulation results for MERA
     (observations) and climate model datasets for the historical period
@@ -311,24 +320,6 @@ def hist_obs_diff(stat, dataset, annual=False):
             ),
             decode_coords="all", chunks="auto"
         )
-
-        # if annual and x == "season":
-        #     for d in [f"{dataset}_{x[0]}", f"MERA_{x[0]}"]:
-        #         # copy attributes
-        #         data_attrs = data[d].copy()
-        #         # calculate
-        #         if stat == "mean":
-        #             data[d] = data[d].mean(dim="season", skipna=True)
-        #         elif stat == "std":  # unbiased standard deviation
-        #             data[d] = data[d].std(dim="season", skipna=True, ddof=1)
-        #         elif stat == "min":  # minimum
-        #             data[d] = data[d].min(dim="season", skipna=True)
-        #         elif stat == "max":  # maximum
-        #             data[d] = data[d].max(dim="season", skipna=True)
-        #         # reassign attributes
-        #         data[d].rio.write_crs(data_attrs.rio.crs, inplace=True)
-        #         for var in data[d].data_vars:
-        #             data[d][var].attrs = data_attrs[var].attrs
 
         # reassign projection
         data[f"MERA_{x[0]}"].rio.write_crs(
@@ -470,6 +461,9 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     # add boundary
     for axis, model in zip(fig.axs.flat, model_list):
         try:
+            mask.to_crs(cplt.plot_projection).plot(
+                ax=axis, color="white", linewidth=0
+            )
             ie_bbox.to_crs(cplt.plot_projection).plot(
                 ax=axis, edgecolor="darkslategrey", color="white",
                 linewidth=.5
@@ -479,53 +473,53 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
 
-        # add max/min values as annotations
-        da = data.sel(model=model)[var]
-        # clip to remove cells over the coastline
-        da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
-        da_max = da.isel(da.compute().argmax(dim=["x", "y"]))
-        da_min = da.isel(da.compute().argmin(dim=["x", "y"]))
-        da = gpd.GeoDataFrame(
-            {
-                "name": ["max", "min"],
-                "value": [da_max.values, da_min.values],
-                "geometry": gpd.GeoSeries.from_wkt([
-                    f"POINT ({da_max['x'].values} {da_max['y'].values})",
-                    f"POINT ({da_min['x'].values} {da_min['y'].values})"
-                ])
-            },
-            crs=cplt.lambert_conformal
-        )
+        # # add max/min values as annotations
+        # da = data.sel(model=model)[var]
+        # # clip to remove cells over the coastline
+        # da = da.rio.clip(ie.buffer(1).to_crs(data.rio.crs))
+        # da_max = da.isel(da.compute().argmax(dim=["x", "y"]))
+        # da_min = da.isel(da.compute().argmin(dim=["x", "y"]))
+        # da = gpd.GeoDataFrame(
+        #     {
+        #         "name": ["max", "min"],
+        #         "value": [da_max.values, da_min.values],
+        #         "geometry": gpd.GeoSeries.from_wkt([
+        #             f"POINT ({da_max['x'].values} {da_max['y'].values})",
+        #             f"POINT ({da_min['x'].values} {da_min['y'].values})"
+        #         ])
+        #     },
+        #     crs=cplt.lambert_conformal
+        # )
 
-        da = da.to_crs(cplt.plot_projection)
-        da_max = da.loc[[0]]
-        da_min = da.loc[[1]]
-        da_max.plot(ax=axis, color="#01665e", marker="o", edgecolor="white")
-        da_min.plot(ax=axis, color="#8c510a", marker="o", edgecolor="white")
-        da_max["value"] = da_max["value"].astype(float).round(1)
-        da_min["value"] = da_min["value"].astype(float).round(1)
+        # da = da.to_crs(cplt.plot_projection)
+        # da_max = da.loc[[0]]
+        # da_min = da.loc[[1]]
+        # da_max.plot(ax=axis, color="#01665e", marker="o", edgecolor="white")
+        # da_min.plot(ax=axis, color="#8c510a", marker="o", edgecolor="white")
+        # da_max["value"] = da_max["value"].astype(float).round(1)
+        # da_min["value"] = da_min["value"].astype(float).round(1)
 
-        for xy, lab in zip(
-            zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
-            da_max["value"]
-        ):
-            axis.annotate(
-                text=lab, xy=xy, ha="center", va="center", size=12.5,
-                weight="semibold", color="#01665e",
-                path_effects=[
-                    patheffects.withStroke(linewidth=3, foreground="white")
-                ]
-            )
-        for xy, lab in zip(
-            zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
-            da_min["value"]
-        ):
-            axis.annotate(
-                text=lab, xy=xy, ha="center", va="center", size=12.5,
-                weight="semibold", color="#8c510a",
-                path_effects=[
-                    patheffects.withStroke(linewidth=3, foreground="white")
-                ]
-            )
+        # for xy, lab in zip(
+        #     zip(da_max["geometry"].x - 0.3, da_max["geometry"].y),
+        #     da_max["value"]
+        # ):
+        #     axis.annotate(
+        #         text=lab, xy=xy, ha="center", va="center", size=12.5,
+        #         weight="semibold", color="#01665e",
+        #         path_effects=[
+        #             patheffects.withStroke(linewidth=3, foreground="white")
+        #         ]
+        #     )
+        # for xy, lab in zip(
+        #     zip(da_min["geometry"].x + 0.3, da_min["geometry"].y),
+        #     da_min["value"]
+        # ):
+        #     axis.annotate(
+        #         text=lab, xy=xy, ha="center", va="center", size=12.5,
+        #         weight="semibold", color="#8c510a",
+        #         path_effects=[
+        #             patheffects.withStroke(linewidth=3, foreground="white")
+        #         ]
+        #     )
 
     plt.show()
