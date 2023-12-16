@@ -94,7 +94,7 @@ for var in var_dirs:
         data = data.rename({list(data.data_vars)[0]: data_varname})
         data[data_varname].attrs = data_attrs
         data = data.rio.clip(
-            ie.buffer(1).to_crs(cplt.lambert_conformal), all_touched=True
+            ie.buffer(1).to_crs(cplt.projection_lambert_conformal), all_touched=True
         )
         data.to_netcdf(
             os.path.join(NC_DIR, f"{var}_FC3hr", file_name + ".nc")

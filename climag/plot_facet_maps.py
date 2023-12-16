@@ -59,7 +59,7 @@ def plot_facet_map(
         robust=True,
         cbar_kwargs={"aspect": 40, "label": cbar_label},
         transform=plot_transform,
-        subplot_kws={"projection": cplt.plot_projection},
+        subplot_kws={"projection": cplt.projection_hiresireland},
         levels=cbar_levels
     )
 
@@ -73,7 +73,7 @@ def plot_facet_map(
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
         else:
-            boundary_data.to_crs(cplt.plot_projection).plot(
+            boundary_data.to_crs(cplt.projection_hiresireland).plot(
                 ax=axs, edgecolor="darkslategrey", color="white",
                 linewidth=.5
             )
@@ -154,7 +154,7 @@ def plot_averages(
             )
         },
         transform=plot_transform,
-        subplot_kws={"projection": cplt.plot_projection},
+        subplot_kws={"projection": cplt.projection_hiresireland},
         levels=cbar_levels,
         xlim=(-1.9, 1.6),
         ylim=(-2.1, 2.1),
@@ -162,7 +162,7 @@ def plot_averages(
     )
 
     for i, axs in enumerate(fig.axs.flat):
-        # boundary_data.to_crs(plot_projection).boundary.plot(
+        # boundary_data.to_crs(projection_hiresireland).boundary.plot(
         #     ax=axs, color="darkslategrey", linewidth=.5
         # )
         if boundary_data is None:
@@ -170,7 +170,7 @@ def plot_averages(
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
         else:
-            boundary_data.to_crs(cplt.plot_projection).plot(
+            boundary_data.to_crs(cplt.projection_hiresireland).plot(
                 ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
             )
 
@@ -262,7 +262,7 @@ def plot_seasonal(
                 )
             },
             transform=plot_transform,
-            subplot_kws={"projection": cplt.plot_projection},
+            subplot_kws={"projection": cplt.projection_hiresireland},
             levels=cbar_levels,
             xlim=(-1.9, 1.6),
             ylim=(-2.1, 2.1),
@@ -282,7 +282,7 @@ def plot_seasonal(
                 )
             },
             transform=plot_transform,
-            subplot_kws={"projection": cplt.plot_projection},
+            subplot_kws={"projection": cplt.projection_hiresireland},
             levels=cbar_levels,
             xlim=(-1.9, 1.6),
             ylim=(-2.1, 2.1),
@@ -296,7 +296,7 @@ def plot_seasonal(
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
         else:
-            boundary_data.to_crs(cplt.plot_projection).plot(
+            boundary_data.to_crs(cplt.projection_hiresireland).plot(
                 ax=axs, edgecolor="darkslategrey", color="white", linewidth=.5
             )
 
@@ -343,7 +343,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
 
     fig, axs = plt.subplots(
         nrows=4, ncols=3, figsize=(10, 10),
-        subplot_kw={"projection": cplt.plot_projection}
+        subplot_kw={"projection": cplt.projection_hiresireland}
     )
 
     for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
@@ -389,7 +389,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
         else:
-            boundary_data.to_crs(cplt.plot_projection).plot(
+            boundary_data.to_crs(cplt.projection_hiresireland).plot(
                 ax=axis, edgecolor="darkslategrey", color="white",
                 linewidth=.5
             )
@@ -462,7 +462,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
 
     fig, axs = plt.subplots(
         nrows=4, ncols=3, figsize=(10, 10),
-        subplot_kw={"projection": cplt.plot_projection}
+        subplot_kw={"projection": cplt.projection_hiresireland}
     )
 
     for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
@@ -506,7 +506,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
                 resolution="10m", color="darkslategrey", linewidth=.5
             )
         else:
-            boundary_data.to_crs(cplt.plot_projection).plot(
+            boundary_data.to_crs(cplt.projection_hiresireland).plot(
                 ax=axis, edgecolor="darkslategrey", color="white",
                 linewidth=.5
             )
@@ -651,7 +651,7 @@ def plot_weighted_average_season_exp(
             # extend="both",
             cbar_kwargs=cbar_kwargs,
             transform=plot_transform,
-            subplot_kws={"projection": cplt.plot_projection},
+            subplot_kws={"projection": cplt.projection_hiresireland},
             levels=levels[n],
             xlim=(-1.775, 1.6),
             ylim=(-2.1, 2.1),
@@ -668,7 +668,7 @@ def plot_weighted_average_season_exp(
                     resolution="10m", color="darkslategrey", linewidth=.5
                 )
             else:
-                boundary_data.to_crs(cplt.plot_projection).plot(
+                boundary_data.to_crs(cplt.projection_hiresireland).plot(
                     ax=axis, edgecolor="darkslategrey", color="white",
                     linewidth=.5
                 )

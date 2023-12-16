@@ -77,7 +77,7 @@ for var in var_dirs:
     if var == "61_105_0_4":
         data.rio.write_crs(data_crs, inplace=True)  # reassign CRS
         data = data.rio.clip(
-            ie.buffer(1).to_crs(cplt.lambert_conformal), all_touched=True
+            ie.buffer(1).to_crs(cplt.projection_lambert_conformal), all_touched=True
         )
 
     # fix missing May 2013 global radiation data

@@ -12,13 +12,13 @@ import seaborn as sns
 # from dateutil.parser import parse
 
 # set plot projection to the projection of the HiResIreland dataset
-plot_projection = ccrs.RotatedPole(
+projection_hiresireland = ccrs.RotatedPole(
     pole_longitude=172.100006103516, pole_latitude=36.5999984741211
 )
 
 # define Lambert Conformal Conic projection for plots and transformations
 # using MÉRA GRIB metadata
-lambert_conformal = ccrs.LambertConformal(
+projection_lambert_conformal = ccrs.LambertConformal(
     false_easting=1481641.6769636814,
     false_northing=537326.0638850163,
     standard_parallels=[53.5],
@@ -26,7 +26,7 @@ lambert_conformal = ccrs.LambertConformal(
     central_latitude=53.5
 )
 
-eurocordex_projection = ccrs.RotatedPole(
+projection_eurocordex = ccrs.RotatedPole(
     pole_longitude=-162.0, pole_latitude=39.25
 )
 
@@ -34,51 +34,6 @@ eurocordex_projection = ccrs.RotatedPole(
 cmap_mako_r = sns.color_palette("mako_r", as_cmap=True)
 # cmap_crest = sns.color_palette("crest", as_cmap=True)
 cmap_flare = sns.color_palette("flare", as_cmap=True)
-
-
-def colormap_configs(var):
-    """
-    Configure colourmap for each variable
-    """
-
-    if var in ("PP", "TOT_PREC", "pr", "tp"):
-        cmap = cmap_mako_r  # precipitation
-    elif var in ("wr", "r", "u", "v"):
-        cmap = "GnBu"  # wind speed, humidity, water reserves
-    elif var in (
-        "T", "PAR",
-        "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
-        "rsds", "tas",
-        "t", "grad", "tmax", "tmin", "nswrs", "nlwrs"
-    ):
-        cmap = "Spectral_r"  # temperature and radiation
-    elif var in ("PET", "aet", "ET", "evspsblpot"):
-        cmap = "BrBG"  # evapotranspiration
-    elif var in ("ALB_RAD", "pres", "env"):
-        cmap = cmap_flare  # albedo, pressure, environmental limitation
-    else:
-        cmap = "YlGn"
-    return cmap
-
-
-def longitude_tick_format(x, pos):
-    """
-    Return the longitude in degrees west.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-
-    return "{:,.0f}°W".format(x * -1)
-
-
-def latitude_tick_format(x, pos):
-    """
-    Return the latitude in degrees north.
-    The two arguments are the value and tick position.
-    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
-    """
-
-    return "{:.0f}°N".format(x)
 
 
 def rotated_pole_point(data, lon, lat):
@@ -152,6 +107,54 @@ def rotated_pole_transform(data):
         pole_longitude=pole_longitude, pole_latitude=pole_latitude
     )
     return transform
+
+
+def colormap_configs(var):
+    """
+    Configure colourmap for each variable
+    """
+
+    if var in ("PP", "TOT_PREC", "pr", "tp"):
+        cmap = cmap_mako_r  # precipitation
+    elif var in ("wr", "r", "u", "v"):
+        cmap = "GnBu"  # wind speed, humidity, water reserves
+    elif var in (
+        "T", "PAR",
+        "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
+        "rsds", "tas",
+        "t", "grad", "tmax", "tmin", "nswrs", "nlwrs"
+    ):
+        cmap = "Spectral_r"  # temperature and radiation
+    elif var in ("PET", "aet", "ET", "evspsblpot"):
+        cmap = "BrBG"  # evapotranspiration
+    elif var in ("ALB_RAD", "pres", "env"):
+        cmap = cmap_flare  # albedo, pressure, environmental limitation
+    else:
+        cmap = "YlGn"
+    return cmap
+
+
+def longitude_tick_format(x, pos):
+    """
+    Return the longitude in degrees west.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:,.0f}°W".format(x * -1)
+
+
+def latitude_tick_format(x, pos):
+    """
+    Return the latitude in degrees north.
+    The two arguments are the value and tick position.
+    https://matplotlib.org/stable/gallery/ticks/tick-formatters.html
+    """
+
+    return "{:.0f}°N".format(x)
+
+
+
 
 
 # def hiresireland_date_format(data):
@@ -234,7 +237,7 @@ def plot_map(
 
     plt.figure(figsize=(7, 7))
 
-    axs = plt.axes(projection=plot_projection)
+    axs = plt.axes(projection=projection_hiresireland)
 
     # plot data for the variable
     if contour:
@@ -264,7 +267,7 @@ def plot_map(
     if boundary_data is None:
         axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
     else:
-        boundary_data.to_crs(plot_projection).plot(
+        boundary_data.to_crs(projection_hiresireland).plot(
             ax=axs, edgecolor="darkslategrey", color="white", linewidth=.75
         )
 

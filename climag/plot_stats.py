@@ -197,7 +197,7 @@ def plot_all(data, var, season, levels=None, ticks=None):
         robust=robust,
         cbar_kwargs=cbar_kwargs,
         transform=plot_transform,
-        subplot_kws={"projection": cplt.plot_projection},
+        subplot_kws={"projection": cplt.projection_hiresireland},
         levels=levels,
         xlim=(-1.775, 1.6),
         ylim=(-2.1, 2.1),
@@ -221,10 +221,10 @@ def plot_all(data, var, season, levels=None, ticks=None):
         enumerate(model_list), enumerate(data["exp"].values)
     ):
         try:
-            mask.to_crs(cplt.plot_projection).plot(
+            mask.to_crs(cplt.projection_hiresireland).plot(
                 ax=fig.axs[row][col], color="white", linewidth=0
             )
-            ie_bbox.to_crs(cplt.plot_projection).plot(
+            ie_bbox.to_crs(cplt.projection_hiresireland).plot(
                 ax=fig.axs[row][col], edgecolor="darkslategrey", color="white",
                 linewidth=.5
             )
@@ -251,7 +251,7 @@ def plot_all(data, var, season, levels=None, ticks=None):
         #     crs=data.rio.crs
         # )
 
-        # da = da.to_crs(cplt.plot_projection)
+        # da = da.to_crs(cplt.projection_hiresireland)
         # da_max = da.loc[[0]]
         # da_min = da.loc[[1]]
         # da_max.plot(
@@ -323,7 +323,7 @@ def hist_obs_diff(stat, dataset):
 
         # reassign projection
         data[f"MERA_{x[0]}"].rio.write_crs(
-            cplt.lambert_conformal, inplace=True
+            cplt.projection_lambert_conformal, inplace=True
         )
 
         data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].isel(exp=0)
@@ -371,7 +371,7 @@ def hist_obs_diff(stat, dataset):
 
         # clip to Ireland's boundary
         data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].rio.clip(
-            ie.buffer(1).to_crs(cplt.lambert_conformal), all_touched=True
+            ie.buffer(1).to_crs(cplt.projection_lambert_conformal), all_touched=True
         )
 
         # calculate difference
@@ -437,8 +437,8 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         extend="both",
         robust=True,
         cbar_kwargs=cbar_kwargs,
-        transform=cplt.lambert_conformal,
-        subplot_kws={"projection": cplt.plot_projection},
+        transform=cplt.projection_lambert_conformal,
+        subplot_kws={"projection": cplt.projection_hiresireland},
         levels=levels,
         xlim=(-1.775, 1.6),
         ylim=(-2.1, 2.1),
@@ -461,10 +461,10 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
     # add boundary
     for axis, model in zip(fig.axs.flat, model_list):
         try:
-            mask.to_crs(cplt.plot_projection).plot(
+            mask.to_crs(cplt.projection_hiresireland).plot(
                 ax=axis, color="white", linewidth=0
             )
-            ie_bbox.to_crs(cplt.plot_projection).plot(
+            ie_bbox.to_crs(cplt.projection_hiresireland).plot(
                 ax=axis, edgecolor="darkslategrey", color="white",
                 linewidth=.5
             )
@@ -488,10 +488,10 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         #             f"POINT ({da_min['x'].values} {da_min['y'].values})"
         #         ])
         #     },
-        #     crs=cplt.lambert_conformal
+        #     crs=cplt.projection_lambert_conformal
         # )
 
-        # da = da.to_crs(cplt.plot_projection)
+        # da = da.to_crs(cplt.projection_hiresireland)
         # da_max = da.loc[[0]]
         # da_min = da.loc[[1]]
         # da_max.plot(ax=axis, color="#01665e", marker="o", edgecolor="white")
