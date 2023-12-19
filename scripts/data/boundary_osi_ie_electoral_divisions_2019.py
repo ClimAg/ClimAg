@@ -15,6 +15,7 @@ exec(
 
 import os
 from datetime import datetime, timezone
+
 import geopandas as gpd
 import pooch
 
@@ -33,10 +34,7 @@ os.makedirs(SUB_DIR, exist_ok=True)
 # download data if necessary
 if not os.path.isfile(os.path.join(SUB_DIR, FILE_NAME)):
     pooch.retrieve(
-        url=URL,
-        known_hash=KNOWN_HASH,
-        fname=FILE_NAME,
-        path=SUB_DIR
+        url=URL, known_hash=KNOWN_HASH, fname=FILE_NAME, path=SUB_DIR
     )
 
     with open(
@@ -54,5 +52,5 @@ data = gpd.read_file(
 
 data.to_file(
     os.path.join(SUB_DIR, "osi_national_statutory_boundaries.gpkg"),
-    layer="OSi_IE_electoral_divisions_2019"
+    layer="OSi_IE_electoral_divisions_2019",
 )

@@ -98,9 +98,9 @@ def read_params(filename: str) -> dict[str, float]:
     - A dictionary of the input parameters
     """
 
-    params = pd.read_csv(
-        filename, header=None, index_col=0
-    ).squeeze().to_dict()
+    params = (
+        pd.read_csv(filename, header=None, index_col=0).squeeze().to_dict()
+    )
     return params
 
 

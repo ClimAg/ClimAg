@@ -9,7 +9,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+
 # from dateutil.parser import parse
+
+# Irish Transverse Mercator
+ITM_EPSG = 2157
 
 # set plot projection to the projection of the HiResIreland dataset
 projection_hiresireland = ccrs.RotatedPole(
@@ -23,7 +27,7 @@ projection_lambert_conformal = ccrs.LambertConformal(
     false_northing=537326.0638850163,
     standard_parallels=[53.5],
     central_longitude=5.0,
-    central_latitude=53.5
+    central_latitude=53.5,
 )
 
 projection_eurocordex = ccrs.RotatedPole(
@@ -53,23 +57,20 @@ def rotated_pole_point(data, lon, lat):
     """
 
     if data.rio.crs is None:
-        pole_longitude = (
-            data["rotated_pole"].attrs["grid_north_pole_longitude"]
-        )
+        pole_longitude = data["rotated_pole"].attrs[
+            "grid_north_pole_longitude"
+        ]
         pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
     else:
-        pole_longitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][1]["value"]
-        )
-        pole_latitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][0]["value"]
-        )
+        pole_longitude = data.rio.crs.to_dict(projjson=True)["conversion"][
+            "parameters"
+        ][1]["value"]
+        pole_latitude = data.rio.crs.to_dict(projjson=True)["conversion"][
+            "parameters"
+        ][0]["value"]
     rp_cds = ccrs.RotatedGeodetic(
-        pole_longitude=pole_longitude, pole_latitude=pole_latitude,
+        pole_longitude=pole_longitude,
+        pole_latitude=pole_latitude,
     ).transform_point(x=lon, y=lat, src_crs=ccrs.Geodetic())
     return rp_cds[0], rp_cds[1]
 
@@ -88,21 +89,17 @@ def rotated_pole_transform(data):
     """
 
     if data.rio.crs is None:
-        pole_longitude = (
-            data["rotated_pole"].attrs["grid_north_pole_longitude"]
-        )
+        pole_longitude = data["rotated_pole"].attrs[
+            "grid_north_pole_longitude"
+        ]
         pole_latitude = data["rotated_pole"].attrs["grid_north_pole_latitude"]
     else:
-        pole_longitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][1]["value"]
-        )
-        pole_latitude = (
-            data.rio.crs.to_dict(
-                projjson=True
-            )["conversion"]["parameters"][0]["value"]
-        )
+        pole_longitude = data.rio.crs.to_dict(projjson=True)["conversion"][
+            "parameters"
+        ][1]["value"]
+        pole_latitude = data.rio.crs.to_dict(projjson=True)["conversion"][
+            "parameters"
+        ][0]["value"]
     transform = ccrs.RotatedPole(
         pole_longitude=pole_longitude, pole_latitude=pole_latitude
     )
@@ -119,10 +116,21 @@ def colormap_configs(var):
     elif var in ("wr", "r", "u", "v"):
         cmap = "GnBu"  # wind speed, humidity, water reserves
     elif var in (
-        "T", "PAR",
-        "ASWDIR_S", "ASWDIFD_S", "ASWDIFU_S", "ASOB_S", "T_2M",
-        "rsds", "tas",
-        "t", "grad", "tmax", "tmin", "nswrs", "nlwrs"
+        "T",
+        "PAR",
+        "ASWDIR_S",
+        "ASWDIFD_S",
+        "ASWDIFU_S",
+        "ASOB_S",
+        "T_2M",
+        "rsds",
+        "tas",
+        "t",
+        "grad",
+        "tmax",
+        "tmin",
+        "nswrs",
+        "nlwrs",
     ):
         cmap = "Spectral_r"  # temperature and radiation
     elif var in ("PET", "aet", "ET", "evspsblpot"):
@@ -152,9 +160,6 @@ def latitude_tick_format(x, pos):
     """
 
     return "{:.0f}°N".format(x)
-
-
-
 
 
 # def hiresireland_date_format(data):
@@ -193,14 +198,14 @@ def weighted_average(data, averages: str):
 
     # calculate the weights by grouping month length by season or month
     weights = (
-        data.time.dt.days_in_month.groupby(f"time.{averages}") /
-        data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
+        data.time.dt.days_in_month.groupby(f"time.{averages}")
+        / data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
     )
 
     # test that the sum of weights for each year/season/month is one
     np.testing.assert_allclose(
         weights.groupby(f"time.{averages}").sum().values,
-        np.ones(len(set(weights[averages].values)))
+        np.ones(len(set(weights[averages].values))),
     )
 
     # calculate the weighted average
@@ -211,9 +216,7 @@ def weighted_average(data, averages: str):
     return data_weighted
 
 
-def plot_map(
-    data, var, cbar_levels=None, contour=False, boundary_data=None
-):
+def plot_map(data, var, cbar_levels=None, contour=False, boundary_data=None):
     """
     Create an individual plot of a climate data variable covering the Island
     of Ireland.
@@ -229,9 +232,7 @@ def plot_map(
 
     plot_transform = rotated_pole_transform(data)
 
-    cbar_label = (
-        f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
-    )  # colorbar label
+    cbar_label = f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"  # colorbar label
 
     cmap = colormap_configs(var)
 
@@ -249,7 +250,7 @@ def plot_map(
             robust=True,
             cbar_kwargs={"label": cbar_label},
             transform=plot_transform,
-            levels=cbar_levels
+            levels=cbar_levels,
         )
     else:
         data[var].plot(
@@ -260,15 +261,15 @@ def plot_map(
             robust=True,
             cbar_kwargs={"label": cbar_label},
             transform=plot_transform,
-            levels=cbar_levels
+            levels=cbar_levels,
         )
 
     # add boundaries
     if boundary_data is None:
-        axs.coastlines(resolution="10m", color="darkslategrey", linewidth=.75)
+        axs.coastlines(resolution="10m", color="darkslategrey", linewidth=0.75)
     else:
         boundary_data.to_crs(projection_hiresireland).plot(
-            ax=axs, edgecolor="darkslategrey", color="white", linewidth=.75
+            ax=axs, edgecolor="darkslategrey", color="white", linewidth=0.75
         )
 
     # if title != "default":
@@ -286,9 +287,9 @@ def plot_map(
         xlocs=range(-180, 180, 2),
         ylocs=range(-90, 90, 1),
         color="lightslategrey",
-        linewidth=.5,
+        linewidth=0.5,
         x_inline=False,
-        y_inline=False
+        y_inline=False,
     )
 
     plt.show()
@@ -332,7 +333,7 @@ def boxplot_data(datasets, varlist, lonlat):
                 legend=(
                     f"{key.split('_')[0]}\n{key.split('_')[1]}\n"
                     f"{key.split('_')[2]}"
-                )
+                ),
             )
 
     for var in varlist:
@@ -356,18 +357,23 @@ def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
 
     plt.figure(figsize=figsize)
     sns.boxplot(
-        data, x="dataset", y=var, hue="exp", showfliers=showfliers,
-        showmeans=True, palette="Pastel1",
+        data,
+        x="dataset",
+        y=var,
+        hue="exp",
+        showfliers=showfliers,
+        showmeans=True,
+        palette="Pastel1",
         meanprops={
             "markeredgecolor": "darkslategrey",
             "marker": "d",
             "markerfacecolor": "white",
-            "markersize": 7.5
+            "markersize": 7.5,
         },
         boxprops={"edgecolor": "darkslategrey"},
         medianprops={"color": "darkslategrey"},
         whiskerprops={"color": "darkslategrey"},
-        capprops={"color": "darkslategrey"}
+        capprops={"color": "darkslategrey"},
     )
     plt.xlabel("")
     plt.ylabel("")

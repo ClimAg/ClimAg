@@ -7,6 +7,7 @@ import glob
 import os
 import warnings
 from itertools import product
+
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +15,7 @@ import pandas as pd
 import rasterio as rio
 import xarray as xr
 from matplotlib import patheffects
+
 import climag.plot_configs as cplt
 
 warnings.filterwarnings(
@@ -22,18 +24,18 @@ warnings.filterwarnings(
 
 # Ireland boundary
 ie_bbox = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="ne_10m_land_2157_IE_BBOX_DIFF"
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="ne_10m_land_2157_IE_BBOX_DIFF",
 )
 ie = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="NUTS_RG_01M_2021_2157_IE"
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="NUTS_RG_01M_2021_2157_IE",
 )
 
 # mask out non-pasture areas
 mask = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="CLC_2018_MASK_PASTURE_2157_IE"
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="CLC_2018_MASK_PASTURE_2157_IE",
 )
 
 season_list = ["DJF", "MAM", "JJA", "SON"]
@@ -69,14 +71,16 @@ def hist_rcp_diff(data):
     Calculate difference between historical and rcp45/rcp85
     """
 
-    data_out = xr.combine_by_coords([
-        (
-            data.sel(exp="rcp45") - data.sel(exp="historical")
-        ).assign_coords(exp="rcp45 - historical").expand_dims(dim="exp"),
-        (
-            data.sel(exp="rcp85") - data.sel(exp="historical")
-        ).assign_coords(exp="rcp85 - historical").expand_dims(dim="exp")
-    ])
+    data_out = xr.combine_by_coords(
+        [
+            (data.sel(exp="rcp45") - data.sel(exp="historical"))
+            .assign_coords(exp="rcp45 - historical")
+            .expand_dims(dim="exp"),
+            (data.sel(exp="rcp85") - data.sel(exp="historical"))
+            .assign_coords(exp="rcp85 - historical")
+            .expand_dims(dim="exp"),
+        ]
+    )
     # reassign attributes and CRS
     for var in data_out.data_vars:
         data_out[var].attrs = data[var].attrs
@@ -100,7 +104,8 @@ def hist_rcp_stats_data(dataset, stat, diff=True, annual=False):
                     "data", "ModVege", "stats", f"IE_{dataset}*{stat}_{x}.nc"
                 )
             ),
-            decode_coords="all", chunks="auto"
+            decode_coords="all",
+            chunks="auto",
         )
         if annual and x == "season":
             # copy attributes
@@ -146,18 +151,28 @@ def plot_all(data, var, season, levels=None, ticks=None):
     if round(data.rio.resolution()[0], 2) == 0.11:
         notnull = xr.open_dataset(
             os.path.join(
-                "data", "ModVege", "EURO-CORDEX", "historical", "CNRM-CM5",
-                "modvege_IE_EURO-CORDEX_RCA4_CNRM-CM5_historical_1976.nc"
+                "data",
+                "ModVege",
+                "EURO-CORDEX",
+                "historical",
+                "CNRM-CM5",
+                "modvege_IE_EURO-CORDEX_RCA4_CNRM-CM5_historical_1976.nc",
             ),
-            decode_coords="all", chunks="auto"
+            decode_coords="all",
+            chunks="auto",
         )
     else:
         notnull = xr.open_dataset(
             os.path.join(
-                "data", "ModVege", "HiResIreland", "historical", "CNRM-CM5",
-                "modvege_IE_HiResIreland_COSMO5_CNRM-CM5_historical_1976.nc"
+                "data",
+                "ModVege",
+                "HiResIreland",
+                "historical",
+                "CNRM-CM5",
+                "modvege_IE_HiResIreland_COSMO5_CNRM-CM5_historical_1976.nc",
             ),
-            decode_coords="all", chunks="auto"
+            decode_coords="all",
+            chunks="auto",
         )
     notnull = pd.notnull(notnull["gro"].isel(time=0))
 
@@ -170,7 +185,7 @@ def plot_all(data, var, season, levels=None, ticks=None):
         "fraction": 0.085,
         "shrink": 0.85,
         "pad": 0.05,
-        "extendfrac": "auto"
+        "extendfrac": "auto",
     }
 
     if ticks is not None:
@@ -190,25 +205,32 @@ def plot_all(data, var, season, levels=None, ticks=None):
     if season is not None:
         data = data.sel(season=season)
 
-    fig = data[var].where(notnull).plot.contourf(
-        x="rlon", y="rlat", col="model", row="exp",
-        cmap=cmap,
-        extend=extend,
-        robust=robust,
-        cbar_kwargs=cbar_kwargs,
-        transform=plot_transform,
-        subplot_kws={"projection": cplt.projection_hiresireland},
-        levels=levels,
-        xlim=(-1.775, 1.6),
-        ylim=(-2.1, 2.1),
-        figsize=figsize
+    fig = (
+        data[var]
+        .where(notnull)
+        .plot.contourf(
+            x="rlon",
+            y="rlat",
+            col="model",
+            row="exp",
+            cmap=cmap,
+            extend=extend,
+            robust=robust,
+            cbar_kwargs=cbar_kwargs,
+            transform=plot_transform,
+            subplot_kws={"projection": cplt.projection_hiresireland},
+            levels=levels,
+            xlim=(-1.775, 1.6),
+            ylim=(-2.1, 2.1),
+            figsize=figsize,
+        )
     )
 
     fig.set_titles("{value}", weight="semibold", fontsize=14)
 
     title_print = (
-        "_" * 80 +
-        f"\nDifference in average {data[var].attrs['long_name'].lower()}"
+        "_" * 80
+        + f"\nDifference in average {data[var].attrs['long_name'].lower()}"
     )
     if season is not None:
         print(title_print + f" in {season}\n" + "_" * 80)
@@ -225,12 +247,14 @@ def plot_all(data, var, season, levels=None, ticks=None):
                 ax=fig.axs[row][col], color="white", linewidth=0
             )
             ie_bbox.to_crs(cplt.projection_hiresireland).plot(
-                ax=fig.axs[row][col], edgecolor="darkslategrey", color="white",
-                linewidth=.5
+                ax=fig.axs[row][col],
+                edgecolor="darkslategrey",
+                color="white",
+                linewidth=0.5,
             )
         except NameError:
             fig.axs[row][col].coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
 
         # # add max/min values as annotations
@@ -308,17 +332,21 @@ def hist_obs_diff(stat, dataset):
                     "data", "ModVege", "stats", f"*MERA*{stat}_{x}.nc"
                 )
             ),
-            decode_coords="all", chunks="auto"
+            decode_coords="all",
+            chunks="auto",
         )
 
         data[f"{dataset}_{x[0]}"] = xr.open_mfdataset(
             glob.glob(
                 os.path.join(
-                    "data", "ModVege", "stats",
-                    f"*{dataset}*{stat}_{x}_MERA.nc"
+                    "data",
+                    "ModVege",
+                    "stats",
+                    f"*{dataset}*{stat}_{x}_MERA.nc",
                 )
             ),
-            decode_coords="all", chunks="auto"
+            decode_coords="all",
+            chunks="auto",
         )
 
         # reassign projection
@@ -329,49 +357,55 @@ def hist_obs_diff(stat, dataset):
         data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].isel(exp=0)
 
         # regrid climate model data
-        data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].drop([
-            "lat", "lon", "exp"
-        ])
-        data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].rename({
-            "rlon": "x", "rlat": "y"
-        })
+        data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].drop(
+            ["lat", "lon", "exp"]
+        )
+        data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].rename(
+            {"rlon": "x", "rlat": "y"}
+        )
         if x == "season":
             # split by season first
             for season in season_list:
                 data[season] = data[f"{dataset}_{x[0]}"].sel(season=season)
                 data[season] = data[season].rio.reproject_match(
                     data[f"MERA_{x[0]}"],
-                    resampling=rio.enums.Resampling.bilinear
+                    resampling=rio.enums.Resampling.bilinear,
                 )
-                data[season] = data[season].assign_coords({
-                    "x": data[f"MERA_{x[0]}"]["x"],
-                    "y": data[f"MERA_{x[0]}"]["y"]
-                })
+                data[season] = data[season].assign_coords(
+                    {
+                        "x": data[f"MERA_{x[0]}"]["x"],
+                        "y": data[f"MERA_{x[0]}"]["y"],
+                    }
+                )
 
             # combine seasons
-            data[f"{dataset}_{x[0]}"] = xr.combine_by_coords([
-                data["DJF"].expand_dims(dim="season"),
-                data["MAM"].expand_dims(dim="season"),
-                data["JJA"].expand_dims(dim="season"),
-                data["SON"].expand_dims(dim="season")
-            ])
-        else:
-            data[f"{dataset}_{x[0]}"] = (
-                data[f"{dataset}_{x[0]}"].rio.reproject_match(
-                    data[f"MERA_{x[0]}"],
-                    resampling=rio.enums.Resampling.bilinear
-                )
+            data[f"{dataset}_{x[0]}"] = xr.combine_by_coords(
+                [
+                    data["DJF"].expand_dims(dim="season"),
+                    data["MAM"].expand_dims(dim="season"),
+                    data["JJA"].expand_dims(dim="season"),
+                    data["SON"].expand_dims(dim="season"),
+                ]
             )
-            data[f"{dataset}_{x[0]}"] = (
-                data[f"{dataset}_{x[0]}"].assign_coords({
+        else:
+            data[f"{dataset}_{x[0]}"] = data[
+                f"{dataset}_{x[0]}"
+            ].rio.reproject_match(
+                data[f"MERA_{x[0]}"], resampling=rio.enums.Resampling.bilinear
+            )
+            data[f"{dataset}_{x[0]}"] = data[
+                f"{dataset}_{x[0]}"
+            ].assign_coords(
+                {
                     "x": data[f"MERA_{x[0]}"]["x"],
-                    "y": data[f"MERA_{x[0]}"]["y"]
-                })
+                    "y": data[f"MERA_{x[0]}"]["y"],
+                }
             )
 
         # clip to Ireland's boundary
         data[f"{dataset}_{x[0]}"] = data[f"{dataset}_{x[0]}"].rio.clip(
-            ie.buffer(1).to_crs(cplt.projection_lambert_conformal), all_touched=True
+            ie.buffer(1).to_crs(cplt.projection_lambert_conformal),
+            all_touched=True,
         )
 
         # calculate difference
@@ -386,12 +420,12 @@ def hist_obs_diff(stat, dataset):
 
         # reassign attributes
         for var in data[f"MERA_{x[0]}_diff"].data_vars:
-            data[f"MERA_{x[0]}_diff"][var].attrs = (
-                data[f"MERA_{x[0]}"][var].attrs
-            )
-            data[f"MERA_{x[0]}_diff_pct"][var].attrs = (
-                data[f"MERA_{x[0]}"][var].attrs
-            )
+            data[f"MERA_{x[0]}_diff"][var].attrs = data[f"MERA_{x[0]}"][
+                var
+            ].attrs
+            data[f"MERA_{x[0]}_diff_pct"][var].attrs = data[f"MERA_{x[0]}"][
+                var
+            ].attrs
             data[f"MERA_{x[0]}_diff_pct"][var].attrs["units"] = "%"
         data[f"MERA_{x[0]}_diff"].attrs["dataset"] = dataset
         data[f"MERA_{x[0]}_diff_pct"].attrs["dataset"] = dataset
@@ -401,11 +435,9 @@ def hist_obs_diff(stat, dataset):
             data[f"MERA_{x[0]}_diff"] = data[f"MERA_{x[0]}_diff"].reindex(
                 season=season_list
             )
-            data[f"MERA_{x[0]}_diff_pct"] = (
-                data[f"MERA_{x[0]}_diff_pct"].reindex(
-                    season=season_list
-                )
-            )
+            data[f"MERA_{x[0]}_diff_pct"] = data[
+                f"MERA_{x[0]}_diff_pct"
+            ].reindex(season=season_list)
 
     return data
 
@@ -422,7 +454,7 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         "fraction": 0.085,
         "shrink": 0.85,
         "pad": 0.05,
-        "extendfrac": "auto"
+        "extendfrac": "auto",
     }
 
     if ticks is not None:
@@ -432,7 +464,9 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         data = data.sel(season=season)
 
     fig = data[var].plot.contourf(
-        x="x", y="y", col="model",
+        x="x",
+        y="y",
+        col="model",
         cmap="BrBG",
         extend="both",
         robust=True,
@@ -442,14 +476,14 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
         levels=levels,
         xlim=(-1.775, 1.6),
         ylim=(-2.1, 2.1),
-        figsize=(12, 6.25)
+        figsize=(12, 6.25),
     )
 
     fig.set_titles("{value}", weight="semibold", fontsize=14)
 
     title_print = (
-        "_" * 80 +
-        f"\nDifference in average {data[var].attrs['long_name'].lower()} "
+        "_" * 80
+        + f"\nDifference in average {data[var].attrs['long_name'].lower()} "
         f"from MÉRA-driven simulations for {data.attrs['dataset']}"
     )
     if season is not None:
@@ -465,12 +499,14 @@ def plot_obs_diff_all(data, var, season, levels=None, ticks=None):
                 ax=axis, color="white", linewidth=0
             )
             ie_bbox.to_crs(cplt.projection_hiresireland).plot(
-                ax=axis, edgecolor="darkslategrey", color="white",
-                linewidth=.5
+                ax=axis,
+                edgecolor="darkslategrey",
+                color="white",
+                linewidth=0.5,
             )
         except NameError:
             axis.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
 
         # # add max/min values as annotations

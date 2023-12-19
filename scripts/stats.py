@@ -11,6 +11,7 @@ import glob
 import itertools
 import os
 import sys
+
 import numpy as np
 import xarray as xr
 
@@ -29,10 +30,24 @@ def drop_unneeded_vars(data):
     Drop variables that are not needed
     """
 
-    data = data.drop_vars([
-        "bm_gv", "bm_gr", "bm_dv", "bm_dr", "age_gv", "age_gr", "age_dv",
-        "age_dr", "omd_gv", "omd_gr", "lai", "env", "wr", "aet"
-    ])
+    data = data.drop_vars(
+        [
+            "bm_gv",
+            "bm_gr",
+            "bm_dv",
+            "bm_dr",
+            "age_gv",
+            "age_gr",
+            "age_dv",
+            "age_dr",
+            "omd_gv",
+            "omd_gr",
+            "lai",
+            "env",
+            "wr",
+            "aet",
+        ]
+    )
 
     return data
 
@@ -49,14 +64,14 @@ def manage_season_vars(data):
     data = data.assign(
         sen_abs=(
             data["sen_gv"] + data["sen_gr"] + data["abs_dv"] + data["abs_dr"]
-            )
         )
+    )
     data["sen_abs"].attrs["long_name"] = "Defoliation"
     data["sen_abs"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
     data["bm"].attrs["units"] = "kg DM ha⁻¹ day⁻¹"
-    data = data.drop_vars([
-        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm"
-    ])
+    data = data.drop_vars(
+        ["sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm"]
+    )
 
     return data
 
@@ -68,14 +83,24 @@ def manage_cumulative_vars(data):
 
     # total consumption
     data = data.assign(c_bm_all=data["h_bm"] + data["i_bm"])
-    data["c_bm_all"].attrs["long_name"] = (
-        "Yearly ingested and harvested biomass"
-    )
+    data["c_bm_all"].attrs[
+        "long_name"
+    ] = "Yearly ingested and harvested biomass"
     data["c_bm_all"].attrs["units"] = "kg DM ha⁻¹ year⁻¹"
-    data = data.drop_vars([
-        "sen_gv", "sen_gr", "abs_dv", "abs_dr", "h_bm", "i_bm",
-        "c_bm", "pgro", "gro", "bm"
-    ])
+    data = data.drop_vars(
+        [
+            "sen_gv",
+            "sen_gr",
+            "abs_dv",
+            "abs_dr",
+            "h_bm",
+            "i_bm",
+            "c_bm",
+            "pgro",
+            "gro",
+            "bm",
+        ]
+    )
 
     return data
 
@@ -88,20 +113,18 @@ def generate_season_stats(data, stat, annual=False):
     if stat == "mean":  # weighted mean
         # calculate the weights by grouping month length by season
         weights = (
-            data["time"].dt.days_in_month.groupby("time.season") /
-            data["time"].dt.days_in_month.groupby("time.season").sum()
+            data["time"].dt.days_in_month.groupby("time.season")
+            / data["time"].dt.days_in_month.groupby("time.season").sum()
         )
 
         # test that the sum of weights for each season is one
         np.testing.assert_allclose(
             weights.groupby("time.season").sum().values,
-            np.ones(len(set(weights["season"].values)))
+            np.ones(len(set(weights["season"].values))),
         )
 
         # calculate the weighted average
-        data_st = (
-            (data * weights).groupby("time.season").sum(dim="time")
-        )
+        data_st = (data * weights).groupby("time.season").sum(dim="time")
 
     elif stat == "std" and annual:
         data_st = data.std(dim="time", ddof=1)
@@ -164,12 +187,16 @@ for exp, model, dataset in itertools.product(
     ds = xr.open_mfdataset(
         glob.glob(
             os.path.join(
-                "data", "ModVege", dataset, exp, model,
-                f"*{dataset}*{model}*{exp}*.nc"
+                "data",
+                "ModVege",
+                dataset,
+                exp,
+                model,
+                f"*{dataset}*{model}*{exp}*.nc",
             )
         ),
         chunks=CHUNKS,
-        decode_coords="all"
+        decode_coords="all",
     )
 
     # convert HadGEM2-ES data back to 360-day calendar
@@ -238,7 +265,7 @@ for exp, model, dataset in itertools.product(
             ds_sub.to_netcdf(
                 os.path.join(
                     STATS_DIR,
-                    f"{ds.attrs['input_dataset']}_{s}_season_MERA.nc"
+                    f"{ds.attrs['input_dataset']}_{s}_season_MERA.nc",
                 )
             )
             print(f"{ds.attrs['input_dataset']}_{s}_season_MERA done!")
@@ -251,7 +278,7 @@ for exp, model, dataset in itertools.product(
             ds_sub.to_netcdf(
                 os.path.join(
                     STATS_DIR,
-                    f"{ds.attrs['input_dataset']}_{s}_cumulative_MERA.nc"
+                    f"{ds.attrs['input_dataset']}_{s}_cumulative_MERA.nc",
                 )
             )
             print(f"{ds.attrs['input_dataset']}_{s}_cumulative_MERA done!")
@@ -259,7 +286,8 @@ for exp, model, dataset in itertools.product(
 # MERA
 ds = xr.open_mfdataset(
     glob.glob(os.path.join("data", "ModVege", "MERA", "*MERA*FC3hr*day*.nc")),
-    chunks="auto", decode_coords="all"
+    chunks="auto",
+    decode_coords="all",
 )
 
 ds = drop_unneeded_vars(data=ds)

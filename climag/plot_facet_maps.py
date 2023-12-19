@@ -4,9 +4,11 @@ Helper functions to plot facet maps
 """
 
 from datetime import datetime
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
+
 import climag.plot_configs as cplt
 
 season_list = ["DJF", "MAM", "JJA", "SON"]
@@ -15,7 +17,10 @@ model_list = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
 
 def plot_facet_map(
-    data, var: str, boundary_data=None, cbar_levels=None,  # ticks=False
+    data,
+    var: str,
+    boundary_data=None,
+    cbar_levels=None,  # ticks=False
 ):
     """
     Create a facet plot of a variable from an Xarray dataset covering the
@@ -33,9 +38,7 @@ def plot_facet_map(
 
     plot_transform = cplt.rotated_pole_transform(data)
 
-    cbar_label = (
-        f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
-    )  # colorbar label
+    cbar_label = f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"  # colorbar label
 
     cmap = cplt.colormap_configs(var)
 
@@ -53,14 +56,16 @@ def plot_facet_map(
         # x_ticks = []
 
     fig = data[var].plot(
-        x="rlon", y="rlat", col="time",
+        x="rlon",
+        y="rlat",
+        col="time",
         col_wrap=col_wrap,
         cmap=cmap,
         robust=True,
         cbar_kwargs={"aspect": 40, "label": cbar_label},
         transform=plot_transform,
         subplot_kws={"projection": cplt.projection_hiresireland},
-        levels=cbar_levels
+        levels=cbar_levels,
     )
 
     fig.set_xlabels("")
@@ -70,12 +75,11 @@ def plot_facet_map(
     for axs in fig.axs.flat:
         if boundary_data is None:
             axs.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
         else:
             boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                ax=axs, edgecolor="darkslategrey", color="white",
-                linewidth=.5
+                ax=axs, edgecolor="darkslategrey", color="white", linewidth=0.5
             )
 
         axs.set_xlim(-1.9, 1.6)
@@ -142,23 +146,29 @@ def plot_averages(
         # sort seasons
         data = data.reindex(season=["DJF", "MAM", "JJA", "SON"])
 
-    fig = data_weighted[var].where(pd.notnull(data[var][0])).plot(
-        x="rlon", y="rlat", col=averages,
-        col_wrap=columns_cbar_aspect[0],
-        cmap=cmap,
-        robust=True,
-        cbar_kwargs={
-            "aspect": columns_cbar_aspect[1],
-            "label": (
-                f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
-            )
-        },
-        transform=plot_transform,
-        subplot_kws={"projection": cplt.projection_hiresireland},
-        levels=cbar_levels,
-        xlim=(-1.9, 1.6),
-        ylim=(-2.1, 2.1),
-        aspect=.9
+    fig = (
+        data_weighted[var]
+        .where(pd.notnull(data[var][0]))
+        .plot(
+            x="rlon",
+            y="rlat",
+            col=averages,
+            col_wrap=columns_cbar_aspect[0],
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs={
+                "aspect": columns_cbar_aspect[1],
+                "label": (
+                    f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]"
+                ),
+            },
+            transform=plot_transform,
+            subplot_kws={"projection": cplt.projection_hiresireland},
+            levels=cbar_levels,
+            xlim=(-1.9, 1.6),
+            ylim=(-2.1, 2.1),
+            aspect=0.9,
+        )
     )
 
     for i, axs in enumerate(fig.axs.flat):
@@ -167,19 +177,21 @@ def plot_averages(
         # )
         if boundary_data is None:
             axs.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
         else:
             boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                ax=axs, color="white", edgecolor="darkslategrey", linewidth=.5
+                ax=axs, color="white", edgecolor="darkslategrey", linewidth=0.5
             )
 
         if averages == "month":
             axs.set_title(
                 datetime.strptime(
                     str(data_weighted.isel({averages: i})[averages].values),
-                    "%m"
-                ).strftime("%-b").upper()
+                    "%m",
+                )
+                .strftime("%-b")
+                .upper()
             )
         else:
             axs.set_title(data[averages][i].values)
@@ -201,8 +213,12 @@ def plot_averages(
 
 
 def plot_seasonal(
-    data, var: str, stat="mean", cbar_levels=None, contour=False,
-    boundary_data=None
+    data,
+    var: str,
+    stat="mean",
+    cbar_levels=None,
+    contour=False,
+    boundary_data=None,
 ):
     """
     Seasonal plots
@@ -232,9 +248,9 @@ def plot_seasonal(
     elif stat == "std":
         data_stat = data.groupby("time.season").std(dim="time", ddof=1)
     elif stat == "0.9q":
-        data_stat = data.groupby("time.season").quantile(.9, dim="time")
+        data_stat = data.groupby("time.season").quantile(0.9, dim="time")
     elif stat == "0.1q":
-        data_stat = data.groupby("time.season").quantile(.1, dim="time")
+        data_stat = data.groupby("time.season").quantile(0.1, dim="time")
     elif stat == "min":
         data_stat = data.groupby("time.season").min(dim="time")
     elif stat == "max":
@@ -249,55 +265,67 @@ def plot_seasonal(
     cmap = cplt.colormap_configs(var)
 
     if contour:
-        fig = data_stat[var].where(pd.notnull(data[var][0])).plot.contourf(
-            x="rlon", y="rlat", col="season",
-            col_wrap=2,
-            cmap=cmap,
-            robust=True,
-            cbar_kwargs={
-                "aspect": 20,
-                "label": (
-                    f"{data[var].attrs['long_name']} "
-                    f"[{data[var].attrs['units']}]"
-                )
-            },
-            transform=plot_transform,
-            subplot_kws={"projection": cplt.projection_hiresireland},
-            levels=cbar_levels,
-            xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1),
-            aspect=.9
+        fig = (
+            data_stat[var]
+            .where(pd.notnull(data[var][0]))
+            .plot.contourf(
+                x="rlon",
+                y="rlat",
+                col="season",
+                col_wrap=2,
+                cmap=cmap,
+                robust=True,
+                cbar_kwargs={
+                    "aspect": 20,
+                    "label": (
+                        f"{data[var].attrs['long_name']} "
+                        f"[{data[var].attrs['units']}]"
+                    ),
+                },
+                transform=plot_transform,
+                subplot_kws={"projection": cplt.projection_hiresireland},
+                levels=cbar_levels,
+                xlim=(-1.9, 1.6),
+                ylim=(-2.1, 2.1),
+                aspect=0.9,
+            )
         )
     else:
-        fig = data_stat[var].where(pd.notnull(data[var][0])).plot(
-            x="rlon", y="rlat", col="season",
-            col_wrap=2,
-            cmap=cmap,
-            robust=True,
-            cbar_kwargs={
-                "aspect": 20,
-                "label": (
-                    f"{data[var].attrs['long_name']} "
-                    f"[{data[var].attrs['units']}]"
-                )
-            },
-            transform=plot_transform,
-            subplot_kws={"projection": cplt.projection_hiresireland},
-            levels=cbar_levels,
-            xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1),
-            aspect=.9
+        fig = (
+            data_stat[var]
+            .where(pd.notnull(data[var][0]))
+            .plot(
+                x="rlon",
+                y="rlat",
+                col="season",
+                col_wrap=2,
+                cmap=cmap,
+                robust=True,
+                cbar_kwargs={
+                    "aspect": 20,
+                    "label": (
+                        f"{data[var].attrs['long_name']} "
+                        f"[{data[var].attrs['units']}]"
+                    ),
+                },
+                transform=plot_transform,
+                subplot_kws={"projection": cplt.projection_hiresireland},
+                levels=cbar_levels,
+                xlim=(-1.9, 1.6),
+                ylim=(-2.1, 2.1),
+                aspect=0.9,
+            )
         )
 
     for i, axs in enumerate(fig.axs.flat):
         # add boundary
         if boundary_data is None:
             axs.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
         else:
             boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                ax=axs, edgecolor="darkslategrey", color="white", linewidth=.5
+                ax=axs, edgecolor="darkslategrey", color="white", linewidth=0.5
             )
 
         # specify subplot titles
@@ -342,8 +370,10 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
     cmap = cplt.colormap_configs(var)
 
     fig, axs = plt.subplots(
-        nrows=4, ncols=3, figsize=(10, 10),
-        subplot_kw={"projection": cplt.projection_hiresireland}
+        nrows=4,
+        ncols=3,
+        figsize=(10, 10),
+        subplot_kw={"projection": cplt.projection_hiresireland},
     )
 
     for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
@@ -355,7 +385,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         data_2[var].sel(season=season).where(notnull).plot(
@@ -366,7 +396,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         data_diff[var].sel(season=season).where(notnull).plot(
@@ -377,7 +407,7 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         axs[i, 0].set_ylabel(season, fontweight="semibold")
@@ -386,12 +416,14 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
     for axis in axs.flat:
         if boundary_data is None:
             axis.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
         else:
             boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                ax=axis, edgecolor="darkslategrey", color="white",
-                linewidth=.5
+                ax=axis,
+                edgecolor="darkslategrey",
+                color="white",
+                linewidth=0.5,
             )
 
         axis.set_title(None)
@@ -404,7 +436,8 @@ def plot_season_diff(data, var, boundary_data=None, stat="mean"):
 
     fig.suptitle(
         f"{data[var].attrs['long_name']} [{data[var].attrs['units']}]",
-        fontsize=16, y=1.02
+        fontsize=16,
+        y=1.02,
     )
     plt.show()
 
@@ -461,8 +494,10 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
     cmap = cplt.colormap_configs(var)
 
     fig, axs = plt.subplots(
-        nrows=4, ncols=3, figsize=(10, 10),
-        subplot_kw={"projection": cplt.projection_hiresireland}
+        nrows=4,
+        ncols=3,
+        figsize=(10, 10),
+        subplot_kw={"projection": cplt.projection_hiresireland},
     )
 
     for i, season in enumerate(("DJF", "MAM", "JJA", "SON")):
@@ -474,7 +509,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data[0]),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         data_f[var].sel(season=season).where(notnull).plot.contourf(
@@ -484,7 +519,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data[0]),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         data_diff[var].sel(season=season).where(notnull).plot.contourf(
@@ -494,7 +529,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
             transform=cplt.rotated_pole_transform(data[0]),
             cbar_kwargs={"label": None},
             xlim=(-1.9, 1.6),
-            ylim=(-2.1, 2.1)
+            ylim=(-2.1, 2.1),
         )
 
         axs[i, 0].set_ylabel(season, fontweight="semibold")
@@ -503,12 +538,14 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
     for axis in axs.flat:
         if boundary_data is None:
             axis.coastlines(
-                resolution="10m", color="darkslategrey", linewidth=.5
+                resolution="10m", color="darkslategrey", linewidth=0.5
             )
         else:
             boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                ax=axis, edgecolor="darkslategrey", color="white",
-                linewidth=.5
+                ax=axis,
+                edgecolor="darkslategrey",
+                color="white",
+                linewidth=0.5,
             )
 
         axis.set_title(None)
@@ -542,6 +579,7 @@ def plot_season_diff_hist_rcp(data, var, boundary_data=None, stat="mean"):
 
     fig.suptitle(suptitle, fontsize=16, y=1.02)
     plt.show()
+
 
 ############################################################################
 
@@ -582,11 +620,11 @@ def weighted_average_season_exp(driving_model_data: dict):
     data_all.rio.write_crs(driving_model_data[key].rio.crs, inplace=True)
 
     # calculate difference
-    data_diff["rcp45 - historical"] = (
-        data_all.sel(exp="rcp45") - data_all.sel(exp="historical")
+    data_diff["rcp45 - historical"] = data_all.sel(exp="rcp45") - data_all.sel(
+        exp="historical"
     )
-    data_diff["rcp85 - historical"] = (
-        data_all.sel(exp="rcp85") - data_all.sel(exp="historical")
+    data_diff["rcp85 - historical"] = data_all.sel(exp="rcp85") - data_all.sel(
+        exp="historical"
     )
     # data_diff["rcp85 - rcp45"] = (
     #     data_all.sel(exp="rcp85") - data_all.sel(exp="rcp45")
@@ -611,8 +649,7 @@ def weighted_average_season_exp(driving_model_data: dict):
 
 
 def plot_weighted_average_season_exp(
-    data, var: str,
-    boundary_data=None, levels=(None, None), ticks=(None, None)
+    data, var: str, boundary_data=None, levels=(None, None), ticks=(None, None)
 ):
     """
     Plot weighted averages and the difference between each experiment results
@@ -644,19 +681,26 @@ def plot_weighted_average_season_exp(
         if ticks[n] is not None:
             cbar_kwargs["ticks"] = ticks[n]
         # main plot
-        fig = plotting_data[data][var].where(notnull).plot.contourf(
-            x="rlon", y="rlat", col="season", row="exp",
-            cmap=cmap,
-            # robust=True,
-            # extend="both",
-            cbar_kwargs=cbar_kwargs,
-            transform=plot_transform,
-            subplot_kws={"projection": cplt.projection_hiresireland},
-            levels=levels[n],
-            xlim=(-1.775, 1.6),
-            ylim=(-2.1, 2.1),
-            figsize=figsize
-            # aspect=aspect
+        fig = (
+            plotting_data[data][var]
+            .where(notnull)
+            .plot.contourf(
+                x="rlon",
+                y="rlat",
+                col="season",
+                row="exp",
+                cmap=cmap,
+                # robust=True,
+                # extend="both",
+                cbar_kwargs=cbar_kwargs,
+                transform=plot_transform,
+                subplot_kws={"projection": cplt.projection_hiresireland},
+                levels=levels[n],
+                xlim=(-1.775, 1.6),
+                ylim=(-2.1, 2.1),
+                figsize=figsize
+                # aspect=aspect
+            )
         )
 
         fig.set_titles("{value}", weight="semibold", fontsize=14)
@@ -665,12 +709,14 @@ def plot_weighted_average_season_exp(
         for axis in fig.axs.flat:
             if boundary_data is None:
                 axis.coastlines(
-                    resolution="10m", color="darkslategrey", linewidth=.5
+                    resolution="10m", color="darkslategrey", linewidth=0.5
                 )
             else:
                 boundary_data.to_crs(cplt.projection_hiresireland).plot(
-                    ax=axis, edgecolor="darkslategrey", color="white",
-                    linewidth=.5
+                    ax=axis,
+                    edgecolor="darkslategrey",
+                    color="white",
+                    linewidth=0.5,
                 )
 
         plt.show()

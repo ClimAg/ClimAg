@@ -19,6 +19,7 @@ exec(
 import os
 from datetime import datetime, timezone
 from zipfile import BadZipFile, ZipFile
+
 import geopandas as gpd
 import pooch
 
@@ -43,10 +44,7 @@ os.makedirs(DATA_DIR_TEMP, exist_ok=True)
 # download data if necessary
 if not os.path.isfile(os.path.join(SUB_DIR, FILE_NAME)):
     pooch.retrieve(
-        url=URL,
-        known_hash=KNOWN_HASH,
-        fname=FILE_NAME,
-        path=SUB_DIR
+        url=URL, known_hash=KNOWN_HASH, fname=FILE_NAME, path=SUB_DIR
     )
 
     with open(
@@ -67,9 +65,7 @@ except BadZipFile:
     print("There were issues with the file", DATA_FILE)
 
 # NUTS1
-DATA_FILE = os.path.join(
-    DATA_DIR_TEMP, "NUTS_RG_01M_2021_4326_LEVL_1.shp.zip"
-)
+DATA_FILE = os.path.join(DATA_DIR_TEMP, "NUTS_RG_01M_2021_4326_LEVL_1.shp.zip")
 
 ie = gpd.read_file(f"zip://{DATA_FILE}!NUTS_RG_01M_2021_4326_LEVL_1.shp")
 

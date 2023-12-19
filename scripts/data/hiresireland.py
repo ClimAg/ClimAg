@@ -20,9 +20,11 @@ import itertools
 import os
 import sys
 from datetime import datetime, timezone
+
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
+
 # from dask.distributed import Client
 
 # client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
@@ -39,7 +41,7 @@ ie = gpd.read_file(GPKG_BOUNDARY, layer="NUTS_RG_01M_2021_2157_IE")
 
 for exp, model in itertools.product(
     ["historical", "rcp45", "rcp85"],
-    ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
+    ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"],
 ):
     # auto-rechunking may cause NotImplementedError with object dtype
     # where it will not be able to estimate the size in bytes of object data
@@ -50,8 +52,11 @@ for exp, model in itertools.product(
 
     # rename evapotranspiration field
     et_file = os.path.join(
-        DATA_DIR_BASE, "COSMO5-CLM", exp, model,
-        f"day_sum_ET_COSMO5_{model}_{exp}_4km"
+        DATA_DIR_BASE,
+        "COSMO5-CLM",
+        exp,
+        model,
+        f"day_sum_ET_COSMO5_{model}_{exp}_4km",
     )
 
     os.system(f"cdo -s chname,w,ET {et_file}.nc {et_file}_ref.nc")
@@ -69,13 +74,13 @@ for exp, model in itertools.product(
                         f"*mean_T_2M*{model}*{exp}*.nc",
                         f"S1_daymean*{model}*{exp}*.nc",
                         f"*ET*{model}*{exp}*4km_*.nc",
-                        f"*TOT_PREC*{model}*{exp}*.nc"
+                        f"*TOT_PREC*{model}*{exp}*.nc",
                     ]
                 )
             )
         ),
         chunks=CHUNKS,
-        decode_coords="all"
+        decode_coords="all",
     )
 
     # copy CRS
@@ -110,9 +115,9 @@ for exp, model in itertools.product(
         elif v == "PAR":
             var_attrs["units"] = "MJ m⁻² day⁻¹"
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            var_attrs["long_name"] = (
-                "Surface Photosynthetically Active Radiation"
-            )
+            var_attrs[
+                "long_name"
+            ] = "Surface Photosynthetically Active Radiation"
             var_attrs["note"] = (
                 "Calculated by multiplying the surface downwelling shortwave "
                 "radiation (calculated by summing the direct and diffuse "
@@ -155,7 +160,7 @@ for exp, model in itertools.product(
             time=pd.date_range(
                 "1975-01-01T10:30:00", "1975-12-31T10:30:00", freq="D"
             ),
-            kwargs={"fill_value": None}
+            kwargs={"fill_value": None},
         )
 
         # adjustments for 360-day calendar
@@ -190,8 +195,9 @@ for exp, model in itertools.product(
     # assign attributes to the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
-        "and units have been converted. Last updated: " +
-        str(datetime.now(tz=timezone.utc)) + " by nstreethran@ucc.ie."
+        "and units have been converted. Last updated: "
+        + str(datetime.now(tz=timezone.utc))
+        + " by nstreethran@ucc.ie."
     )
 
     # ### Export data

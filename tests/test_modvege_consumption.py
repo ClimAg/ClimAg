@@ -6,6 +6,7 @@ coverage run -m pytest && coverage report -m
 """
 
 import numpy as np
+
 import climag.modvege_consumption as cm
 
 
@@ -22,7 +23,7 @@ def test_organic_matter_digestibility():
         "min_omd_gr": 0.65,
         "lls": 500.0,
         "st_1": 120.0,
-        "st_2": 2300.0
+        "st_2": 2300.0,
     }
 
     ts_vals["age_gv"] = 1000.0
@@ -54,7 +55,7 @@ def test_biomass_ingestion():
         "omd_dv": 0.45,
         "omd_dr": 0.4,
         "st_g1": 180.0,
-        "st_g2": 2300.0
+        "st_g2": 2300.0,
     }
 
     # with stocking rate
@@ -106,7 +107,7 @@ def test_biomass_harvest():
         "bd_dv": 500.0,
         "bd_dr": 150.0,
         "st_h1": 2100.0,
-        "st_g2": 2300.0
+        "st_g2": 2300.0,
     }
 
     # during the harvest season

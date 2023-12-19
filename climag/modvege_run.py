@@ -6,11 +6,13 @@ https://github.com/YannChemin/modvege
 import itertools
 import os
 from datetime import datetime, timezone
+
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 import xarray as xr
+
 from climag.modvege import modvege
 from climag.modvege_read_files import read_params, read_timeseries
 
@@ -40,11 +42,13 @@ output_vars = {
     "abs_dv": ["Abscission of dead vegetative biomass", "kg DM ha⁻¹"],
     "abs_dr": ["Abscission of dead reproductive biomass", "kg DM ha⁻¹"],
     "omd_gv": [
-        "Green vegetative biomass organic matter digestibility", "kg DM ha⁻¹"
+        "Green vegetative biomass organic matter digestibility",
+        "kg DM ha⁻¹",
     ],
     "omd_gr": [
-        "Green reproductive biomass organic matter digestibility", "kg DM ha⁻¹"
-    ]
+        "Green reproductive biomass organic matter digestibility",
+        "kg DM ha⁻¹",
+    ],
 }
 
 
@@ -88,8 +92,12 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
     # plot data
     data_df.plot(
-        subplots=True, layout=(9, 3), figsize=(18, 18),
-        xlabel="", title=plot_title, legend=False
+        subplots=True,
+        layout=(9, 3),
+        figsize=(18, 18),
+        xlabel="",
+        title=plot_title,
+        legend=False,
     )
     plt.tight_layout()
     plt.show()
@@ -111,14 +119,11 @@ def site_specific_params_file(input_params_vector, tseries, params):
                 input_params_vector, layer="hiresireland"
             )
         else:
-            params["gpkg"] = gpd.read_file(
-                input_params_vector, layer="mera"
-            )
+            params["gpkg"] = gpd.read_file(input_params_vector, layer="mera")
 
 
 def run_modvege_nc(
-    input_timeseries_file, input_params_file, out_dir,
-    input_params_vector=None
+    input_timeseries_file, input_params_file, out_dir, input_params_vector=None
 ):
     """
     Input time series: NetCDF (climate data)
@@ -126,7 +131,7 @@ def run_modvege_nc(
 
     print(
         f"Running simulations for input file '{input_timeseries_file}'...",
-        datetime.now(tz=timezone.utc)
+        datetime.now(tz=timezone.utc),
     )
 
     # dictionary to store parameters
@@ -153,31 +158,22 @@ def run_modvege_nc(
 
     # site-specific characteristics that vary spatially
     site_specific_params_file(
-        input_params_vector=input_params_vector,
-        tseries=tseries,
-        params=params
+        input_params_vector=input_params_vector, tseries=tseries, params=params
     )
 
     # get the CRS
     model_vals["data_crs"] = tseries.rio.crs
 
     # loop through each year
-    model_vals["year_list"] = list(
-        sorted(set(tseries["time"].dt.year.values))
-    )
+    model_vals["year_list"] = list(sorted(set(tseries["time"].dt.year.values)))
 
     for year in model_vals["year_list"]:
         tseries_y = tseries.sel(time=slice(f"{year}-01-01", f"{year}-12-31"))
 
         # assign the outputs as new variables
         for key, val in output_vars.items():
-            tseries_y[key] = xr.full_like(
-                tseries_y["PP"], fill_value=np.nan
-            )
-            tseries_y[key].attrs = {
-                "long_name": val[0],
-                "units": val[1]
-            }
+            tseries_y[key] = xr.full_like(tseries_y["PP"], fill_value=np.nan)
+            tseries_y[key].attrs = {"long_name": val[0], "units": val[1]}
 
         # create a dictionary to store the time series output
         # dataframes
@@ -186,7 +182,7 @@ def run_modvege_nc(
         # loop through each grid cell
         for rlon, rlat in itertools.product(
             range(len(tseries_y.coords[xcoord])),
-            range(len(tseries_y.coords[ycoord]))
+            range(len(tseries_y.coords[ycoord])),
         ):
             if "MERA" in input_timeseries_file:
                 tseries_l = tseries_y.isel(x=rlon, y=rlat)
@@ -202,7 +198,7 @@ def run_modvege_nc(
                         "PP": tseries_l["PP"],
                         "PAR": tseries_l["PAR"],
                         "PET": tseries_l["PET"],
-                        "T": tseries_l["T"]
+                        "T": tseries_l["T"],
                     }
                 )
 
@@ -212,14 +208,12 @@ def run_modvege_nc(
                         params["csv"][key] = float(
                             params["gpkg"][
                                 (
-                                    params["gpkg"][xcoord] == float(
-                                        tseries_l[xcoord].values
-                                    )
-                                ) &
-                                (
-                                    params["gpkg"][ycoord] == float(
-                                        tseries_l[ycoord].values
-                                    )
+                                    params["gpkg"][xcoord]
+                                    == float(tseries_l[xcoord].values)
+                                )
+                                & (
+                                    params["gpkg"][ycoord]
+                                    == float(tseries_l[ycoord].values)
                                 )
                             ][key]
                         )
@@ -227,18 +221,23 @@ def run_modvege_nc(
                 # temperatures for calculating ten-day moving averages in the
                 # following year when day < 10
                 model_vals[f"{rlon}_{rlat}_{year}"] = {}
-                model_vals[f"{rlon}_{rlat}_{year}"]["t_init"] = (
-                    data_df[f"{rlon}_{rlat}_{year}"]["T"].iloc[-10:-1]
-                )
+                model_vals[f"{rlon}_{rlat}_{year}"]["t_init"] = data_df[
+                    f"{rlon}_{rlat}_{year}"
+                ]["T"].iloc[-10:-1]
 
                 # starting values
                 if year > model_vals["year_list"][0]:
                     (
-                        params["csv"]["bm_gv"], params["csv"]["bm_gr"],
-                        params["csv"]["bm_dv"], params["csv"]["bm_dr"],
-                        params["csv"]["age_gv"], params["csv"]["age_gr"],
-                        params["csv"]["age_dv"], params["csv"]["age_dr"],
-                        params["csv"]["wr"], model_vals["t_init"]
+                        params["csv"]["bm_gv"],
+                        params["csv"]["bm_gr"],
+                        params["csv"]["bm_dv"],
+                        params["csv"]["bm_dr"],
+                        params["csv"]["age_gv"],
+                        params["csv"]["age_gr"],
+                        params["csv"]["age_dv"],
+                        params["csv"]["age_dr"],
+                        params["csv"]["wr"],
+                        model_vals["t_init"],
                     ) = (
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["bm_gv"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["bm_gr"],
@@ -249,7 +248,7 @@ def run_modvege_nc(
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["age_dv"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["age_dr"],
                         model_vals[f"{rlon}_{rlat}_{year - 1}"]["wr"],
-                        model_vals[f"{rlon}_{rlat}_{year - 1}"]["t_init"]
+                        model_vals[f"{rlon}_{rlat}_{year - 1}"]["t_init"],
                     )
                 else:
                     params["csv"]["wr"] = params["csv"]["whc"]
@@ -260,7 +259,7 @@ def run_modvege_nc(
                     params=params["csv"],
                     tseries=data_df[f"{rlon}_{rlat}_{year}"],
                     endday=len(tseries_l["time"]),
-                    t_init=model_vals["t_init"]
+                    t_init=model_vals["t_init"],
                 )
 
                 # convert output to dataframe
@@ -279,7 +278,7 @@ def run_modvege_nc(
                     model_vals[f"{rlon}_{rlat}_{year}"]["age_gr"],
                     model_vals[f"{rlon}_{rlat}_{year}"]["age_dv"],
                     model_vals[f"{rlon}_{rlat}_{year}"]["age_dr"],
-                    model_vals[f"{rlon}_{rlat}_{year}"]["wr"]
+                    model_vals[f"{rlon}_{rlat}_{year}"]["wr"],
                 ) = (
                     round(
                         data_df[f"{rlon}_{rlat}_{year}"]["bm_gv"].iat[-1], 7
@@ -305,9 +304,7 @@ def run_modvege_nc(
                     round(
                         data_df[f"{rlon}_{rlat}_{year}"]["age_dr"].iat[-1], 7
                     ),
-                    round(
-                        data_df[f"{rlon}_{rlat}_{year}"]["wr"].iat[-1], 7
-                    )
+                    round(data_df[f"{rlon}_{rlat}_{year}"]["wr"].iat[-1], 7),
                 )
 
                 # # drop biomass age columns
@@ -318,11 +315,13 @@ def run_modvege_nc(
 
                 # assign the output variables to the main Xarray dataset
                 for key in output_vars:
-                    tseries_y[key].loc[{
-                        xcoord: tseries_l.coords[xcoord],
-                        ycoord: tseries_l.coords[ycoord],
-                        "time": tseries_l.coords["time"]
-                    }] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
+                    tseries_y[key].loc[
+                        {
+                            xcoord: tseries_l.coords[xcoord],
+                            ycoord: tseries_l.coords[ycoord],
+                            "time": tseries_l.coords["time"],
+                        }
+                    ] = np.array(data_df[f"{rlon}_{rlat}_{year}"][key])
 
         # delete input variables
         tseries_y = tseries_y.drop_vars(list(tseries.data_vars))
@@ -333,7 +332,7 @@ def run_modvege_nc(
             "contact": "nstreethran@ucc.ie",
             "frequency": "day",
             "references": "https://github.com/ClimAg",
-            "input_dataset": tseries.attrs["dataset"]
+            "input_dataset": tseries.attrs["dataset"],
         }
 
         # reassign CRS
@@ -347,13 +346,13 @@ def run_modvege_nc(
                 out_dir,
                 tseries.attrs["dataset"].split("_")[1],
                 tseries.attrs["dataset"].split("_")[4],
-                tseries.attrs["dataset"].split("_")[3]
+                tseries.attrs["dataset"].split("_")[3],
             )
         os.makedirs(model_vals["out_dir"], exist_ok=True)
         tseries_y.to_netcdf(
             os.path.join(
                 model_vals["out_dir"],
-                f"modvege_{tseries.attrs['dataset']}_{year}.nc"
+                f"modvege_{tseries.attrs['dataset']}_{year}.nc",
             )
         )
 
@@ -361,8 +360,7 @@ def run_modvege_nc(
 
 
 def run_modvege(
-    input_params_file, input_timeseries_file, out_dir,
-    input_params_vector=None
+    input_params_file, input_timeseries_file, out_dir, input_params_vector=None
 ):
     """
     Preprocess the inputs to run ModVege as a function and save the results
@@ -379,6 +377,8 @@ def run_modvege(
         run_modvege_csv(input_timeseries_file, input_params_file, out_dir)
     else:  # open the climate model dataset
         run_modvege_nc(
-            input_timeseries_file, input_params_file, out_dir,
-            input_params_vector
+            input_timeseries_file,
+            input_params_file,
+            out_dir,
+            input_params_vector,
         )

@@ -16,6 +16,7 @@ exec(
 
 import os
 import sys
+
 from climag.modvege_run import run_modvege
 
 DATA_DIR = os.path.join("data", "ModVege")
@@ -31,7 +32,7 @@ run_modvege(
         "data", "MERA", "IE_MERA_FC3hr_3_day.nc"
     ),
     out_dir=DATA_DIR,
-    input_params_vector=PARAMS_GPKG_FILE
+    input_params_vector=PARAMS_GPKG_FILE,
 )
 
 sys.exit()

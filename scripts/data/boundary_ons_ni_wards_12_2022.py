@@ -16,6 +16,7 @@ exec(
 
 import os
 from datetime import datetime, timezone
+
 import geopandas as gpd
 import pooch
 
@@ -33,10 +34,7 @@ os.makedirs(SUB_DIR, exist_ok=True)
 # download data if necessary
 if not os.path.isfile(os.path.join(SUB_DIR, FILE_NAME)):
     pooch.retrieve(
-        url=URL,
-        known_hash=KNOWN_HASH,
-        fname=FILE_NAME,
-        path=SUB_DIR
+        url=URL, known_hash=KNOWN_HASH, fname=FILE_NAME, path=SUB_DIR
     )
 
     with open(
@@ -54,7 +52,7 @@ data = data[data["WD22CD"].str.contains("N")]
 
 data.to_file(
     os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="ONS_NI_wards_12_2022_27700"
+    layer="ONS_NI_wards_12_2022_27700",
 )
 
 # reproject to Irish Transverse Mercator
@@ -62,5 +60,5 @@ data.to_crs(2157, inplace=True)
 
 data.to_file(
     os.path.join("data", "boundaries", "boundaries.gpkg"),
-    layer="ONS_NI_wards_12_2022_2157"
+    layer="ONS_NI_wards_12_2022_2157",
 )

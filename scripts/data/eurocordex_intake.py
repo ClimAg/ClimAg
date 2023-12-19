@@ -12,6 +12,7 @@ DKRZ data store
 import json
 import os
 from datetime import datetime, timezone
+
 import intake
 import pooch
 
@@ -32,7 +33,7 @@ timerange = [
     "20510101-20551231",
     "20560101-20601231",
     "20610101-20651231",
-    "20660101-20701231"
+    "20660101-20701231",
 ]
 
 # add additional time ranges for the MOHC datasets, which use a 360-day year
@@ -44,7 +45,7 @@ driving_model_id = [
     "CNRM-CERFACS-CNRM-CM5",
     "ICHEC-EC-EARTH",
     "MPI-M-MPI-ESM-LR",
-    "MOHC-HadGEM2-ES"
+    "MOHC-HadGEM2-ES",
 ]
 
 # create local catalogue
@@ -54,7 +55,7 @@ server = dkrz_cat._entries["dkrz_cordex_disk"]._open_args["esmcol_obj"]
 
 dkrz_cordex = intake.open_esm_datastore(
     server,
-    read_csv_kwargs={"dtype": {"time_min": "string", "time_max": "string"}}
+    read_csv_kwargs={"dtype": {"time_min": "string", "time_max": "string"}},
 )
 
 # download data if necessary
@@ -62,15 +63,13 @@ FILE_NAME = "dkrz_cordex_disk.json"
 KNOWN_HASH = None
 if not os.path.isfile(os.path.join(DATA_DIR_BASE, FILE_NAME)):
     pooch.retrieve(
-        url=server,
-        known_hash=KNOWN_HASH,
-        fname=FILE_NAME,
-        path=DATA_DIR_BASE
+        url=server, known_hash=KNOWN_HASH, fname=FILE_NAME, path=DATA_DIR_BASE
     )
 
     with open(
         os.path.join(DATA_DIR_BASE, f"{FILE_NAME[:-5]}.txt"),
-        "w", encoding="utf-8"
+        "w",
+        encoding="utf-8",
     ) as outfile:
         outfile.write(
             f"Data downloaded on: {datetime.now(tz=timezone.utc)}\n"
@@ -86,7 +85,7 @@ query = {
     "time_range": timerange,
     "model_id": "SMHI-RCA4",
     "driving_model_id": driving_model_id,
-    "member": ["r1i1p1", "r12i1p1"]
+    "member": ["r1i1p1", "r12i1p1"],
 }
 
 cordex_eur11 = dkrz_cordex.search(**query)
@@ -94,16 +93,16 @@ cordex_eur11 = dkrz_cordex.search(**query)
 # drop v1 of MPI-M-MPI-ESM-LR outputs
 cordex_eur11_df = cordex_eur11.df.drop(
     cordex_eur11.df[
-        (cordex_eur11.df["driving_model_id"] == "MPI-M-MPI-ESM-LR") &
-        (cordex_eur11.df["rcm_version_id"] == "v1")
+        (cordex_eur11.df["driving_model_id"] == "MPI-M-MPI-ESM-LR")
+        & (cordex_eur11.df["rcm_version_id"] == "v1")
     ].index
 )
 
 # keep only r12i1p1 outputs of ICHEC-EC-EARTH
 cordex_eur11_df = cordex_eur11_df.drop(
     cordex_eur11_df[
-        (cordex_eur11_df["driving_model_id"] == "ICHEC-EC-EARTH") &
-        (cordex_eur11_df["member"] == "r1i1p1")
+        (cordex_eur11_df["driving_model_id"] == "ICHEC-EC-EARTH")
+        & (cordex_eur11_df["member"] == "r1i1p1")
     ].index
 )
 
@@ -113,17 +112,21 @@ cordex_eur11_df["driving_model"] = cordex_eur11_df["driving_model_id"].replace(
         "CNRM-CERFACS-CNRM-CM5": "CNRM-CM5",
         "ICHEC-EC-EARTH": "EC-EARTH",
         "MOHC-HadGEM2-ES": "HadGEM2-ES",
-        "MPI-M-MPI-ESM-LR": "MPI-ESM-LR"
+        "MPI-M-MPI-ESM-LR": "MPI-ESM-LR",
     }
 )
 
 # replace URI to path to downloaded data
 cordex_eur11_df["uri"] = (
-    DATA_DIR_BASE + os.sep +
-    "RCA4" + os.sep +
-    cordex_eur11_df["experiment_id"] + os.sep +
-    cordex_eur11_df["driving_model"] + os.sep +
-    cordex_eur11_df["uri"].str.split("/").str[-1]
+    DATA_DIR_BASE
+    + os.sep
+    + "RCA4"
+    + os.sep
+    + cordex_eur11_df["experiment_id"]
+    + os.sep
+    + cordex_eur11_df["driving_model"]
+    + os.sep
+    + cordex_eur11_df["uri"].str.split("/").str[-1]
 )
 
 cordex_eur11_df["path"] = cordex_eur11_df["uri"]
@@ -154,10 +157,13 @@ cordex_eur11_cat["description"] = (
     "project. Data has been generated using the DKRZ intake-esm stores. "
     "Data is filtered for the EUR-11 CORDEX domain at the daily frequency, "
     "the historical (1976-2005) and future (rcp45, rcp85) (2041-2070) "
-    "experiments, and the following variables: " + ", ".join(variables) +
-    ". The SMHI-RCA4 RCM and four GCMs (" + ", ".join(driving_model_id) +
-    ") are the models used to generate these data. Last updated: " +
-    str(datetime.now(tz=timezone.utc)) + "."
+    "experiments, and the following variables: "
+    + ", ".join(variables)
+    + ". The SMHI-RCA4 RCM and four GCMs ("
+    + ", ".join(driving_model_id)
+    + ") are the models used to generate these data. Last updated: "
+    + str(datetime.now(tz=timezone.utc))
+    + "."
 )
 
 # save the modified JSON file

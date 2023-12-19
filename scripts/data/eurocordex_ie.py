@@ -20,9 +20,11 @@ import itertools
 import os
 import sys
 from datetime import datetime, timezone
+
 import geopandas as gpd
 import intake
 import xarray as xr
+
 # from dask.distributed import Client
 
 # client = Client(n_workers=2, threads_per_worker=4, memory_limit="3GB")
@@ -53,8 +55,7 @@ experiment_id = list(cordex_eur11_cat.df["experiment_id"].unique())
 
 for exp, model in itertools.product(experiment_id, driving_model):
     cordex_eur11 = cordex_eur11_cat.search(
-        experiment_id=exp,
-        driving_model=model
+        experiment_id=exp, driving_model=model
     )
 
     # auto-rechunking may cause NotImplementedError with object dtype
@@ -65,9 +66,7 @@ for exp, model in itertools.product(experiment_id, driving_model):
         CHUNKS = "auto"
 
     data = xr.open_mfdataset(
-        list(cordex_eur11.df["uri"]),
-        chunks=CHUNKS,
-        decode_coords="all"
+        list(cordex_eur11.df["uri"]), chunks=CHUNKS, decode_coords="all"
     )
 
     # data = xr.open_mfdataset(
@@ -115,9 +114,9 @@ for exp, model in itertools.product(experiment_id, driving_model):
         elif v == "PAR":
             var_attrs["units"] = "MJ m⁻² day⁻¹"
             data[v] = data[v] * (60 * 60 * 24 / 1e6)
-            var_attrs["long_name"] = (
-                "Surface Photosynthetically Active Radiation"
-            )
+            var_attrs[
+                "long_name"
+            ] = "Surface Photosynthetically Active Radiation"
             var_attrs["note"] = (
                 "Calculated by multiplying the surface downwelling "
                 "shortwave radiation with an irradiance ratio of 0.473 "
@@ -147,8 +146,9 @@ for exp, model in itertools.product(experiment_id, driving_model):
     # assign attributes to the data
     data.attrs["comment"] = (
         "This dataset has been clipped with the Island of Ireland's boundary "
-        "and units have been converted. Last updated: " +
-        str(datetime.now(tz=timezone.utc)) + " by nstreethran@ucc.ie."
+        "and units have been converted. Last updated: "
+        + str(datetime.now(tz=timezone.utc))
+        + " by nstreethran@ucc.ie."
     )
 
     # reassign CRS

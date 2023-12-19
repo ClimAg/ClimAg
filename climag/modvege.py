@@ -88,8 +88,9 @@ short leaf lifespan, and early reproductive growth and flowering).
 """
 
 import numpy as np
-import climag.modvege_lib as lm
+
 import climag.modvege_consumption as cm
+import climag.modvege_lib as lm
 
 np.seterr("raise")
 
@@ -200,9 +201,9 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
         # sum of temperatures at the start
         try:
             start = list(
-                timeseries.loc[str(year)]["T"].rolling(6).apply(
-                    lambda x: all(x > 5.0)
-                )
+                timeseries.loc[str(year)]["T"]
+                .rolling(6)
+                .apply(lambda x: all(x > 5.0))
             ).index(1.0)
             # the lowest possible start index would be 5
             # so force the lowest value to zero
@@ -214,19 +215,19 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
             start = int(timeseries.loc[f"{year}-03-15"]["idx"])
 
         # beginning of the reproductive period
-        st_thresholds[year]["st_1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[start]
-        )
+        st_thresholds[year]["st_1"] = timeseries.loc[str(year)]["Tg"].cumsum()[
+            start
+        ]
 
         # beginning of the grazing season
-        st_thresholds[year]["st_g1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[start + 10]
-        )
+        st_thresholds[year]["st_g1"] = timeseries.loc[str(year)][
+            "Tg"
+        ].cumsum()[start + 10]
 
         # end of the reproductive period
-        st_thresholds[year]["st_2"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[-1]
-        )
+        st_thresholds[year]["st_2"] = timeseries.loc[str(year)]["Tg"].cumsum()[
+            -1
+        ]
 
         # end of the grazing and harvesting season
         # use the calculated grazing season length
@@ -236,14 +237,14 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
         #     start + 10 + grazing_season
         # )
         grazing_end = int(timeseries.loc[f"{year}-12-01"]["idx"])
-        st_thresholds[year]["st_g2"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end]
-        )
+        st_thresholds[year]["st_g2"] = timeseries.loc[str(year)][
+            "Tg"
+        ].cumsum()[grazing_end]
 
         # beginning of harvest
-        st_thresholds[year]["st_h1"] = (
-            timeseries.loc[str(year)]["Tg"].cumsum()[grazing_end - 1]
-        )
+        st_thresholds[year]["st_h1"] = timeseries.loc[str(year)][
+            "Tg"
+        ].cumsum()[grazing_end - 1]
 
     timeseries.reset_index(inplace=True)
     timeseries.drop(columns=["Tg", "idx"], inplace=True)
@@ -314,7 +315,7 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         "abs_dv": [],
         "abs_dr": [],
         "omd_gv": [],
-        "omd_gr": []
+        "omd_gr": [],
     }
 
     # dictionary to store intermediate time series values
@@ -327,17 +328,25 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
         # assume that the initial value of WR = WHC
         if i == 0:
             (
-                ts_vals["bm_gv"], ts_vals["bm_gr"],
-                ts_vals["bm_dv"], ts_vals["bm_dr"],
-                ts_vals["age_gv"], ts_vals["age_gr"],
-                ts_vals["age_dv"], ts_vals["age_dr"],
-                ts_vals["wr"]
+                ts_vals["bm_gv"],
+                ts_vals["bm_gr"],
+                ts_vals["bm_dv"],
+                ts_vals["bm_dr"],
+                ts_vals["age_gv"],
+                ts_vals["age_gr"],
+                ts_vals["age_dv"],
+                ts_vals["age_dr"],
+                ts_vals["wr"],
             ) = (
-                params["bm_gv"], params["bm_gr"],
-                params["bm_dv"], params["bm_dr"],
-                params["age_gv"], params["age_gr"],
-                params["age_dv"], params["age_dr"],
-                params["wr"]
+                params["bm_gv"],
+                params["bm_gr"],
+                params["bm_dv"],
+                params["bm_dr"],
+                params["age_gv"],
+                params["age_gr"],
+                params["age_dv"],
+                params["age_dr"],
+                params["wr"],
             )
 
         # initialise ingested/harvested biomass and temperature sum
@@ -437,16 +446,36 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
 
         # net standing biomass
         outputs_dict["bm"].append(
-            ts_vals["bm_gv"] + ts_vals["bm_gr"] +
-            ts_vals["bm_dv"] + ts_vals["bm_dr"]
+            ts_vals["bm_gv"]
+            + ts_vals["bm_gr"]
+            + ts_vals["bm_dv"]
+            + ts_vals["bm_dr"]
         )
 
         for out in [
-            "bm_gv", "bm_gr", "bm_dv", "bm_dr",
-            "age_gv", "age_gr", "age_dv", "age_dr",
-            "pgro", "gro", "i_bm", "h_bm", "c_bm",
-            "env", "lai", "aet", "wr",
-            "sen_gv", "sen_gr", "abs_dv", "abs_dr", "omd_gv", "omd_gr"
+            "bm_gv",
+            "bm_gr",
+            "bm_dv",
+            "bm_dr",
+            "age_gv",
+            "age_gr",
+            "age_dv",
+            "age_dr",
+            "pgro",
+            "gro",
+            "i_bm",
+            "h_bm",
+            "c_bm",
+            "env",
+            "lai",
+            "aet",
+            "wr",
+            "sen_gv",
+            "sen_gr",
+            "abs_dv",
+            "abs_dr",
+            "omd_gv",
+            "omd_gr",
         ]:
             outputs_dict[out].append(ts_vals[out])
 

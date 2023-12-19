@@ -7,13 +7,12 @@ directory
 import os
 import re
 from datetime import datetime, timezone
+
 import requests
 
 
 # define function to download data
-def download_data(
-    server, dl_dir="data", params=None, chunk_size=1048676
-):
+def download_data(server, dl_dir="data", params=None, chunk_size=1048676):
     """
     Download data using specified URL and optional parameters into
     the specified directory
@@ -35,20 +34,22 @@ def download_data(
         req = requests.get(server, params=params, stream=True, timeout=3000)
         req.raise_for_status()  # raise exceptions in case of HTTP errors
         if (
-            "Content-Disposition" in req.headers.keys() and
-            "filename" in req.headers["Content-Disposition"]
+            "Content-Disposition" in req.headers.keys()
+            and "filename" in req.headers["Content-Disposition"]
         ):
             file_name = re.findall(
                 "filename=(.+)", req.headers["Content-Disposition"]
-            )[0].replace('"', '')
+            )[0].replace('"', "")
         else:
             file_name = server.split("/")[-1]
         with open(os.path.join(dl_dir, file_name), "wb") as file_dl:
             for chunk in req.iter_content(chunk_size=chunk_size):
                 file_dl.write(chunk)
         print(
-            "Data successfully downloaded to", dl_dir,
-            "\nLast downloaded:", datetime.now(tz=timezone.utc)
+            "Data successfully downloaded to",
+            dl_dir,
+            "\nLast downloaded:",
+            datetime.now(tz=timezone.utc),
         )
     except requests.exceptions.RequestException as err:
         print("Data download unsuccessful!", err)

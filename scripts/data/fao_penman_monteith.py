@@ -122,8 +122,8 @@ def saturation_vapour_pressure(t_max: float, t_min: float) -> float:
     """
 
     return (
-        saturation_vapour_pressure_temp(t_air=t_max) +
-        saturation_vapour_pressure_temp(t_air=t_min)
+        saturation_vapour_pressure_temp(t_air=t_max)
+        + saturation_vapour_pressure_temp(t_air=t_min)
     ) / 2
 
 
@@ -154,9 +154,9 @@ def slope_vapour_pressure_curve_temp(t_air: float) -> float:
     """
 
     return (
-        4098 *
-        (0.6108 * np.exp((17.27 * t_air) / (t_air + 237.3))) /
-        np.power((t_air + 273.3), 2)
+        4098
+        * (0.6108 * np.exp((17.27 * t_air) / (t_air + 237.3)))
+        / np.power((t_air + 273.3), 2)
     )
 
 
@@ -168,8 +168,8 @@ def slope_vapour_pressure_curve(t_max: float, t_min: float) -> float:
     """
 
     return (
-        slope_vapour_pressure_curve_temp(t_air=t_max) +
-        slope_vapour_pressure_curve_temp(t_air=t_min)
+        slope_vapour_pressure_curve_temp(t_air=t_max)
+        + slope_vapour_pressure_curve_temp(t_air=t_min)
     ) / 2
 
 
@@ -381,8 +381,12 @@ def saturation_vapour_pressure_deficit(e_s: float, e_a: float) -> float:
 
 
 def fao_penman_monteith(
-    r_n: float, t_mean: float, w_2: float, e_deficit: float,
-    delta: float, gamma: float
+    r_n: float,
+    t_mean: float,
+    w_2: float,
+    e_deficit: float,
+    delta: float,
+    gamma: float,
 ) -> float:
     """
     The FAO Penman-Monteith equation.
@@ -424,9 +428,6 @@ def fao_penman_monteith(
     """
 
     return (
-        (
-            (0.408 * delta * r_n) +
-            (gamma * (900 / (t_mean + 273)) * w_2 * e_deficit)
-        ) /
-        (delta + (gamma * (1 + 0.34 * w_2)))
-    )
+        (0.408 * delta * r_n)
+        + (gamma * (900 / (t_mean + 273)) * w_2 * e_deficit)
+    ) / (delta + (gamma * (1 + 0.34 * w_2)))

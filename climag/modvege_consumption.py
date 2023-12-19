@@ -54,17 +54,17 @@ def organic_matter_digestibility(
     """
 
     ts_vals["omd_gv"] = max(
-        params["max_omd_gv"] -
-        (ts_vals["age_gv"] * (params["max_omd_gv"] - params["min_omd_gv"])) /
-        params["lls"],
-        params["min_omd_gv"]
+        params["max_omd_gv"]
+        - (ts_vals["age_gv"] * (params["max_omd_gv"] - params["min_omd_gv"]))
+        / params["lls"],
+        params["min_omd_gv"],
     )
 
     ts_vals["omd_gr"] = max(
-        params["max_omd_gr"] -
-        (ts_vals["age_gr"] * (params["max_omd_gr"] - params["min_omd_gr"])) /
-        (params["st_2"] - params["st_1"]),
-        params["min_omd_gr"]
+        params["max_omd_gr"]
+        - (ts_vals["age_gr"] * (params["max_omd_gr"] - params["min_omd_gr"]))
+        / (params["st_2"] - params["st_1"]),
+        params["min_omd_gr"],
     )
 
 
@@ -149,19 +149,18 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["sr"] > 0.0 and
-        params["h_grass"] >= 0.0 and
-        params["st_g1"] <= ts_vals["st"] <= params["st_g2"]
+        params["sr"] > 0.0
+        and params["h_grass"] >= 0.0
+        and params["st_g1"] <= ts_vals["st"] <= params["st_g2"]
     ):
-
         # max available compartmental biomass
         available_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:
             residual_biomass = params["h_grass"] * params[f"bd_{key}"] * 10.0
             if residual_biomass < ts_vals[f"bm_{key}"]:
                 available_biomass[f"bm_{key}"] = (
-                    (ts_vals[f"bm_{key}"] - residual_biomass) * 0.9
-                )
+                    ts_vals[f"bm_{key}"] - residual_biomass
+                ) * 0.9
             else:
                 available_biomass[f"bm_{key}"] = 0.0
 
@@ -173,8 +172,10 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
         ingested = {}
 
         weights_total = (
-            ts_vals["omd_gv"] + ts_vals["omd_gr"] +
-            params["omd_dv"] + params["omd_dr"]
+            ts_vals["omd_gv"]
+            + ts_vals["omd_gr"]
+            + params["omd_dv"]
+            + params["omd_dr"]
         )
 
         weights["bm_gv"] = ts_vals["omd_gv"] / weights_total
@@ -201,14 +202,18 @@ def biomass_ingestion(ts_vals: dict[str, float], params: dict[str, float]):
 
         # total ingestion
         ts_vals["i_bm"] += (
-            ingested["bm_gv"] + ingested["bm_gr"] +
-            ingested["bm_dv"] + ingested["bm_dr"]
+            ingested["bm_gv"]
+            + ingested["bm_gr"]
+            + ingested["bm_dv"]
+            + ingested["bm_dr"]
         )
 
         # daily values
         ts_vals["c_bm"] = (
-            ingested["bm_gv"] + ingested["bm_gr"] +
-            ingested["bm_dv"] + ingested["bm_dr"]
+            ingested["bm_gv"]
+            + ingested["bm_gr"]
+            + ingested["bm_dv"]
+            + ingested["bm_dr"]
         )
 
     else:
@@ -270,8 +275,8 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
     """
 
     if (
-        params["h_grass"] >= 0.0 and
-        params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
+        params["h_grass"] >= 0.0
+        and params["st_h1"] <= ts_vals["st"] <= params["st_g2"]
     ):
         harvested_biomass = {}
         for key in ["gv", "gr", "dv", "dr"]:
@@ -280,14 +285,16 @@ def biomass_harvest(ts_vals: dict[str, float], params: dict[str, float]):
             harvested_biomass[f"bm_{key}"] = 0.0
             if residual_biomass < ts_vals[f"bm_{key}"]:
                 harvested_biomass[f"bm_{key}"] += (
-                    (ts_vals[f"bm_{key}"] - residual_biomass) * 0.9
-                )
+                    ts_vals[f"bm_{key}"] - residual_biomass
+                ) * 0.9
             # update biomass compartments
             # 10% of biomass is lost during harvest
             ts_vals[f"bm_{key}"] -= harvested_biomass[f"bm_{key}"] / 0.9
 
         # total harvested biomass
         ts_vals["h_bm"] += (
-            harvested_biomass["bm_gv"] + harvested_biomass["bm_gr"] +
-            harvested_biomass["bm_dv"] + harvested_biomass["bm_dr"]
+            harvested_biomass["bm_gv"]
+            + harvested_biomass["bm_gr"]
+            + harvested_biomass["bm_dv"]
+            + harvested_biomass["bm_dr"]
         )

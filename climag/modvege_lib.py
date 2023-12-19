@@ -35,9 +35,10 @@ def leaf_area_index(
 
     # use the sum of both green compartments
     return (
-        params["sla"] *
-        (ts_vals["bm_gv"] + ts_vals["bm_gr"]) / 10.0 *
-        params["pct_lam"]
+        params["sla"]
+        * (ts_vals["bm_gv"] + ts_vals["bm_gr"])
+        / 10.0
+        * params["pct_lam"]
     )
     # return (
     #     params["sla"] *
@@ -104,8 +105,10 @@ def potential_growth(
     """
 
     return (
-        par_i * params["rue_max"] *
-        (1.0 - np.exp(-0.6 * ts_vals["lai"])) * 10.0
+        par_i
+        * params["rue_max"]
+        * (1.0 - np.exp(-0.6 * ts_vals["lai"]))
+        * 10.0
     )
 
 
@@ -142,8 +145,10 @@ def par_function(par_i: float) -> float:
 
 
 def sum_of_temperatures(
-    params: dict[str, float], ts_vals: dict[str, float],
-    t_ts: list[float], day: int
+    params: dict[str, float],
+    ts_vals: dict[str, float],
+    t_ts: list[float],
+    day: int,
 ) -> float:
     """
     Return the sum of temperatures for each day of the year above the minimum
@@ -253,8 +258,8 @@ def temperature_function(
     """
 
     if (
-        ts_vals["t_m10"] <= params["t_0"] or
-        ts_vals["t_m10"] >= params["t_max"]
+        ts_vals["t_m10"] <= params["t_0"]
+        or ts_vals["t_m10"] >= params["t_max"]
     ):
         val = 0.0
     elif params["t_0"] < ts_vals["t_m10"] < params["t_1"]:
@@ -388,14 +393,11 @@ def water_reserves(
     """
 
     return min(
-        max(0.0, ts_vals["wr"] + precipitation - ts_vals["aet"]),
-        params["whc"]
+        max(0.0, ts_vals["wr"] + precipitation - ts_vals["aet"]), params["whc"]
     )
 
 
-def water_stress(
-    ts_vals: dict[str, float], params: dict[str, float]
-) -> float:
+def water_stress(ts_vals: dict[str, float], params: dict[str, float]) -> float:
     """
     Calculate the water stress (*W*).
 
@@ -504,9 +506,9 @@ def reproductive_function(
     """
 
     if (
-        ts_vals["st"] < params["st_1"] or
-        ts_vals["i_bm"] > 0.0 or
-        ts_vals["h_bm"] > 0.0
+        ts_vals["st"] < params["st_1"]
+        or ts_vals["i_bm"] > 0.0
+        or ts_vals["h_bm"] > 0.0
     ):
         val = 0.0
     else:
@@ -537,8 +539,10 @@ def environmental_limitation(
     """
 
     return (
-        ts_vals["f_t"] * params["ni"] *
-        par_function(par_i=par_i) * ts_vals["f_w"]
+        ts_vals["f_t"]
+        * params["ni"]
+        * par_function(par_i=par_i)
+        * ts_vals["f_w"]
     )
 
 
@@ -608,8 +612,10 @@ def abscission(
         ts_vals["f_age_dv"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dv"] = (
-            params["kl_dv"] * ts_vals["bm_dv"] *
-            temperature * ts_vals["f_age_dv"]
+            params["kl_dv"]
+            * ts_vals["bm_dv"]
+            * temperature
+            * ts_vals["f_age_dv"]
         )
     else:
         ts_vals["abs_dv"] = 0.0
@@ -623,8 +629,10 @@ def abscission(
         ts_vals["f_age_dr"] = 3.0
     if temperature > 0.0:
         ts_vals["abs_dr"] = (
-            params["kl_dr"] * ts_vals["bm_dr"] *
-            temperature * ts_vals["f_age_dr"]
+            params["kl_dr"]
+            * ts_vals["bm_dr"]
+            * temperature
+            * ts_vals["f_age_dr"]
         )
     else:
         ts_vals["abs_dr"] = 0.0
@@ -683,8 +691,10 @@ def senescence(
         ts_vals["f_age_gv"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gv"] = (
-            params["k_gv"] * ts_vals["bm_gv"] *
-            temperature * ts_vals["f_age_gv"]
+            params["k_gv"]
+            * ts_vals["bm_gv"]
+            * temperature
+            * ts_vals["f_age_gv"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gv"] = (
@@ -701,15 +711,17 @@ def senescence(
         gradient = (3.0 - 1.0) / (1.0 - 1.0 / 3.0)
         intercept = 3.0 - gradient * 1.0
         ts_vals["f_age_gr"] = (
-            gradient * ts_vals["age_gr"] /
-            (params["st_2"] - params["st_1"]) + intercept
+            gradient * ts_vals["age_gr"] / (params["st_2"] - params["st_1"])
+            + intercept
         )
     else:
         ts_vals["f_age_gr"] = 3.0
     if temperature > params["t_0"]:
         ts_vals["sen_gr"] = (
-            params["k_gr"] * ts_vals["bm_gr"] *
-            temperature * ts_vals["f_age_gr"]
+            params["k_gr"]
+            * ts_vals["bm_gr"]
+            * temperature
+            * ts_vals["f_age_gr"]
         )
     elif temperature < 0.0:
         ts_vals["sen_gr"] = (
@@ -738,7 +750,7 @@ def biomass_growth(ts_vals: dict[str, float]) -> float:
 
     return (
         ts_vals["gro"] * (1.0 - ts_vals["rep"]),
-        ts_vals["gro"] * ts_vals["rep"]
+        ts_vals["gro"] * ts_vals["rep"],
     )
 
 
@@ -777,26 +789,30 @@ def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
 
     # GV compartment
     ts_vals["bm_gv"] = (
-        ts_vals["bm_gv"] +
-        biomass_growth(ts_vals=ts_vals)[0] - ts_vals["sen_gv"]
+        ts_vals["bm_gv"]
+        + biomass_growth(ts_vals=ts_vals)[0]
+        - ts_vals["sen_gv"]
     )
 
     # GR compartment
     ts_vals["bm_gr"] = (
-        ts_vals["bm_gr"] +
-        biomass_growth(ts_vals=ts_vals)[1] - ts_vals["sen_gr"]
+        ts_vals["bm_gr"]
+        + biomass_growth(ts_vals=ts_vals)[1]
+        - ts_vals["sen_gr"]
     )
 
     # DV compartment
     ts_vals["bm_dv"] = (
-        ts_vals["bm_dv"] +
-        (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"] - ts_vals["abs_dv"]
+        ts_vals["bm_dv"]
+        + (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"]
+        - ts_vals["abs_dv"]
     )
 
     # DR compartment
     ts_vals["bm_dr"] = (
-        ts_vals["bm_dr"] +
-        (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"] - ts_vals["abs_dr"]
+        ts_vals["bm_dr"]
+        + (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"]
+        - ts_vals["abs_dr"]
     )
 
 
@@ -846,43 +862,47 @@ def biomass_age(
     # GV compartment
     if temperature > 0.0 and ts_vals["bm_gv"] > 0.0:
         ts_vals["age_gv"] = (
-            (ts_vals["bm_gv"] - ts_vals["sen_gv"]) /
-            (
-                ts_vals["bm_gv"] - ts_vals["sen_gv"] +
-                biomass_growth(ts_vals=ts_vals)[0]
-            ) *
-            (ts_vals["age_gv"] + temperature)
+            (ts_vals["bm_gv"] - ts_vals["sen_gv"])
+            / (
+                ts_vals["bm_gv"]
+                - ts_vals["sen_gv"]
+                + biomass_growth(ts_vals=ts_vals)[0]
+            )
+            * (ts_vals["age_gv"] + temperature)
         )
 
     # GR compartment
     if temperature > 0.0 and ts_vals["bm_gr"] > 0.0:
         ts_vals["age_gr"] = (
-            (ts_vals["bm_gr"] - ts_vals["sen_gr"]) /
-            (
-                ts_vals["bm_gr"] - ts_vals["sen_gr"] +
-                biomass_growth(ts_vals=ts_vals)[1]
-            ) *
-            (ts_vals["age_gr"] + temperature)
+            (ts_vals["bm_gr"] - ts_vals["sen_gr"])
+            / (
+                ts_vals["bm_gr"]
+                - ts_vals["sen_gr"]
+                + biomass_growth(ts_vals=ts_vals)[1]
+            )
+            * (ts_vals["age_gr"] + temperature)
         )
 
     # DV compartment
     if temperature > 0.0 and ts_vals["bm_dv"] > 0.0:
         ts_vals["age_dv"] = (
-            (ts_vals["bm_dv"] - ts_vals["abs_dv"]) /
-            (
-                ts_vals["bm_dv"] - ts_vals["abs_dv"] +
-                (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"]
-            ) *
-            (ts_vals["age_dv"] + temperature)
+            (ts_vals["bm_dv"] - ts_vals["abs_dv"])
+            / (
+                ts_vals["bm_dv"]
+                - ts_vals["abs_dv"]
+                + (1.0 - params["sigma_gv"]) * ts_vals["sen_gv"]
+            )
+            * (ts_vals["age_dv"] + temperature)
         )
 
     # DR compartment
     if temperature > 0.0 and ts_vals["bm_dr"] > 0.0:
         ts_vals["age_dr"] = (
-            (ts_vals["bm_dr"] - ts_vals["abs_dr"]) /
-            (
-                ts_vals["bm_dr"] - ts_vals["abs_dr"] +
-                (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"]
-            ) *
-            (ts_vals["age_dr"] + temperature)
+            (ts_vals["bm_dr"] - ts_vals["abs_dr"])
+            / (
+                ts_vals["bm_dr"]
+                - ts_vals["abs_dr"]
+                + (1.0 - params["sigma_gr"]) * ts_vals["sen_gr"]
+            )
+            * (ts_vals["age_dr"] + temperature)
         )

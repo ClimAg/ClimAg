@@ -17,8 +17,10 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from itertools import chain
+
 import geopandas as gpd
 import xarray as xr
+
 import climag.plot_configs as cplt
 
 print("Begin MÉRA data processing...", datetime.now(tz=timezone.utc))
@@ -33,17 +35,17 @@ NC_DIR = os.path.join("/run/media/nms/MyPassport", "MERA", "netcdf")
 
 # list of folders containing variables
 var_dirs = [
-    "1_105_0_0",    # surface pressure
-    "11_105_2_0",   # 2 m temperature
-    "15_105_2_2",   # max temperature
-    "16_105_2_2",   # min temperature
+    "1_105_0_0",  # surface pressure
+    "11_105_2_0",  # 2 m temperature
+    "15_105_2_2",  # max temperature
+    "16_105_2_2",  # min temperature
     "33_105_10_0",  # u-component of 10 m wind
     "34_105_10_0",  # v-component of 10 m wind
-    "52_105_2_0",   # 2 m relative humidity
-    "61_105_0_4",   # total precipitation
+    "52_105_2_0",  # 2 m relative humidity
+    "61_105_0_4",  # total precipitation
     "111_105_0_4",  # net shortwave irradiance
     "112_105_0_4",  # net longwave irradiance
-    "117_105_0_4"   # global irradiance
+    "117_105_0_4",  # global irradiance
 ]
 
 for var in var_dirs:
@@ -54,10 +56,14 @@ for var in var_dirs:
     os.makedirs(os.path.join(NC_DIR, f"{var}_FC3hr"), exist_ok=True)
 
     # list of files; 1981 to 2020
-    file_list = list(chain(*list(
-        glob.glob(os.path.join(DATA_DIR, f"{var}_FC3hr", e))
-        for e in [f"*{i}*{var}_FC3hr*" for i in range(1981, 2020)]
-    )))
+    file_list = list(
+        chain(
+            *list(
+                glob.glob(os.path.join(DATA_DIR, f"{var}_FC3hr", e))
+                for e in [f"*{i}*{var}_FC3hr*" for i in range(1981, 2020)]
+            )
+        )
+    )
 
     for f in file_list:
         # if the GRIB file is archived, decompress it
@@ -94,11 +100,10 @@ for var in var_dirs:
         data = data.rename({list(data.data_vars)[0]: data_varname})
         data[data_varname].attrs = data_attrs
         data = data.rio.clip(
-            ie.buffer(1).to_crs(cplt.projection_lambert_conformal), all_touched=True
+            ie.buffer(1).to_crs(cplt.projection_lambert_conformal),
+            all_touched=True,
         )
-        data.to_netcdf(
-            os.path.join(NC_DIR, f"{var}_FC3hr", file_name + ".nc")
-        )
+        data.to_netcdf(os.path.join(NC_DIR, f"{var}_FC3hr", file_name + ".nc"))
 
         # delete intermediate files
         os.system(f"rm -r {os.path.join(TEMP_DIR, '*')}")
