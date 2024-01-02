@@ -1,6 +1,6 @@
 [submodule "data"]
 	path = data
 	url = git@github.com:ClimAg/data.git
-[submodule "jupyter-notebooks"]
-	path = jupyter-notebooks
-	url = git@github.com:ClimAg/jupyter-notebooks.git
+[submodule "docs"]
+	path = docs
+	url = git@github.com:ClimAg/docs.git
