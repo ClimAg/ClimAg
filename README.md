@@ -1,5 +1,7 @@
 # ClimAg: Multifactorial causes of fodder crises in Ireland and risks due to climate change
 
+[![Documentation Status](https://readthedocs.org/projects/climag/badge/?version=latest)](https://climag.readthedocs.io/en/latest/?badge=latest)
+
 ![ClimAg project logos](https://raw.githubusercontent.com/ClimAg/.github/main/images/logos.png)
 
 [ClimAg] is a three-year research project funded by the [Irish Environmental Protection Agency (EPA)][EPA] under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority][HEA].
@@ -11,9 +13,13 @@ ClimAg seeks to identify the multifactorial drivers of fodder crises by:
 - developing a detailed understanding of the multiple interlinked drivers of previous fodder crises affecting the Irish agricultural sector
 - combining datasets from 21st century climate simulations with grass growth models to predict the frequency and severity of fodder crisis events under future climate change scenarios
 
+## Documentation
+
+Available at: <https://climag.readthedocs.io/>
+
 ## Repositories
 
-[This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis. Separate repositories host [Jupyter notebooks](https://github.com/ClimAg/jupyter-notebooks) and [information about the datasets used](https://github.com/ClimAg/data).
+All repositories can be found in the [ClimAg GitHub organisation](https://github.com/ClimAg). [This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis. Separate repositories host [the documentation and Jupyter notebooks](https://github.com/ClimAg/docs) and [information about the datasets used](https://github.com/ClimAg/data).
 
 ## Installation
 
