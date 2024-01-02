@@ -15,6 +15,34 @@ ClimAg seeks to identify the multifactorial drivers of fodder crises by:
 
 [This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis. Separate repositories host [Jupyter notebooks](https://github.com/ClimAg/jupyter-notebooks) and [information about the datasets used](https://github.com/ClimAg/data).
 
+## Installation
+
+This project uses Conda with Python 3.10.
+
+Create a virtual environment and install all requirements:
+
+```sh
+conda env create
+```
+
+Activate the virtual environment:
+
+```sh
+conda activate ClimAg
+```
+
+To run tests:
+
+```sh
+python -m pytest
+```
+
+To generate a coverage report with the tests:
+
+```sh
+python -m coverage run -m pytest && coverage report -m
+```
+
 ## Licence
 
 Copyright 2022-2023 N. M. Streethran

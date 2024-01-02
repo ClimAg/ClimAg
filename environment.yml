@@ -4,20 +4,22 @@ channels:
   - defaults
 dependencies:
   - python=3.10
+  - aiohttp
+  - cartopy
+  - cdo  # unavailable on Windows; use Conda with WSL
+  - cfgrib
   - dask
-  - rioxarray
   - geopandas
   - intake-esm
-  - cartopy
-  - aiohttp
-  - odfpy
-  - cfgrib
-  - netcdf4
-  - pooch
-  - rasterstats
-  - cdo  # unavailable on Windows; use Conda with WSL
+  - mapclassify
   - matplotlib
   - nc-time-axis
+  - netcdf4
+  - odfpy
+  - pooch
+  - rasterstats
+  - rioxarray
   - seaborn
-  - mapclassify
-  - qgis
+  - pytest
+  - coverage
+  - jupyterlab
