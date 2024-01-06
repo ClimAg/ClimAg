@@ -1,0 +1,8 @@
+jupyterlab
+pytest
+coverage
+pylint
+flake8
+pydata-sphinx-theme
+black[jupyter]
+myst-nb

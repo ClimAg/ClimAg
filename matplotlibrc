@@ -52,5 +52,3 @@ xtick.labelsize: 13
 ytick.labelsize: 13
 image.cmap: Spectral_r
 axes.edgecolor: darkslategrey
-# Solarized colour cycle
-axes.prop_cycle: cycler('color', ['268BD2', '2AA198', '859900', 'B58900', 'CB4B16', 'DC322F', 'D33682', '6C71C4'])

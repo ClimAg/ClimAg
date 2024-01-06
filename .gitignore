@@ -128,10 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-## Other
 draft/
 *.access*
-.vscode/
 tests/data
 .fuse_*
 .empty/
