@@ -1,13 +1,12 @@
 """modvege.py
 
 This is a Python implementation of the ModVege pasture model, a modified
-version of the original Java to Python translation by Chemin (2022).
+version of the original Java to Python translation by Y. Chemin.
 The Java model was provided by Raphael Martin, INRAE UREP Clermont-Ferrand
 for the original Python implementation.
 The original ModVege pasture model was developed by Jouven et al. (2006a).
 
-Chemin, Y. (2022). 'modvege', Python. [Online]. Available at
-https://github.com/YannChemin/modvege (Accessed 6 September 2022).
+https://code.europa.eu/agri4cast/modvege
 
 References
 ----------
@@ -162,7 +161,6 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
     maximised.
     The end of harvest is the same as the end of the grazing season.
     """
-
     st_thresholds = {}
 
     timeseries.sort_values(by=["time"], inplace=True)
@@ -284,7 +282,6 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
     - Environmental limitation of growth [dimensionless]
     - Reproductive function [dimensionless]
     """
-
     st_thresholds = sum_of_temperature_thresholds(
         timeseries=tseries, params=params
     )

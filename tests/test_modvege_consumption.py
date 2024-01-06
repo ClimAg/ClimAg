@@ -1,8 +1,5 @@
-"""test_modvege_consumption.py
+"""Tests for `climag.modvege_consumption`
 
-Tests for modvege_consumption.py
-
-coverage run -m pytest && coverage report -m
 """
 
 import numpy as np
@@ -11,10 +8,7 @@ import climag.modvege_consumption as cm
 
 
 def test_organic_matter_digestibility():
-    """
-    Test the organic matter digestibility function
-    """
-
+    """Test `climag.modvege_consumption.organic_matter_digestibility`"""
     ts_vals = {}
     params = {
         "max_omd_gv": 0.9,
@@ -34,10 +28,7 @@ def test_organic_matter_digestibility():
 
 
 def test_biomass_ingestion():
-    """
-    Test the biomass ingestion function
-    """
-
+    """Test `climag.modvege_consumption.biomass_ingestion`"""
     ts_vals = {
         "bm_gv": 1700.5,
         "bm_gr": 254.7,
@@ -91,10 +82,7 @@ def test_biomass_ingestion():
 
 
 def test_biomass_harvest():
-    """
-    Test the biomass ingestion function
-    """
-
+    """Test `climag.modvege_consumption.biomass_harvest`"""
     ts_vals = {
         "bm_gv": 700.5,
         "bm_gr": 254.7,

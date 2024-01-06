@@ -1,6 +1,6 @@
-"""modvege_read_files.py
+"""Functions for reading parameters and time series data
 
-https://github.com/YannChemin/modvege
+https://code.europa.eu/agri4cast/modvege
 
 ModVege has four compartments:
 Green vegetative          (GV)
@@ -13,8 +13,7 @@ import pandas as pd
 
 
 def read_params(filename: str) -> dict[str, float]:
-    """
-    Read the input parameters (constants) file
+    """Read the input parameters (constants) file
 
     See Tables 2 and 3 in Jouven et al. (2006a) for estimates of these
     parameters. Temperate grasses have been classified into four groups based
@@ -97,7 +96,6 @@ def read_params(filename: str) -> dict[str, float]:
     -------
     - A dictionary of the input parameters
     """
-
     params = (
         pd.read_csv(filename, header=None, index_col=0).squeeze().to_dict()
     )
@@ -105,8 +103,7 @@ def read_params(filename: str) -> dict[str, float]:
 
 
 def read_timeseries(filename: str):
-    """
-    Read the time series input data
+    """Read the time series input data
 
     Definition of inputs
     --------------------
@@ -125,7 +122,6 @@ def read_timeseries(filename: str):
     - A dataframe of the input time series data
     - Length of the data (total number of days)
     """
-
     timeseries = pd.read_csv(filename, parse_dates=["time"])
     timeseries.sort_values(by=["time"], inplace=True)
     timeseries["doy"] = timeseries.set_index("time").index.dayofyear

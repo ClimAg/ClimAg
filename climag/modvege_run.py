@@ -1,6 +1,6 @@
 """modvege_run.py
 
-https://github.com/YannChemin/modvege
+https://code.europa.eu/agri4cast/modvege
 """
 
 import itertools
@@ -53,11 +53,10 @@ output_vars = {
 
 
 def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
-    """
-    Input time series: CSV
+    """Input time series: CSV
+
     Also creates time series plots
     """
-
     # read parameter file into a dataframe
     params = read_params(filename=input_params_file)
 
@@ -107,7 +106,6 @@ def site_specific_params_file(input_params_vector, tseries, params):
     """
     Load the site-specific characteristics layers that vary spatially
     """
-
     # site-specific characteristics that vary spatially
     if input_params_vector is not None:
         if "EURO-CORDEX" in tseries.attrs["dataset"]:
@@ -128,7 +126,6 @@ def run_modvege_nc(
     """
     Input time series: NetCDF (climate data)
     """
-
     print(
         f"Running simulations for input file '{input_timeseries_file}'...",
         datetime.now(tz=timezone.utc),
@@ -372,7 +369,6 @@ def run_modvege(
     input_timeseries_file : File path for the input time series
     out_dir : Directory to store output file(s)
     """
-
     if input_timeseries_file.endswith(".csv"):
         run_modvege_csv(input_timeseries_file, input_params_file, out_dir)
     else:  # open the climate model dataset

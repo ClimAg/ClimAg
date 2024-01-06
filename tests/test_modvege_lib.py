@@ -1,8 +1,5 @@
-"""test_modvege_lib.py
+"""Tests for `climag.modvege_lib`
 
-Tests for modvege_lib.py
-
-coverage run -m pytest && coverage report -m
 """
 
 import numpy as np
@@ -11,13 +8,9 @@ import climag.modvege_lib as lm
 
 
 def test_leaf_area_index():
-    """
-    Test leaf_area_index
-    """
-
+    """Test leaf_area_index"""
     ts_vals = {"bm_gv": 1200.0, "bm_gr": 500.0}
     params = {"sla": 0.033, "pct_lam": 0.68}
-
     assert lm.leaf_area_index(ts_vals=ts_vals, params=params) == (
         params["sla"]
         * (ts_vals["bm_gv"] + ts_vals["bm_gr"])
@@ -27,30 +20,21 @@ def test_leaf_area_index():
 
 
 def test_actual_evapotranspiration():
-    """
-    Test actual_evapotranspiration
-    """
-
+    """Test actual_evapotranspiration"""
     pet = 3.5
     ts_vals = {}
-
     ts_vals["lai"] = 0.9
     assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) < pet
-
     # the value cannot exceed the potential evapotranspiration
     ts_vals["lai"] = 4.3
     assert lm.actual_evapotranspiration(pet=pet, ts_vals=ts_vals) == pet
 
 
 def test_potential_growth():
-    """
-    Test potential_growth
-    """
-
+    """Test potential_growth"""
     par_i = 15.0
     ts_vals = {"lai": 3.5}
     params = {"rue_max": 3.0}
-
     assert (
         lm.potential_growth(par_i=par_i, ts_vals=ts_vals, params=params)
         == 394.8946072861582
@@ -58,23 +42,16 @@ def test_potential_growth():
 
 
 def test_par_function():
-    """
-    Test par_function
-    """
-
+    """Test par_function"""
     par_i = 15.0
     assert 0.0 < lm.par_function(par_i=par_i) < 1.0
-
     # par_i < 5.0
     par_i = 3.2
     assert lm.par_function(par_i=par_i) == 1.0
 
 
 def test_sum_of_temperatures():
-    """
-    Test sum_of_temperatures
-    """
-
+    """Test sum_of_temperatures"""
     t_ts = [2.1, 7.0, 4.1, 5.0, 8.6, 3.2, 6.0, 9.5, 1.0, 3.3, 5.5, 7.2]
     ts_vals = {}
     params = {"t_0": 4.0}
@@ -108,10 +85,7 @@ def test_sum_of_temperatures():
 
 
 def test_ten_day_moving_avg_temperature():
-    """
-    Test ten_day_moving_avg_temperature
-    """
-
+    """Test ten_day_moving_avg_temperature"""
     t_ts = [2.1, 7.0, 4.1, 5.0, 8.6, 3.2, 6.0, 9.5, 1.0, 3.3, 5.5, 7.2]
 
     # when day < 10
@@ -124,20 +98,17 @@ def test_ten_day_moving_avg_temperature():
     t_init = [5.7, 8.9, 2.4, 5.3, 4.8, 9.0, 3.4, 6.5, 7.8]
     assert lm.ten_day_moving_avg_temperature(
         day=day, t_ts=t_ts, t_init=t_init
-    ) == np.mean((list(t_init) + list(t_ts))[(day - 1) : (day + 9)])
+    ) == np.mean((list(t_init) + list(t_ts))[(day - 1): (day + 9)])
 
     # when day >= 10
     day = 11
     assert lm.ten_day_moving_avg_temperature(day=day, t_ts=t_ts) == np.mean(
-        t_ts[(day - 10) : day]
+        t_ts[(day - 10): day]
     )
 
 
 def test_temperature_function():
-    """
-    Test temperature_function
-    """
-
+    """Test temperature_function"""
     ts_vals = {}
     params = {"t_0": 4.0, "t_1": 10.0, "t_2": 20.0, "t_max": 40.0}
 
@@ -163,10 +134,7 @@ def test_temperature_function():
 
 
 def test_seasonal_effect():
-    """
-    Test seasonal_effect
-    """
-
+    """Test seasonal_effect"""
     params = {"min_sea": 0.8, "max_sea": 1.2, "st_2": 1200.0}
 
     # st_1 <= 200.0
@@ -204,10 +172,7 @@ def test_seasonal_effect():
 
 
 def test_water_reserves():
-    """
-    Test water_reserves
-    """
-
+    """Test water_reserves"""
     ts_vals = {"wr": 20.0, "aet": 20.0}
     params = {}
 
@@ -249,10 +214,7 @@ def test_water_reserves():
 
 
 def test_water_stress():
-    """
-    Test water_stress
-    """
-
+    """Test water_stress"""
     ts_vals = {}
     params = {}
 
@@ -270,10 +232,7 @@ def test_water_stress():
 
 
 def test_water_stress_function():
-    """
-    Test water_stress_function
-    """
-
+    """Test water_stress_function"""
     ts_vals = {}
 
     # pet < 3.8
@@ -312,10 +271,7 @@ def test_water_stress_function():
 
 
 def test_reproductive_function():
-    """
-    Test reproductive_function
-    """
-
+    """Test reproductive_function"""
     ts_vals = {}
     params = {"st_1": 85.0, "ni": 0.75}
 
@@ -346,14 +302,10 @@ def test_reproductive_function():
 
 
 def test_environmental_limitation():
-    """
-    Test environmental_limitation
-    """
-
+    """Test environmental_limitation"""
     par_i = 15.0
     ts_vals = {"f_t": 0.5, "f_w": 0.75}
     params = {"ni": 0.9}
-
     assert (
         lm.environmental_limitation(
             ts_vals=ts_vals, params=params, par_i=par_i
@@ -363,20 +315,13 @@ def test_environmental_limitation():
 
 
 def test_total_growth():
-    """
-    Test total_growth
-    """
-
+    """Test total_growth"""
     ts_vals = {"pgro": 150.0, "env": 0.25, "sea": 0.95}
-
     assert lm.total_growth(ts_vals=ts_vals) == 35.625
 
 
 def test_abscission():
-    """
-    Test abscission
-    """
-
+    """Test abscission"""
     ts_vals = {"bm_dv": 200.0, "bm_dr": 90.4}
     params = {
         "lls": 500.0,
@@ -420,10 +365,7 @@ def test_abscission():
 
 
 def test_senescence():
-    """
-    Test senescence
-    """
-
+    """Test senescence"""
     ts_vals = {
         "age_gv": 890.2,
         "bm_gv": 1206.7,
@@ -481,10 +423,7 @@ def test_senescence():
 
 
 def test_biomass_growth():
-    """
-    Test biomass_growth
-    """
-
+    """Test biomass_growth"""
     ts_vals = {"gro": 139.4}
 
     # 0.0 < rep < 0.5
@@ -509,6 +448,4 @@ def test_biomass_growth():
 
 
 def test_standing_biomass():
-    """
-    Test standing_biomass
-    """
+    """Test standing_biomass"""
