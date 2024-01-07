@@ -1,5 +1,6 @@
-"""modvege_run.py
+"""Functions for running ModVege
 
+Some code has been adapted from:
 https://code.europa.eu/agri4cast/modvege
 """
 
@@ -53,8 +54,16 @@ output_vars = {
 
 
 def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
-    """Input time series: CSV
+    """Run ModVege for a CSV time series input
 
+    Parameters
+    ----------
+    input_timeseries_file : str
+    input_params_file : str
+    out_dir : str
+
+    Notes
+    -----
     Also creates time series plots
     """
     # read parameter file into a dataframe
@@ -103,8 +112,13 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
 
 
 def site_specific_params_file(input_params_vector, tseries, params):
-    """
-    Load the site-specific characteristics layers that vary spatially
+    """Load the site-specific characteristics layers that vary spatially
+
+    Parameters
+    ----------
+    input_params_vector : str
+    tseries : xarray.Dataset
+    params : dict[str]
     """
     # site-specific characteristics that vary spatially
     if input_params_vector is not None:
@@ -123,8 +137,14 @@ def site_specific_params_file(input_params_vector, tseries, params):
 def run_modvege_nc(
     input_timeseries_file, input_params_file, out_dir, input_params_vector=None
 ):
-    """
-    Input time series: NetCDF (climate data)
+    """Run ModVege for a netCDF time series (climate data) input
+
+    Parameters
+    ----------
+    input_timeseries_file : str
+    input_params_file : str
+    out_dir : str
+    input_params_vector : str
     """
     print(
         f"Running simulations for input file '{input_timeseries_file}'...",
@@ -359,15 +379,21 @@ def run_modvege_nc(
 def run_modvege(
     input_params_file, input_timeseries_file, out_dir, input_params_vector=None
 ):
-    """
-    Preprocess the inputs to run ModVege as a function and save the results
-    as a CSV file
+    """Run ModVege
 
     Parameters
     ----------
-    input_params_file : File path for the input parameters
-    input_timeseries_file : File path for the input time series
-    out_dir : Directory to store output file(s)
+    input_params_file : str
+        File path for the input parameters
+    input_timeseries_file : str
+        File path for the input time series
+    out_dir : str
+        Directory to store output file(s)
+
+    Notes
+    -----
+    Preprocess the inputs to run ModVege as a function and save the results
+    as a CSV file
     """
     if input_timeseries_file.endswith(".csv"):
         run_modvege_csv(input_timeseries_file, input_params_file, out_dir)
