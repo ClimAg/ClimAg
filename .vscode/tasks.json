@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "update-requirements",
+            "label": "install-requirements",
             "type": "shell",
             "command": "source .venv/bin/activate && python -m pip install -r requirements.txt",
             "problemMatcher": [],
