@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ClimAg"
+name = "climag"
 version = "0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
@@ -33,8 +33,7 @@ Bibliography = "https://www.zotero.org/groups/4706660/climag/library"
 Twitter = "https://twitter.com/climatt_project"
 
 [tool.setuptools.packages.find]
-where = ["climag"]
-exclude = ["plot*", "download*"]
+include = ["climag"]
 
 [tool.black]
 line-length = 79
