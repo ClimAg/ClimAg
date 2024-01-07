@@ -34,7 +34,7 @@ Twitter = "https://twitter.com/climatt_project"
 
 [tool.setuptools.packages.find]
 where = ["climag"]
-include = ["modvege*"]
+exclude = ["plot*", "download*"]
 
 [tool.black]
 line-length = 79
