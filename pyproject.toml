@@ -2,11 +2,23 @@
 name = "ClimAg"
 requires-python = ">= 3.10"
 dependencies = [
+  "cartopy",
   "geopandas",
-  "rasterstats,
+  "rasterstats",
   "rioxarray",
   "seaborn",
 ]
+authors = [
+  {name = "Nithiya Streethran", email = "nmstreethran@gmail.com"},
+]
+readme = "README.md"
+
+[project.urls]
+Documentation = "https://climag.readthedocs.io/"
+Repository = "https://github.com/ClimAg"
+Bibliography = https://www.zotero.org/groups/4706660/climag/library
+"Landing Page" = "https://www.ucc.ie/en/eel/projects/climag/"
+Twitter = https://twitter.com/climatt_project
 
 [tool.black]
 line-length = 79
