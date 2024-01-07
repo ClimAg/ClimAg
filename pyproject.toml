@@ -4,15 +4,23 @@ version = "0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
   "cartopy",
+  "dask",
   "geopandas",
   "rasterstats",
   "rioxarray",
   "seaborn",
 ]
+py_modules = ["climag"]
 authors = [
   {name = "Nithiya Streethran", email = "nmstreethran@gmail.com"},
 ]
 readme = "README.md"
+description = "EPA Research Project: Multifactorial causes of fodder crises in Ireland and risks due to climate change"
+license = {file = "LICENCE.txt"}
+keywords = ["agriculture", "climate change", "ireland"]
+classifiers = [
+  "Programming Language :: Python"
+]
 
 [project.urls]
 Documentation = "https://climag.readthedocs.io/"
