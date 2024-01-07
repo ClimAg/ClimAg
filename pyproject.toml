@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "ClimAg"
 version = "0.1.0"
@@ -10,7 +14,6 @@ dependencies = [
   "rioxarray",
   "seaborn",
 ]
-py_modules = ["climag"]
 authors = [
   {name = "Nithiya Streethran", email = "nmstreethran@gmail.com"},
 ]
@@ -19,7 +22,7 @@ description = "EPA Research Project: Multifactorial causes of fodder crises in I
 license = {file = "LICENCE.txt"}
 keywords = ["agriculture", "climate change", "ireland"]
 classifiers = [
-  "Programming Language :: Python"
+  "Programming Language :: Python :: 3"
 ]
 
 [project.urls]
@@ -28,6 +31,10 @@ Repository = "https://github.com/ClimAg"
 Bibliography = "https://www.zotero.org/groups/4706660/climag/library"
 "Landing Page" = "https://www.ucc.ie/en/eel/projects/climag/"
 Twitter = "https://twitter.com/climatt_project"
+
+[tool.setuptools.packages.find]
+where = ["climag"]
+include = ["modvege*"]
 
 [tool.black]
 line-length = 79
