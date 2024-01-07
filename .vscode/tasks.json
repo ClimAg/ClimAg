@@ -4,6 +4,15 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "update-requirements",
+            "type": "shell",
+            "command": "source .venv/bin/activate && python -m pip install -r requirements.txt",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
             "label": "nbconvert",
             "type": "shell",
             "command": "source .venv/bin/activate && ./convert-notebooks.sh",
