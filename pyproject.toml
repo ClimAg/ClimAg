@@ -16,9 +16,9 @@ readme = "README.md"
 [project.urls]
 Documentation = "https://climag.readthedocs.io/"
 Repository = "https://github.com/ClimAg"
-Bibliography = https://www.zotero.org/groups/4706660/climag/library
+Bibliography = "https://www.zotero.org/groups/4706660/climag/library"
 "Landing Page" = "https://www.ucc.ie/en/eel/projects/climag/"
-Twitter = https://twitter.com/climatt_project
+Twitter = "https://twitter.com/climatt_project"
 
 [tool.black]
 line-length = 79
