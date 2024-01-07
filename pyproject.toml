@@ -1,2 +1,12 @@
+[project]
+name = "ClimAg"
+requires-python = ">= 3.10"
+dependencies = [
+  "geopandas",
+  "rasterstats,
+  "rioxarray",
+  "seaborn",
+]
+
 [tool.black]
 line-length = 79
