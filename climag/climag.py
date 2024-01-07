@@ -1,11 +1,5 @@
-"""climag.py
+"""Utility functions
 
-EPA Research Project: ClimAg: Multifactorial causes of fodder crises in
-Ireland and risks due to climate change
-
-https://climag.readthedocs.io/
-https://www.ucc.ie/en/eel/projects/climag/
-https://github.com/ClimAg
 """
 
 import cartopy.crs as ccrs
@@ -34,19 +28,21 @@ projection_eurocordex = ccrs.RotatedPole(
 
 
 def rotated_pole_point(data, lon, lat):
-    """
-    Convert the longitude and latitude of a specific point to rotated pole
-    coordinates used in the input data.
+    """Convert lat/lon of a specific point to rotated pole coordinates
 
     Parameters
     ----------
-    data : input climate data which uses rotated pole coordinates
-    lon : longitude of the point
-    lat : latitude of the point
+    data : xarray.Dataset
+        input climate data which uses rotated pole coordinates
+    lon : float
+        longitude of the point
+    lat : float
+        latitude of the point
 
     Returns
     -------
-    - transformed longitude and latitude in rotated pole coordinates
+    tuple[float, float]
+        transformed longitude and latitude in rotated pole coordinates
     """
     if data.rio.crs is None:
         pole_longitude = data["rotated_pole"].attrs[
@@ -68,16 +64,17 @@ def rotated_pole_point(data, lon, lat):
 
 
 def rotated_pole_transform(data):
-    """
-    Rotated pole transform for plotting CORDEX data.
+    """Rotated pole transform for plotting CORDEX data.
 
     Parameters
     ----------
-    data : input CORDEX data
+    data : xarray.Dataset
+        Input CORDEX data
 
     Returns
     -------
-    - rotated pole transform
+    cartopy.crs.RotatedPole
+        rotated pole transform
     """
     if data.rio.crs is None:
         pole_longitude = data["rotated_pole"].attrs[

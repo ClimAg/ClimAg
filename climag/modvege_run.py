@@ -59,8 +59,11 @@ def run_modvege_csv(input_timeseries_file, input_params_file, out_dir):
     Parameters
     ----------
     input_timeseries_file : str
+        Path to input time series file
     input_params_file : str
+        Path to input parameters file
     out_dir : str
+        Path to output directory
 
     Notes
     -----
@@ -117,8 +120,11 @@ def site_specific_params_file(input_params_vector, tseries, params):
     Parameters
     ----------
     input_params_vector : str
+        Path to input parameter vector spatial file
     tseries : xarray.Dataset
+        Xarray dataset of time series data
     params : dict[str]
+        Dictionary of input parameters
     """
     # site-specific characteristics that vary spatially
     if input_params_vector is not None:
@@ -142,9 +148,13 @@ def run_modvege_nc(
     Parameters
     ----------
     input_timeseries_file : str
+        Path to input time series file
     input_params_file : str
+        Path to input parameters file
     out_dir : str
+        Path to output directory
     input_params_vector : str
+        Path to input parameter vector spatial file
     """
     print(
         f"Running simulations for input file '{input_timeseries_file}'...",
