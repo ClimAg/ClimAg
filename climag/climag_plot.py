@@ -221,3 +221,91 @@ def plot_averages(
         #     )
 
     plt.show()
+
+
+def boxplot_data(datasets, varlist, lonlat):
+    """
+    Process time series data for a given location to create box plots
+
+    Parameters
+    ----------
+    data : Dictionary of Xarray climate model datasets
+    var : The variable to be plotted from the dataset
+    lonlat : A tuple of the location's coordinates (longitude, latitude)
+
+    Returns
+    -------
+    - A dictionary of dataframes (one for each variable) of the boxplot data
+      to be plotted
+    """
+
+    data_all = {}
+
+    for var in varlist:
+        data_all[var] = {}
+
+    for key in datasets.keys():
+        cds = rotated_pole_point(
+            data=datasets[key], lon=lonlat[0], lat=lonlat[1]
+        )
+        data_all[key] = datasets[key].sel(
+            {"rlon": cds[0], "rlat": cds[1]}, method="nearest"
+        )
+
+        for var in varlist:
+            data_all[var][key] = pd.DataFrame(
+                {var: data_all[key][var]}
+            ).assign(
+                dataset=f"{key.split('_')[0]}\n{key.split('_')[1]}",
+                exp=key.split("_")[2],
+                legend=(
+                    f"{key.split('_')[0]}\n{key.split('_')[1]}\n"
+                    f"{key.split('_')[2]}"
+                ),
+            )
+
+    for var in varlist:
+        data_all[var] = pd.concat([v for k, v in data_all[var].items()])
+
+    return data_all
+
+
+def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
+    """
+    Generate box plots for Xarray datasets stored in a dictionary
+
+    Parameters
+    ----------
+    data : A dictionary of Xarray datasets
+    var : The variable from the Xarray dataset to plot
+    title : Plot title
+    showfliers : Show outliers (default is False)
+    figsize : Size of the plot figure
+    """
+
+    plt.figure(figsize=figsize)
+    sns.boxplot(
+        data,
+        x="dataset",
+        y=var,
+        hue="exp",
+        showfliers=showfliers,
+        showmeans=True,
+        palette="Pastel1",
+        meanprops={
+            "markeredgecolor": "darkslategrey",
+            "marker": "d",
+            "markerfacecolor": "white",
+            "markersize": 7.5,
+        },
+        boxprops={"edgecolor": "darkslategrey"},
+        medianprops={"color": "darkslategrey"},
+        whiskerprops={"color": "darkslategrey"},
+        capprops={"color": "darkslategrey"},
+    )
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.title(title)
+    plt.legend(title=None, loc="upper right")
+    plt.tight_layout()
+    plt.show()
