@@ -3,6 +3,7 @@
 """
 
 import cartopy.crs as ccrs
+import numpy as np
 
 # Irish Transverse Mercator
 ITM_EPSG = 2157
@@ -92,3 +93,33 @@ def rotated_pole_transform(data):
         pole_longitude=pole_longitude, pole_latitude=pole_latitude
     )
     return transform
+
+
+def weighted_average(data, averages: str):
+    """
+    Calculate the weighted average
+
+    - https://docs.xarray.dev/en/stable/user-guide/computation.html
+    - https://ncar.github.io/esds/posts/2021/yearly-averages-xarray/
+    - https://docs.xarray.dev/en/stable/examples/monthly-means.html
+    - https://ncar.github.io/esds/posts/2020/Time/
+    """
+
+    # calculate the weights by grouping month length by season or month
+    weights = (
+        data.time.dt.days_in_month.groupby(f"time.{averages}")
+        / data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
+    )
+
+    # test that the sum of weights for each year/season/month is one
+    np.testing.assert_allclose(
+        weights.groupby(f"time.{averages}").sum().values,
+        np.ones(len(set(weights[averages].values))),
+    )
+
+    # calculate the weighted average
+    data_weighted = (
+        (data * weights).groupby(f"time.{averages}").sum(dim="time")
+    )
+
+    return data_weighted
