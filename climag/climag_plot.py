@@ -2,21 +2,24 @@
 
 """
 
-import climag.climag as cplt
-import seaborn as sns
-import pandas as pd
-import matplotlib.pyplot as plt
-from datetime import datetime
-import xarray as xr
-import cartopy.crs as ccrs
-import numpy as np
 import glob
 import os
 import warnings
+from datetime import datetime
 from itertools import product
+
+import cartopy.crs as ccrs
 import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import rasterio as rio
+import seaborn as sns
+import xarray as xr
 from matplotlib import patheffects
+
+import climag.climag as cplt
+
 # from dateutil.parser import parse
 
 warnings.filterwarnings(
@@ -60,7 +63,9 @@ def colormap_configs(var):
     return cmap
 
 
-def plot_single_map(data, var, boundary_data=None, cbar_levels=None, contour=False):
+def plot_single_map(
+    data, var, boundary_data=None, cbar_levels=None, contour=False
+):
     """
     Create an individual plot of a climate data variable covering the Island
     of Ireland.

@@ -15,11 +15,10 @@
         {
             "label": "nbconvert",
             "type": "shell",
-            "command": "source .venv/bin/activate && ./convert-notebooks.sh",
+            "command": "source .venv/bin/activate && cd docs && ./convert-notebooks.sh",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
-                "isDefault": true
             }
         },
         {

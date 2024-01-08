@@ -4,10 +4,11 @@ Some code has been adapted from:
 https://code.europa.eu/agri4cast/modvege
 """
 
-import pandas as pd
-import pooch
 import os
 from datetime import datetime, timezone
+
+import pandas as pd
+import pooch
 
 
 def download_data(url, data_dir, file_name, known_hash=None):
