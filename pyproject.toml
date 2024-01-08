@@ -61,7 +61,6 @@ Twitter = "https://twitter.com/climatt_project"
 
 [tool.setuptools.packages.find]
 include = ["climag"]
-exclude = ["plot*"]
 
 [tool.black]
 line-length = 79
