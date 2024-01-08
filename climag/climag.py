@@ -2,8 +2,26 @@
 
 """
 
+import climag.climag as cplt
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+from datetime import datetime
+import xarray as xr
 import cartopy.crs as ccrs
 import numpy as np
+import glob
+import os
+import warnings
+from itertools import product
+import geopandas as gpd
+import rasterio as rio
+from matplotlib import patheffects
+# from dateutil.parser import parse
+
+warnings.filterwarnings(
+    action="ignore", category=RuntimeWarning, module="dask"
+)
 
 # Irish Transverse Mercator
 ITM_EPSG = 2157
@@ -26,6 +44,26 @@ projection_lambert_conformal = ccrs.LambertConformal(
 projection_eurocordex = ccrs.RotatedPole(
     pole_longitude=-162.0, pole_latitude=39.25
 )
+
+# Ireland boundary
+ie_bbox = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="ne_10m_land_2157_IE_BBOX_DIFF",
+)
+ie = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="NUTS_RG_01M_2021_2157_IE",
+)
+
+# mask out non-pasture areas
+mask = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="CLC_2018_MASK_PASTURE_2157_IE",
+)
+
+season_list = ["DJF", "MAM", "JJA", "SON"]
+exp_list = ["historical", "rcp45", "rcp85"]
+model_list = ["CNRM-CM5", "EC-EARTH", "HadGEM2-ES", "MPI-ESM-LR"]
 
 
 def rotated_pole_point(data, lon, lat):

@@ -6,6 +6,22 @@ import climag.climag as cplt
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from datetime import datetime
+import xarray as xr
+import cartopy.crs as ccrs
+import numpy as np
+import glob
+import os
+import warnings
+from itertools import product
+import geopandas as gpd
+import rasterio as rio
+from matplotlib import patheffects
+# from dateutil.parser import parse
+
+warnings.filterwarnings(
+    action="ignore", category=RuntimeWarning, module="dask"
+)
 
 
 def colormap_configs(var):
@@ -309,3 +325,25 @@ def boxplot_all(data, var, title, showfliers=False, figsize=(12, 5)):
     plt.legend(title=None, loc="upper right")
     plt.tight_layout()
     plt.show()
+
+
+def colorbar_levels(maximum, levels=22):
+    """
+    Create a list of diverging colourbar levels based on the maximum value and
+    number of levels
+    """
+
+    # levels = [
+    #     i for i in [
+    #         -maximum + num * n for n in range(int(maximum / num * 2 + 1))
+    #     ] if i != 0
+    # ]
+    return [-maximum + maximum / ((levels - 1) / 2) * n for n in range(levels)]
+
+
+def colorbar_ticks(maximum):
+    """
+    Colourbar tick labels
+    """
+
+    return [-maximum, 0, maximum]
