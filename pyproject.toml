@@ -8,26 +8,53 @@ version = "0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
   "cartopy",
+  "cfgrib",
   "dask",
   "geopandas",
+  "mapclassify",
+  "pooch",
   "rasterstats",
   "rioxarray",
   "seaborn",
+  "statsmodels",
 ]
 authors = [
   {name = "Nithiya Streethran", email = "nmstreethran@gmail.com"},
 ]
 readme = "README.md"
 description = "EPA Research Project: Multifactorial causes of fodder crises in Ireland and risks due to climate change"
-license = {file = "LICENCE.txt"}
 keywords = ["agriculture", "climate change", "ireland"]
 classifiers = [
-  "Programming Language :: Python :: 3"
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+
+[project.optional-dependencies]
+docs = [
+  "myst-nb",
+  "pydata-sphinx-theme",
+]
+test = [
+  "black[jupyter]",
+  "coverage",
+  "flake8",
+  "jupyterlab",
+  "nbconvert",
+  "pylint",
+  "pytest",
 ]
 
 [project.urls]
 Documentation = "https://climag.readthedocs.io/"
-Repository = "https://github.com/ClimAg"
+Repository = "https://github.com/ClimAg/ClimAg.git"
+Issues = "https://github.com/ClimAg/ClimAg/issues"
 Bibliography = "https://www.zotero.org/groups/4706660/climag/library"
 "Landing Page" = "https://www.ucc.ie/en/eel/projects/climag/"
 Twitter = "https://twitter.com/climatt_project"

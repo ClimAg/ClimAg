@@ -3,9 +3,9 @@
 EPA Research Project: Multifactorial causes of fodder crises in Ireland and
 risks due to climate change
 
-https://climag.readthedocs.io/
-https://www.ucc.ie/en/eel/projects/climag/
-https://github.com/ClimAg
+- https://climag.readthedocs.io/
+- https://www.ucc.ie/en/eel/projects/climag/
+- https://github.com/ClimAg
 """
 
 __author__ = """Nithiya Streethran"""

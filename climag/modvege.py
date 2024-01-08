@@ -95,7 +95,22 @@ np.seterr("raise")
 
 
 def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
-    """
+    """Calculate sum of temperatures
+
+    Parameters
+    ----------
+    timeseries : pandas.DataFrame
+        Input meteorological time series data
+    params : dict
+        A dictionary of input parameters
+
+    Returns
+    -------
+    dict
+        Dictionary of the sum of temperature thresholds
+
+    Notes
+    -----
     Calculate sum of temperatures at:
         - the beginning of the reproductive period (ST₁) [°C d]
         - the end of the reproductive period (ST₂) [°C d]
@@ -103,17 +118,6 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
         - the end of the grazing season (STg₂) [°C d]
         - the beginning of harvest (STh₁) [°C d]
 
-    Parameters
-    ----------
-    timeseries : Input meteorological time series data (Pandas dataframe)
-    params : A dictionary of input parameters
-
-    Returns
-    -------
-    - A dictionary of the sum of temperature thresholds
-
-    Notes
-    -----
     Nolan and Flanagan (2020) define the thermal growing season length as the
     number of days between the first occurrence of at least six consecutive
     days with a daily mean temperature of > 5°C and the first occurrence of at
@@ -251,22 +255,25 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
 
 
 def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
-    """
-    **ModVege** model as a function
-
-    Jouven, M., Carrère, P., and Baumont, R. (2006). 'Model predicting
-    dynamics of biomass, structure and digestibility of herbage in managed
-    permanent pastures. 1. Model description', Grass and Forage Science, vol.
-    61, no. 2, pp. 112-124. DOI: 10.1111/j.1365-2494.2006.00515.x.
+    """ModVege model as a function
 
     Parameters
     ----------
-    params : Parameters (constants)
-    tseries : Time series meteorological data
-    endday : Number of days of the year (default is 365)
+    params : dict
+        Parameters (constants)
+    tseries : pandas.DataFrame
+        Time series meteorological data
+    endday : int
+        Number of days of the year (default is 365)
 
     Returns
     -------
+    dict[str, float]
+        Dictionary of results
+
+    Notes
+    -----
+    Results:
     - Green vegetative biomass [kg DM ha⁻¹]
     - Dead vegetative biomass [kg DM ha⁻¹]
     - Green reproductive biomass [kg DM ha⁻¹]
