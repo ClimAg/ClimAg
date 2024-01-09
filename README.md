@@ -21,8 +21,8 @@ All repositories can be found in the [ClimAg GitHub organisation](https://github
 
 ## Installation
 
-This project uses Conda with Python 3.10.
-Windows users should use Conda within Windows Subsystem for Linux (WSL), as some packages (e.g. CDO) are unavailable for Windows.
+This project uses [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) with [Python](https://www.python.org/) 3.10.
+Windows users should use Conda within [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install), as some packages (e.g. [CDO](https://code.mpimet.mpg.de/projects/cdo)) are unavailable for Windows.
 
 Create a virtual environment and install all requirements:
 
@@ -45,13 +45,13 @@ python -m pytest
 To generate a coverage report with the tests:
 
 ```sh
-python -m coverage run -m pytest && coverage report -m
+coverage run -m pytest && coverage report -m
 ```
 
 To update the virtual environment:
 
 ```sh
-conda env update --name ClimAg --file environment.yml
+conda env update
 ```
 
 ## Licence
