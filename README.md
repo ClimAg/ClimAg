@@ -15,7 +15,7 @@ ClimAg seeks to identify the multifactorial drivers of fodder crises by:
 
 ## Repositories
 
-Documentation is available at: <https://climag.readthedocs.io/>.
+Documentation is available at: <https://climag.readthedocs.io>.
 All repositories can be found in the [ClimAg GitHub organisation](https://github.com/ClimAg).
 [This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis. Separate repositories host [the documentation and Jupyter notebooks](https://github.com/ClimAg/docs) and [information about the datasets used](https://github.com/ClimAg/data).
 
@@ -23,6 +23,13 @@ All repositories can be found in the [ClimAg GitHub organisation](https://github
 
 This project uses [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html) with [Python](https://www.python.org/) 3.10.
 Windows users should use Conda within [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install), as some packages (e.g. [CDO](https://code.mpimet.mpg.de/projects/cdo)) are unavailable for Windows.
+
+Clone the ClimAg repository including submodules:
+
+```sh
+git clone --recurse-submodules https://github.com/ClimAg/ClimAg.git
+cd ClimAg
+```
 
 Create a virtual environment and install all requirements:
 
