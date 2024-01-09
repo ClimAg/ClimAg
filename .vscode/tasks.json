@@ -4,18 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "install-requirements",
-            "type": "shell",
-            "command": "source .venv/bin/activate && python -m pip install -r requirements.txt",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-            }
-        },
-        {
             "label": "nbconvert",
             "type": "shell",
-            "command": "source .venv/bin/activate && cd docs && ./convert-notebooks.sh",
+            "command": "cd docs && source ../zsh-conda-init.sh && ./convert-notebooks.sh",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -24,7 +15,7 @@
         {
             "label": "docs",
             "type": "shell",
-            "command": "source .venv/bin/activate && cd docs && make html",
+            "command": "cd docs && source ../zsh-conda-init.sh && make html",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -33,7 +24,7 @@
         {
             "label": "docs-clean",
             "type": "shell",
-            "command": "source .venv/bin/activate && cd docs && make clean html",
+            "command": "cd docs && source ../zsh-conda-init.sh && make clean html",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -42,7 +33,7 @@
         {
             "label": "format-py",
             "type": "shell",
-            "command": "source .venv/bin/activate && black **/*.py **/*.ipynb && isort **/*.py",
+            "command": "source zsh-conda-init.sh && black **/*.py **/*.ipynb && isort **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -51,7 +42,7 @@
         {
             "label": "sanitise-notebooks",
             "type": "shell",
-            "command": "source .venv/bin/activate && jupyter nbconvert --sanitize-html --to notebook --inplace **/*.ipynb",
+            "command": "source zsh-conda-init.sh && jupyter nbconvert --sanitize-html --to notebook --inplace **/*.ipynb",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -60,7 +51,7 @@
         {
             "label": "pytest",
             "type": "shell",
-            "command": "source .venv/bin/activate && python -m pytest",
+            "command": "source zsh-conda-init.sh && python -m pytest",
             "problemMatcher": [],
             "group": {
                 "kind": "test",
@@ -70,7 +61,7 @@
         {
             "label": "pytest-coverage",
             "type": "shell",
-            "command": "source .venv/bin/activate && coverage run -m pytest && coverage report -m",
+            "command": "source zsh-conda-init.sh && coverage run -m pytest && coverage report -m",
             "problemMatcher": [],
             "group": {
                 "kind": "test"
@@ -79,7 +70,7 @@
         {
             "label": "pylint",
             "type": "shell",
-            "command": "source .venv/bin/activate && pylint **/*.py",
+            "command": "source zsh-conda-init.sh && pylint **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "test"
@@ -88,7 +79,7 @@
         {
             "label": "flake8",
             "type": "shell",
-            "command": "source .venv/bin/activate && flake8 **/*.py",
+            "command": "source zsh-conda-init.sh && flake8 **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "test"
