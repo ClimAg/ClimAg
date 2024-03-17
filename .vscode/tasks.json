@@ -51,20 +51,11 @@
         {
             "label": "pytest",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && python -m pytest",
+            "command": "source zsh-conda-init.sh && python -m pytest --cov",
             "problemMatcher": [],
             "group": {
                 "kind": "test",
                 "isDefault": true
-            }
-        },
-        {
-            "label": "pytest-coverage",
-            "type": "shell",
-            "command": "source zsh-conda-init.sh && coverage run -m pytest && coverage report -m",
-            "problemMatcher": [],
-            "group": {
-                "kind": "test"
             }
         },
         {
