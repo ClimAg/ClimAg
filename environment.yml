@@ -20,6 +20,5 @@ dependencies:
   - rasterstats
   - rioxarray
   - seaborn
-  - pytest
-  - coverage
+  - pytest-cov
   - jupyterlab

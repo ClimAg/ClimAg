@@ -55,19 +55,25 @@ conda activate ClimAg
 To run tests:
 
 ```sh
-python -m pytest
-```
-
-To generate a coverage report with the tests:
-
-```sh
-coverage run -m pytest && coverage report -m
+python -m pytest --cov
 ```
 
 To update the virtual environment:
 
 ```sh
 conda env update
+```
+
+To build the documentation locally:
+
+```sh
+cd docs && make html
+```
+
+To clean build the documentation locally:
+
+```sh
+cd docs && make clean html
 ```
 
 ## Licence
