@@ -12,7 +12,6 @@ dependencies:
   - geopandas
   - intake-esm
   - mapclassify
-  - matplotlib
   - nc-time-axis
   - netcdf4
   - odfpy
@@ -20,5 +19,11 @@ dependencies:
   - rasterstats
   - rioxarray
   - seaborn
+  - statsmodels
   - pytest-cov
   - jupyterlab
+  - pylint
+  - flake8
+  - black-jupyter
+  - myst-nb
+  - pydata-sphinx-theme
