@@ -274,20 +274,20 @@ def modvege(params, tseries, endday=365, t_init=None) -> dict[str, float]:
     Notes
     -----
     Results:
-    - Green vegetative biomass [kg DM ha⁻¹]
-    - Dead vegetative biomass [kg DM ha⁻¹]
-    - Green reproductive biomass [kg DM ha⁻¹]
-    - Dead reproductive biomass [kg DM ha⁻¹]
-    - Total standing biomass [kg DM ha⁻¹]
-    - Potential growth [kg DM ha⁻¹]
-    - Total growth [kg DM ha⁻¹]
-    - Ingested biomass [kg DM ha⁻¹]
-    - Harvested biomass [kg DM ha⁻¹]
-    - Leaf area index [dimensionless]
-    - Water reserves [mm]
-    - Actual evapotranspiration [mm]
-    - Environmental limitation of growth [dimensionless]
-    - Reproductive function [dimensionless]
+        - Green vegetative biomass [kg DM ha⁻¹]
+        - Dead vegetative biomass [kg DM ha⁻¹]
+        - Green reproductive biomass [kg DM ha⁻¹]
+        - Dead reproductive biomass [kg DM ha⁻¹]
+        - Total standing biomass [kg DM ha⁻¹]
+        - Potential growth [kg DM ha⁻¹]
+        - Total growth [kg DM ha⁻¹]
+        - Ingested biomass [kg DM ha⁻¹]
+        - Harvested biomass [kg DM ha⁻¹]
+        - Leaf area index [dimensionless]
+        - Water reserves [mm]
+        - Actual evapotranspiration [mm]
+        - Environmental limitation of growth [dimensionless]
+        - Reproductive function [dimensionless]
     """
     st_thresholds = sum_of_temperature_thresholds(
         timeseries=tseries, params=params
