@@ -37,6 +37,11 @@ Clone the ClimAg repository including submodules:
 
 ```sh
 git clone --recurse-submodules https://github.com/ClimAg/ClimAg.git
+```
+
+Navigate to the directory of the cloned repository:
+
+```sh
 cd ClimAg
 ```
 
@@ -67,13 +72,13 @@ conda env update
 To build the documentation locally:
 
 ```sh
-cd docs && make html
+cd doc && make html && cd ../docs && cp ../doc/_build/html/objects.inv . && make html
 ```
 
 To clean build the documentation locally:
 
 ```sh
-cd docs && make clean html
+cd doc && make clean html && cd ../docs && cp ../doc/_build/html/objects.inv . && make clean html
 ```
 
 ## Licence
