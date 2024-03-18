@@ -165,3 +165,4 @@ draft/
 tests/data
 .fuse_*
 .empty/
+doc/_build
