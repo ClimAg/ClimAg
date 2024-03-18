@@ -72,13 +72,13 @@ conda env update
 To build the documentation locally:
 
 ```sh
-cd doc && make html && cd ../docs && cp ../doc/_build/html/objects.inv . && make html
+cd doc && make html
 ```
 
 To clean build the documentation locally:
 
 ```sh
-cd doc && make clean html && cd ../docs && cp ../doc/_build/html/objects.inv . && make clean html
+cd doc && make clean html
 ```
 
 ## Licence
