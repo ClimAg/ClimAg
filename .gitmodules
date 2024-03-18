@@ -2,5 +2,5 @@
 	path = data
 	url = git@github.com:ClimAg/data.git
 [submodule "docs"]
-	path = jupyter
+	path = docs
 	url = git@github.com:ClimAg/docs.git
