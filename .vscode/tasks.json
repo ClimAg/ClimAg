@@ -6,7 +6,7 @@
         {
             "label": "nbconvert",
             "type": "shell",
-            "command": "cd docs && source ../zsh-conda-init.sh && ./convert-notebooks.sh",
+            "command": "source zsh-conda-init.sh && cd docs && ./convert-notebooks.sh",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
