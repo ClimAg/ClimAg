@@ -11,18 +11,19 @@ np.seterr("raise")
 def leaf_area_index(
     ts_vals: dict[str, float], params: dict[str, float]
 ) -> float:
-    """
-    Calculate the leaf area index (LAI)
+    """Calculate the leaf area index (LAI)
 
     Equation (12) in Jouven et al. (2006a)
 
     Parameters
     ----------
-    params : A dictionary containing these model parameters:
+    params : dict[str, float]
+        A dictionary containing these model parameters:
         - pct_lam: Percentage of laminae in the green vegetative (GV) biomass
           compartment; default is 0.68 (%LAM) [dimensionless]
         - sla: Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - bm_gv: Standing biomass of the green vegetative (GV) compartment
           (BM_GV) [kg DM ha⁻¹]
         - bm_gr: Standing biomass of the green reproductive (GR) compartment
@@ -30,7 +31,8 @@ def leaf_area_index(
 
     Returns
     -------
-    - Leaf area index (LAI) [dimensionless]
+    float
+        Leaf area index (LAI) [dimensionless]
     """
 
     # use the sum of both green compartments
@@ -48,8 +50,7 @@ def leaf_area_index(
 
 
 def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
-    """
-    Calculate the actual evapotranspiration (AET)
+    """Calculate the actual evapotranspiration (AET)
 
     AET is equivalent to potential evapotranspiration (PET) when the cover
     intercepts approximately 0.95 of the incident photosynthetically active
@@ -62,13 +63,16 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
 
     Parameters
     ----------
-    pet : Potential evapotranspiration (PET) [mm]
-    ts_vals : A dictionary with intermediate time series values for:
+    pet : float
+        Potential evapotranspiration (PET) [mm]
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - lai: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
-    - Actual evapotranspiration (AET) [mm]
+    float
+        Actual evapotranspiration (AET) [mm]
     """
 
     return min(pet, pet * ts_vals["lai"] / 3.0)
@@ -77,8 +81,7 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
 def potential_growth(
     par_i: float, ts_vals: dict[str, float], params: dict[str, float]
 ) -> float:
-    """
-    Calculate potential growth (PGRO)
+    """Calculate potential growth (PGRO)
 
     See Equation (12) in Jouven et al. (2006a)
 
@@ -92,16 +95,20 @@ def potential_growth(
 
     Parameters
     ----------
-    par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
-    params : A dictionary containing model parameters:
+    par_i : float
+        Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - rue_max: Maximum radiation use efficiency (RUE_max); default is 3.0
           [g DM MJ⁻¹]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - lai: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
-    - Potential growth (PGRO) [kg DM ha⁻¹]
+    float
+        Potential growth (PGRO) [kg DM ha⁻¹]
     """
 
     return (
@@ -113,7 +120,8 @@ def potential_growth(
 
 
 def par_function(par_i: float) -> float:
-    """
+    """Incident photosynthetically active radiation
+
     Incident photosynthetically active radiation (PAR_*i*) function
     (*f*(PAR_*i*)) needed to calculate the environmental limitation of growth
     (ENV).
@@ -127,11 +135,13 @@ def par_function(par_i: float) -> float:
 
     Parameters
     ----------
-    par_i : Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
+    par_i : float
+        Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
 
     Returns
     -------
-    - PAR_i function (*f*(PAR_*i*)) [dimensionless]
+    float
+        PAR_i function (*f*(PAR_*i*)) [dimensionless]
     """
 
     if par_i < 5.0:
@@ -150,24 +160,30 @@ def sum_of_temperatures(
     t_ts: list[float],
     day: int,
 ) -> float:
-    """
+    """Sum of temperature threshold
+
     Return the sum of temperatures for each day of the year above the minimum
     temperature for growth (ST)
 
     Parameters
     ----------
-    t_ts : Temperature (*T*) field of the input time series data (temperature
+    t_ts : list[float]
+        Temperature (*T*) field of the input time series data (temperature
         should be in °C)
-    day : Day number
-    params : A dictionary containing model parameters:
+    day : int
+        Day number
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - st: Sum of temperatures value for the previous data row (ST) [°C d]
 
     Returns
     -------
-    - Sum of temperatures above *T*₀ corresponding to each day of the year
-      (ST) [°C d]
+    float
+        Sum of temperatures above *T*₀ corresponding to each day of the year
+        (ST) [°C d]
 
     Notes
     -----
@@ -202,21 +218,23 @@ def sum_of_temperatures(
 def ten_day_moving_avg_temperature(
     day: int, t_ts: list[float], t_init: list[float] = None
 ) -> float:
-    """
-    Calculate the 10-d moving average temperature.
+    """Calculate the 10-d moving average temperature.
 
     See sec. "Growth functions", par. above Equation (13) in Jouven et al.
     (2006a).
 
     Parameters
     ----------
-    t_ts : Temperature (*T*) field of the input time series data (temperature
+    t_ts : list[float]
+        Temperature (*T*) field of the input time series data (temperature
         should be in °C)
-    day : Day number
+    day : int
+        Day number
 
     Returns
     -------
-    - 10-d moving average temperature [°C]
+    float
+        10-d moving average temperature [°C]
     """
 
     if day < 10:
@@ -234,8 +252,7 @@ def ten_day_moving_avg_temperature(
 def temperature_function(
     ts_vals: dict[str, float], params: dict[str, float]
 ) -> float:
-    """
-    Temperature function, *f*(*T*)
+    """Temperature function, *f*(*T*)
 
     See Figure 2(b) of Jouven et al. (2006a) and the accompanying text for
     more info; *f*(*T*) has been derived based on Schapendonk et al. (1998)
@@ -244,9 +261,11 @@ def temperature_function(
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - t_m10: 10-d moving average temperature [°C]
-    params : A dictionary containing these model parameters:
+    params : dict[str, float]
+        A dictionary containing these model parameters:
         - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
         - t_1: Minimum temperature for optimal growth; default is 10 [°C]
         - t_2: Maximum temperature for optimal growth; default is 20 [°C]
@@ -254,7 +273,8 @@ def temperature_function(
 
     Returns
     -------
-    - Temperature function (*f*(*T*)) [dimensionless]
+    float
+        Temperature function (*f*(*T*)) [dimensionless]
     """
 
     if (
@@ -281,7 +301,8 @@ def seasonal_effect(
     # ts_vals: dict[str, float],
     params: dict[str, float]
 ) -> float:
-    """
+    """Seasonal effect
+
     Calculate seasonal effect (SEA) on growth, driven by the sum of
     temperatures.
 
@@ -312,7 +333,8 @@ def seasonal_effect(
 
     Parameters
     ----------
-    params : A dictionary containing these model parameters:
+    params : dict[str, float]
+        A dictionary containing these model parameters:
         - max_sea: Maximum seasonal effect (maxSEA); default is 1.2
           [dimensionless]
         - min_sea: Minimum seasonal effect (minSEA); default is 0.8
@@ -321,12 +343,14 @@ def seasonal_effect(
           period (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period
           (ST₂) [°C d]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - st: Sum of temperatures (ST) [°C d]
 
     Returns
     -------
-    - Seasonal effect [dimensionless]
+    float
+        Seasonal effect [dimensionless]
     """
 
     # if params["st_1"] <= 200.0:
@@ -369,8 +393,7 @@ def seasonal_effect(
 def water_reserves(
     ts_vals: dict[str, float], params: dict[str, float], precipitation: float
 ) -> float:
-    """
-    Calculate the water reserves (WR).
+    """Calculate the water reserves (WR).
 
     WR vary between zero and the soil water-holding capacity (WHC).
     Precipitation (PP) fill the WHC, increasing WR, while actual
@@ -380,16 +403,20 @@ def water_reserves(
 
     Parameters
     ----------
-    precipitation : Precipitation (PP) [mm]
-    ts_vals : A dictionary with intermediate time series values for:
+    precipitation : float
+        Precipitation (PP) [mm]
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - wr: Water reserves (WR) [mm]
         - aet: Actual evapotranspiration (AET) [mm]
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - whc: Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
-    - Water reserves (WR) [mm]
+    float
+        Water reserves (WR) [mm]
     """
 
     return min(
@@ -398,21 +425,23 @@ def water_reserves(
 
 
 def water_stress(ts_vals: dict[str, float], params: dict[str, float]) -> float:
-    """
-    Calculate the water stress (*W*).
+    """Calculate the water stress (*W*).
 
     See Equation (14) in Jouven et al. (2006a)
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - wr: Water reserves (WR) [mm]
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - whc: Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
-    - Water stress (*W*) [dimensionless]
+    float
+        Water stress (*W*) [dimensionless]
     """
 
     try:
@@ -422,9 +451,8 @@ def water_stress(ts_vals: dict[str, float], params: dict[str, float]) -> float:
     return val
 
 
-def water_stress_function(ts_vals: dict[str, float], pet) -> float:
-    """
-    Water stress function (*f*(*W*)).
+def water_stress_function(ts_vals: dict[str, float], pet: float) -> float:
+    """Water stress function (*f*(*W*)).
 
     See Figure 2(c) and Equation (14) of Jouven et al. (2006a).
 
@@ -432,13 +460,16 @@ def water_stress_function(ts_vals: dict[str, float], pet) -> float:
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - w: Water stress (*W*) [dimensionless]
-    pet : Potential evapotranspiration (PET) [mm]
+    pet : float
+        Potential evapotranspiration (PET) [mm]
 
     Returns
     -------
-    - Water stress function (*f*(*W*)) [dimensionless]
+    float
+        Water stress function (*f*(*W*)) [dimensionless]
     """
 
     if pet < 3.8:
@@ -482,8 +513,8 @@ def water_stress_function(ts_vals: dict[str, float], pet) -> float:
 def reproductive_function(
     params: dict[str, float], ts_vals: dict[str, float]
 ) -> float:
-    """
-    Reproductive function (REP).
+    """Reproductive function (REP).
+
     REP is zero when there is a cut due to grazing or harvesting.
     REP is also zero before and after the period of reproductive growth.
 
@@ -491,18 +522,21 @@ def reproductive_function(
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - st: Sum of temperatures [°C d]
         - h_bm: The total harvested biomass amount [kg DM ha⁻¹]
         - i_bm: The total ingested biomass amount [kg DM ha⁻¹]
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - ni: Nitrogen nutritional index (NI) [dimensionless]
         - st_1: Sum of temperatures at the beginning of the reproductive
           period [°C d]
 
     Returns
     -------
-    - Reproductive function [dimensionless]
+    float
+        Reproductive function [dimensionless]
     """
 
     if (
@@ -519,23 +553,26 @@ def reproductive_function(
 def environmental_limitation(
     ts_vals: dict[str, float], params: dict[str, float], par_i: float
 ) -> float:
-    """
-    Environmental limitation of growth (ENV).
+    """Environmental limitation of growth (ENV).
 
     See Equation (13) of Jouven et al. (2006a).
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - f_t: temperature function (*f*(*T*)) [dimensionless]
         - f_w: Water stress function (*f*(*W*)) [dimensionless]
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - ni: Nutritional index of pixel (NI) [dimensionless]
-    par_i : Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
+    par_i : float
+        Incident photosynthetically active radiation (PAR_i) [MJ m⁻²]
 
     Returns
     -------
-    - Environmental limitation of growth (ENV) [dimensionless]
+    float
+        Environmental limitation of growth (ENV) [dimensionless]
     """
 
     return (
@@ -547,21 +584,22 @@ def environmental_limitation(
 
 
 def total_growth(ts_vals: dict[str, float]) -> float:
-    """
-    Calculate the total biomass growth (GRO)
+    """Calculate the total biomass growth (GRO)
 
     See Equation (11) in Jouven et al. (2006a)
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - pgro: Potential growth (PGRO) [kg DM ha⁻¹]
         - env: Environmental limitation of growth (ENV) [dimensionless]
         - sea: Seasonal effect (SEA) [dimensionless]
 
     Returns
     -------
-    - Total biomass growth (GRO) [kg DM ha⁻¹]
+    float
+        Total biomass growth (GRO) [kg DM ha⁻¹]
     """
 
     return ts_vals["pgro"] * ts_vals["env"] * ts_vals["sea"]
@@ -569,8 +607,9 @@ def total_growth(ts_vals: dict[str, float]) -> float:
 
 def abscission(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
-):
-    """
+) -> dict[str, float]:
+    """Abscission
+
     Compute abscission biomass for the dead vegetative (DV) and dead
     reproductive (DR) compartments.
     See Equation (18) and Figure 4(c) and (d) in in Jouven et al. (2006a).
@@ -579,7 +618,8 @@ def abscission(
 
     Parameters
     ----------
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - lls: Leaf lifespan (LLS) [500 °C d]
         - kl_dv: Basic abscission rate for the dead vegetative compartment;
           default is 0.001 (Kl_DV) [dimensionless]
@@ -589,8 +629,10 @@ def abscission(
           period; (ST₁) [°C d]
         - st_2: Sum of temperatures at the end of the reproductive period;
           (ST₂) [°C d]
-    temperature : Mean daily temperature (T) [°C]
-    ts_vals : A dictionary with intermediate time series values for:
+    temperature : float
+        Mean daily temperature (T) [°C]
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
         - age_dv: Age of the DV compartment (AGE_DV) [°C d]
         - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
@@ -598,7 +640,8 @@ def abscission(
 
     Returns
     -------
-    - An updated `ts_vals` dictionary with:
+    dict[str, float]
+        An updated `ts_vals` dictionary with:
         - abs_dv: Abscission of the DV biomass (ABS_DV) [kg DM ha⁻¹]
         - abs_dr: Abscission of the DR biomass (ABS_DR) [kg DM ha⁻¹]
     """
@@ -640,8 +683,9 @@ def abscission(
 
 def senescence(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
-):
-    """
+) -> dict[str, float]:
+    """Senescence
+
     Senescing biomass for the GV and GR compartments.
     See Equations (16) and (17) and Figure 4(a) and (b) in Jouven et al.
     (2006a).
@@ -652,7 +696,8 @@ def senescence(
 
     Parameters
     ----------
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - k_gv: Basic senescence rate for the green vegetative compartment;
           default is 0.002 (K_GV) [dimensionless]
         - k_gr: Basic senescence rate for the green reproductive compartment;
@@ -663,16 +708,19 @@ def senescence(
           period; (ST₁) [°C d]
         - st_2 : Sum of temperatures at the end of the reproductive period;
           (ST₂) [°C d]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]
         - bm_gr: Biomass available for GR (BM_GR) [kg DM ha⁻¹]
         - age_gr: Age of the GR compartment (AGE_GR) [°C d]
-    temperature : Mean daily temperature (*T*) [°C]
+    temperature : float
+        Mean daily temperature (*T*) [°C]
 
     Returns
     -------
-    - An updated `ts_vals` dictionary with:
+    dict[str, float]
+        An updated `ts_vals` dictionary with:
         - Senescing GV biomass (SEN_GV) [kg DM ha⁻¹]
         - Senescing GR biomass (SEN_GR) [kg DM ha⁻¹]
     """
@@ -731,21 +779,24 @@ def senescence(
         ts_vals["sen_gr"] = 0.0
 
 
-def biomass_growth(ts_vals: dict[str, float]) -> float:
-    """
+def biomass_growth(ts_vals: dict[str, float]) -> tuple[float, float]:
+    """Biomass growth
+
     Calculate the growth of the GV and GR biomass compartments.
     See Equations (1) and (2) in Jouven et al. (2006a)
 
     Parameters
     ----------
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - gro: Total growth (GRO) [kg DM ha⁻¹]
         - rep: Reproductive function (REP) [dimensionless]
 
     Returns
     -------
-    - Growth of the GV compartment (GRO_GV) [kg DM ha⁻¹]
-    - Growth of the GR compartment (GRO_GR) [kg DM ha⁻¹]
+    tuple[float, float]
+        - Growth of the GV compartment (GRO_GV) [kg DM ha⁻¹]
+        - Growth of the GR compartment (GRO_GR) [kg DM ha⁻¹]
     """
 
     return (
@@ -754,19 +805,22 @@ def biomass_growth(ts_vals: dict[str, float]) -> float:
     )
 
 
-def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
-    """
+def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]) -> dict[str, float]:
+    """Standing biomass
+
     Update the standing biomass for each compartment.
     See Equations (1), (2), (3), and (4) in Jouven et al. (2006a).
 
     Parameters
     ----------
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - sigma_gv: Rate of biomass loss with respiration for GV
           [dimensionless]
         - sigma_gr: Rate of biomass loss with respiration for GR
           [dimensionless]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
         - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
@@ -780,7 +834,8 @@ def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
 
     Returns
     -------
-    - An updated `ts_vals` dictionary with:
+    dict[str, float]
+        An updated `ts_vals` dictionary with:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
         - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
@@ -818,9 +873,9 @@ def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]):
 
 def biomass_age(
     temperature: float, params: dict[str, float], ts_vals: dict[str, float]
-):
-    """
-    Update the age of each biomass compartment.
+) -> dict[str, float]:
+    """Update the age of each biomass compartment.
+
     See Equations (5), (6), (7), and (8) in Jouven et al. (2006a).
 
     The age of the residual biomass is increased daily by the mean daily
@@ -828,12 +883,14 @@ def biomass_age(
 
     Parameters
     ----------
-    params : A dictionary containing model parameters:
+    params : dict[str, float]
+        A dictionary containing model parameters:
         - sigma_gv: Rate of biomass loss with respiration for GV
           [dimensionless]
         - sigma_gr: Rate of biomass loss with respiration for GR
           [dimensionless]
-    ts_vals : A dictionary with intermediate time series values for:
+    ts_vals : dict[str, float]
+        A dictionary with intermediate time series values for:
         - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]
         - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
@@ -848,11 +905,13 @@ def biomass_age(
         - abs_dr: Abscission of the DR compartment (ABS_DR) [kg DM ha⁻¹]
         - gro: Total growth (GRO) [kg DM ha⁻¹]
         - rep: Reproductive function (REP) [dimensionless]
-    temperature : Mean daily temperature (*T*) [°C]
+    temperature : float
+        Mean daily temperature (*T*) [°C]
 
     Returns
     -------
-    - An updated `ts_vals` dictionary with:
+    dict[str, float]
+        An updated `ts_vals` dictionary with:
         - age_gv: Age of the GV compartment (AGE_GV) [°C d]
         - age_gr: Age of the GR compartment (AGE_GR) [°C d]
         - age_dv: Age of the DV compartment (AGE_DV) [°C d]

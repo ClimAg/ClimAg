@@ -22,7 +22,7 @@ def sum_of_temperature_thresholds(timeseries, params) -> dict[str, float]:
 
     Returns
     -------
-    dict
+    dict[str, float]
         Dictionary of the sum of temperature thresholds
 
     Notes
