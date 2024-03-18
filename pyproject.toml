@@ -7,16 +7,12 @@ name = "climag"
 version = "0.1.0"
 requires-python = ">= 3.10"
 dependencies = [
+  "geopandas",
+  "pooch",
   "cartopy",
   "cfgrib",
   "dask",
-  "geopandas",
-  "mapclassify",
-  "pooch",
-  "rasterstats",
   "rioxarray",
-  "seaborn",
-  "statsmodels",
 ]
 authors = [
   {name = "Nithiya Streethran", email = "nmstreethran@gmail.com"},
@@ -40,12 +36,15 @@ classifiers = [
 docs = [
   "myst-nb",
   "pydata-sphinx-theme",
+  "seaborn",
+  "statsmodels",
+  "rasterstats",
+  "mapclassify",
 ]
 test = [
   "black[jupyter]",
   "flake8",
   "jupyterlab",
-  "nbconvert",
   "pylint",
   "pytest-cov",
 ]
