@@ -56,7 +56,7 @@ Repository = "https://github.com/ClimAg/ClimAg.git"
 Issues = "https://github.com/ClimAg/ClimAg/issues"
 Bibliography = "https://www.zotero.org/groups/4706660/climag/library"
 "Landing Page" = "https://www.ucc.ie/en/eel/projects/climag/"
-Twitter = "https://x.com/climatt_project"
+X = "https://x.com/climatt_project"
 
 [tool.setuptools.packages.find]
 include = ["climag"]
