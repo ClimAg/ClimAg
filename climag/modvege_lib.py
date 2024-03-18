@@ -19,15 +19,15 @@ def leaf_area_index(
     ----------
     params : dict[str, float]
         A dictionary containing these model parameters:
-        - pct_lam: Percentage of laminae in the green vegetative (GV) biomass
-          compartment; default is 0.68 (%LAM) [dimensionless]
-        - sla: Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
+            - ``pct_lam``: Percentage of laminae in the green vegetative (GV)
+              biomass compartment; default is 0.68 (%LAM) [dimensionless]
+            - ``sla``: Specific leaf area; default is 0.033 (SLA) [m² g⁻¹]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - bm_gv: Standing biomass of the green vegetative (GV) compartment
-          (BM_GV) [kg DM ha⁻¹]
-        - bm_gr: Standing biomass of the green reproductive (GR) compartment
-          (BM_GR) [kg DM ha⁻¹]
+            - ``bm_gv``: Standing biomass of the green vegetative (GV)
+              compartment (BM_GV) [kg DM ha⁻¹]
+            - ``bm_gr``: Standing biomass of the green reproductive (GR)
+              compartment (BM_GR) [kg DM ha⁻¹]
 
     Returns
     -------
@@ -67,7 +67,7 @@ def actual_evapotranspiration(pet: float, ts_vals: dict[str, float]) -> float:
         Potential evapotranspiration (PET) [mm]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - lai: Leaf area index (LAI) [dimensionless]
+            - ``lai``: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -99,11 +99,11 @@ def potential_growth(
         Incident photosynthetically active radiation (PAR_*i*) [MJ m⁻²]
     params : dict[str, float]
         A dictionary containing model parameters:
-        - rue_max: Maximum radiation use efficiency (RUE_max); default is 3.0
-          [g DM MJ⁻¹]
+            - ``rue_max``: Maximum radiation use efficiency (RUE_max); default
+              is 3.0 [g DM MJ⁻¹]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - lai: Leaf area index (LAI) [dimensionless]
+            - ``lai``: Leaf area index (LAI) [dimensionless]
 
     Returns
     -------
@@ -174,10 +174,11 @@ def sum_of_temperatures(
         Day number
     params : dict[str, float]
         A dictionary containing model parameters:
-        - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
+            - ``t_0``: Minimum temperature for growth (*T*₀); default is 4 [°C]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - st: Sum of temperatures value for the previous data row (ST) [°C d]
+            - ``st``: Sum of temperatures value for the previous data row (ST)
+              [°C d]
 
     Returns
     -------
@@ -263,13 +264,15 @@ def temperature_function(
     ----------
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - t_m10: 10-d moving average temperature [°C]
+            - ``t_m10``: 10-d moving average temperature [°C]
     params : dict[str, float]
         A dictionary containing these model parameters:
-        - t_0: Minimum temperature for growth (*T*₀); default is 4 [°C]
-        - t_1: Minimum temperature for optimal growth; default is 10 [°C]
-        - t_2: Maximum temperature for optimal growth; default is 20 [°C]
-        - t_max: Maximum temperature for growth; default is 40 [°C]
+            - ``t_0``: Minimum temperature for growth (*T*₀); default is 4 [°C]
+            - ``t_1``: Minimum temperature for optimal growth; default is 10
+              [°C]
+            - ``t_2``: Maximum temperature for optimal growth; default is 20
+              [°C]
+            - ``t_max``: Maximum temperature for growth; default is 40 [°C]
 
     Returns
     -------
@@ -335,17 +338,17 @@ def seasonal_effect(
     ----------
     params : dict[str, float]
         A dictionary containing these model parameters:
-        - max_sea: Maximum seasonal effect (maxSEA); default is 1.2
-          [dimensionless]
-        - min_sea: Minimum seasonal effect (minSEA); default is 0.8
-          [dimensionless]
-        - st_1: Sum of temperatures at the beginning of the reproductive
-          period (ST₁) [°C d]
-        - st_2: Sum of temperatures at the end of the reproductive period
-          (ST₂) [°C d]
+            - ``max_sea``: Maximum seasonal effect (maxSEA); default is 1.2
+              [dimensionless]
+            - ``min_sea``: Minimum seasonal effect (minSEA); default is 0.8
+              [dimensionless]
+            - ``st_1``: Sum of temperatures at the beginning of the
+              reproductive period (ST₁) [°C d]
+            - ``st_2``: Sum of temperatures at the end of the reproductive
+              period (ST₂) [°C d]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - st: Sum of temperatures (ST) [°C d]
+            - ``st``: Sum of temperatures (ST) [°C d]
 
     Returns
     -------
@@ -407,11 +410,11 @@ def water_reserves(
         Precipitation (PP) [mm]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - wr: Water reserves (WR) [mm]
-        - aet: Actual evapotranspiration (AET) [mm]
+            - ``wr``: Water reserves (WR) [mm]
+            - ``aet``: Actual evapotranspiration (AET) [mm]
     params : dict[str, float]
         A dictionary containing model parameters:
-        - whc: Soil water-holding capacity (WHC) [mm]
+            - ``whc``: Soil water-holding capacity (WHC) [mm]
 
     Returns
     -------
@@ -608,7 +611,7 @@ def total_growth(ts_vals: dict[str, float]) -> float:
 def abscission(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
 ) -> dict[str, float]:
-    """Abscission
+    """Abscission biomass.
 
     Compute abscission biomass for the dead vegetative (DV) and dead
     reproductive (DR) compartments.
@@ -684,15 +687,14 @@ def abscission(
 def senescence(
     ts_vals: dict[str, float], params: dict[str, float], temperature: float
 ) -> dict[str, float]:
-    """Senescence
+    """Senescing biomass for the GV and GR compartments.
 
-    Senescing biomass for the GV and GR compartments.
     See Equations (16) and (17) and Figure 4(a) and (b) in Jouven et al.
     (2006a).
 
     No senescence occurs when *T* is between zero and *T*₀.
     When T drops below zero, senescence is driven by freezing effects and is
-    proportional to |*T*|.
+    proportional to :math:`(|T|)`.
 
     Parameters
     ----------
@@ -780,9 +782,8 @@ def senescence(
 
 
 def biomass_growth(ts_vals: dict[str, float]) -> tuple[float, float]:
-    """Biomass growth
+    """Calculate the growth of the GV and GR biomass compartments.
 
-    Calculate the growth of the GV and GR biomass compartments.
     See Equations (1) and (2) in Jouven et al. (2006a)
 
     Parameters
@@ -806,9 +807,8 @@ def biomass_growth(ts_vals: dict[str, float]) -> tuple[float, float]:
 
 
 def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]) -> dict[str, float]:
-    """Standing biomass
+    """Update the standing biomass for each compartment.
 
-    Update the standing biomass for each compartment.
     See Equations (1), (2), (3), and (4) in Jouven et al. (2006a).
 
     Parameters
@@ -885,26 +885,26 @@ def biomass_age(
     ----------
     params : dict[str, float]
         A dictionary containing model parameters:
-        - sigma_gv: Rate of biomass loss with respiration for GV
-          [dimensionless]
-        - sigma_gr: Rate of biomass loss with respiration for GR
-          [dimensionless]
+            - sigma_gv: Rate of biomass loss with respiration for GV
+              [dimensionless]
+            - sigma_gr: Rate of biomass loss with respiration for GR
+              [dimensionless]
     ts_vals : dict[str, float]
         A dictionary with intermediate time series values for:
-        - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
-        - age_gv: Age of the GV compartment (AGE_GV) [°C d]
-        - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
-        - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
-        - age_gr: Age of the GR compartment (AGE_GR) [°C d]
-        - sen_gr: Senescence of GR compartment (SEN_GR) [kg DM ha⁻¹]
-        - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
-        - age_dv: Age of the DV compartment (AGE_DV) [°C d]
-        - abs_dv: Abscission of the DV compartment (ABS_DV) [kg DM ha⁻¹]
-        - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
-        - age_dr: Age of the DR compartment (AGE_DR) [°C d]
-        - abs_dr: Abscission of the DR compartment (ABS_DR) [kg DM ha⁻¹]
-        - gro: Total growth (GRO) [kg DM ha⁻¹]
-        - rep: Reproductive function (REP) [dimensionless]
+            - bm_gv: GV biomass (BM_GV) [kg DM ha⁻¹]
+            - age_gv: Age of the GV compartment (AGE_GV) [°C d]
+            - sen_gv: Senescence of GV compartment (SEN_GV) [kg DM ha⁻¹]
+            - bm_gr: GR biomass (BM_GR) [kg DM ha⁻¹]
+            - age_gr: Age of the GR compartment (AGE_GR) [°C d]
+            - sen_gr: Senescence of GR compartment (SEN_GR) [kg DM ha⁻¹]
+            - bm_dv: DV biomass (BM_DV) [kg DM ha⁻¹]
+            - age_dv: Age of the DV compartment (AGE_DV) [°C d]
+            - abs_dv: Abscission of the DV compartment (ABS_DV) [kg DM ha⁻¹]
+            - bm_dr: DR biomass (BM_DR) [kg DM ha⁻¹]
+            - age_dr: Age of the DR compartment (AGE_DR) [°C d]
+            - abs_dr: Abscission of the DR compartment (ABS_DR) [kg DM ha⁻¹]
+            - gro: Total growth (GRO) [kg DM ha⁻¹]
+            - rep: Reproductive function (REP) [dimensionless]
     temperature : float
         Mean daily temperature (*T*) [°C]
 
@@ -912,10 +912,10 @@ def biomass_age(
     -------
     dict[str, float]
         An updated `ts_vals` dictionary with:
-        - age_gv: Age of the GV compartment (AGE_GV) [°C d]
-        - age_gr: Age of the GR compartment (AGE_GR) [°C d]
-        - age_dv: Age of the DV compartment (AGE_DV) [°C d]
-        - age_dr: Age of the DR compartment (AGE_DR) [°C d]
+            - age_gv: Age of the GV compartment (AGE_GV) [°C d]
+            - age_gr: Age of the GR compartment (AGE_GR) [°C d]
+            - age_dv: Age of the DV compartment (AGE_DV) [°C d]
+            - age_dr: Age of the DR compartment (AGE_DR) [°C d]
     """
 
     # GV compartment
