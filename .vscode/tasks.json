@@ -15,16 +15,17 @@
         {
             "label": "docs",
             "type": "shell",
-            "command": "cd docs && source ../zsh-conda-init.sh && make html",
+            "command": "cd docs && source ../zsh-conda-init.sh && make html && cd ../jupyter && cp ../docs/_build/html/objects.inv . && make html",
             "problemMatcher": [],
             "group": {
-                "kind": "build"
+                "kind": "build",
+                "isDefault": true
             }
         },
         {
             "label": "docs-clean",
             "type": "shell",
-            "command": "cd docs && source ../zsh-conda-init.sh && make clean html",
+            "command": "cd docs && source ../zsh-conda-init.sh && make clean html && cd ../jupyter && cp ../docs/_build/html/objects.inv . && make clean html",
             "problemMatcher": [],
             "group": {
                 "kind": "build"

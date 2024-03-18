@@ -10,6 +10,11 @@ Welcome to ClimAg's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. automodule:: climag.modvege_lib
+   :members:
+
+.. automodule:: climag.modvege_consumption
+   :members:
 
 
 Indices and tables
