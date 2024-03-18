@@ -807,7 +807,9 @@ def biomass_growth(ts_vals: dict[str, float]) -> tuple[float, float]:
     )
 
 
-def standing_biomass(ts_vals: dict[str, float], params: dict[str, float]) -> dict[str, float]:
+def standing_biomass(
+    ts_vals: dict[str, float], params: dict[str, float]
+) -> dict[str, float]:
     """Update the standing biomass for each compartment.
 
     See Equations (1), (2), (3), and (4) in Jouven et al. (2006a).
