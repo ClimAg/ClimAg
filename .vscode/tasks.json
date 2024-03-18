@@ -15,7 +15,7 @@
         {
             "label": "docs",
             "type": "shell",
-            "command": "cd docs && source ../zsh-conda-init.sh && make html && cd ../jupyter && cp ../docs/_build/html/objects.inv . && make html",
+            "command": "source zsh-conda-init.sh && cd doc && make html && cd ../docs && cp ../doc/_build/html/objects.inv . && make html",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -25,7 +25,7 @@
         {
             "label": "docs-clean",
             "type": "shell",
-            "command": "cd docs && source ../zsh-conda-init.sh && make clean html && cd ../jupyter && cp ../docs/_build/html/objects.inv . && make clean html",
+            "command": "source zsh-conda-init.sh && cd doc && make clean html && cd ../docs && cp ../doc/_build/html/objects.inv . && make clean html",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
