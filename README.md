@@ -11,7 +11,7 @@ ClimAg seeks to identify the multifactorial drivers of fodder crises by:
 - developing a detailed understanding of the multiple interlinked drivers of previous fodder crises affecting the Irish agricultural sector
 - combining datasets from 21st century climate simulations with grass growth models to predict the frequency and severity of fodder crisis events under future climate change scenarios
 
-Documentation is available at: <https://climag.readthedocs.io>.
+Documentation is available at: [climag.readthedocs.io](https://climag.readthedocs.io/).
 [This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis.
 
 ## Acknowledgements
