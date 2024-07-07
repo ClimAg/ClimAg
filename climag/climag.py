@@ -18,8 +18,6 @@ import seaborn as sns
 import xarray as xr
 from matplotlib import patheffects
 
-import climag.climag as cplt
-
 # from dateutil.parser import parse
 
 warnings.filterwarnings(
@@ -136,7 +134,7 @@ def rotated_pole_transform(data):
     return transform
 
 
-def weighted_average(data, averages: str):
+def weighted_average(data, averages: str, months=None):
     """
     Calculate the weighted average
 
@@ -145,22 +143,164 @@ def weighted_average(data, averages: str):
     - https://docs.xarray.dev/en/stable/examples/monthly-means.html
     - https://ncar.github.io/esds/posts/2020/Time/
     """
-
+    if months:
+        data = data.sel(time=data["time"].dt.month.isin(months))
     # calculate the weights by grouping month length by season or month
     weights = (
         data.time.dt.days_in_month.groupby(f"time.{averages}")
         / data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
     )
-
     # test that the sum of weights for each year/season/month is one
     np.testing.assert_allclose(
         weights.groupby(f"time.{averages}").sum().values,
         np.ones(len(set(weights[averages].values))),
     )
-
     # calculate the weighted average
     data_weighted = (
         (data * weights).groupby(f"time.{averages}").sum(dim="time")
     )
-
     return data_weighted
+
+
+def keep_minimal_vars(data):
+    """
+    Drop variables that are not needed
+    """
+    data = data.drop_vars(
+        [
+            "bm_gv",
+            "bm_gr",
+            "bm_dv",
+            "bm_dr",
+            "age_gv",
+            "age_gr",
+            "age_dv",
+            "age_dr",
+            "omd_gv",
+            "omd_gr",
+            "lai",
+            "env",
+            "wr",
+            "aet",
+            "sen_gv",
+            "sen_gr",
+            "abs_dv",
+            "abs_dr",
+            "c_bm",
+            # "i_bm",
+            # "h_bm",
+            # "pgro",
+            # "bm",
+        ]
+    )
+    return data
+
+
+def combine_datasets(dataset_dict, dataset_crs):
+    """combine a dict of datasets into a single dataset"""
+    dataset = xr.combine_by_coords(
+        dataset_dict.values(), combine_attrs="override"
+    )
+    dataset.rio.write_crs(dataset_crs, inplace=True)
+    return dataset
+
+
+def calculate_stats(clim_dataset):
+    ds = {}
+    ds_mam = {}
+    ds_jja = {}
+    ds_son = {}
+
+    for exp, model in product(exp_list, model_list):
+        # auto-rechunking may cause NotImplementedError with object dtype
+        # where it will not be able to estimate the size in bytes of object
+        # data
+        if model == "HadGEM2-ES":
+            CHUNKS = 300
+        else:
+            CHUNKS = "auto"
+
+        ds[f"{model}_{exp}"] = xr.open_mfdataset(
+            glob.glob(
+                os.path.join(
+                    "data",
+                    "ModVege",
+                    clim_dataset,
+                    exp,
+                    model,
+                    f"*{clim_dataset}*{model}*{exp}*.nc",
+                )
+            ),
+            chunks=CHUNKS,
+            decode_coords="all",
+        )
+
+        # copy CRS
+        crs_ds = ds[f"{model}_{exp}"].rio.crs
+
+        # remove spin-up year
+        if exp == "historical":
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].sel(
+                time=slice("1976", "2005")
+            )
+        else:
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].sel(
+                time=slice("2041", "2070")
+            )
+
+        # convert HadGEM2-ES data back to 360-day calendar
+        # this ensures that the correct weighting is applied when
+        # calculating the weighted average
+        if model == "HadGEM2-ES":
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
+                "360_day", align_on="year"
+            )
+
+        # assign new coordinates and dimensions
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp)
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].expand_dims(dim="exp")
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model)
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].expand_dims(dim="model")
+
+        # crop offshore cells
+        land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.clip(land_mask.to_crs(crs_ds).dissolve()["geometry"], all_touched=True)
+
+        # calculate cumulative biomass
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
+            bm_t=(
+                ds[f"{model}_{exp}"]["bm"]
+                + ds[f"{model}_{exp}"]["i_bm"]
+                + ds[f"{model}_{exp}"]["h_bm"]
+            )
+        )
+
+        # drop unnecessary variables
+        ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
+        # weighted mean - yearly, MAM
+        ds_mam[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [3, 4, 5])
+        # weighted mean - yearly, JJA
+        ds_jja[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [6, 7, 8])
+        # weighted mean - yearly, SON
+        ds_son[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [9, 10, 11])
+        # weighted annual average
+        ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
+
+    # combine data
+    ds = combine_datasets(ds, crs_ds)
+    ds_mam = combine_datasets(ds_mam, crs_ds)
+    ds_jja = combine_datasets(ds_jja, crs_ds)
+    ds_son = combine_datasets(ds_son, crs_ds)
+
+    # ensemble mean
+    # ds_son = ds_son.mean(dim="model", skipna=True)
+    # ds_mam = ds_mam.mean(dim="model", skipna=True)
+    # ds_jja = ds_jja.mean(dim="model", skipna=True)
+
+    # long-term average
+    # ds_son_lta = ds_son.mean(dim="year", skipna=True)
+
+    # # shift SON year by one
+    # ds_son["year"] = ds_son["year"] + 1
+
+    return ds, ds_mam, ds_jja, ds_son
