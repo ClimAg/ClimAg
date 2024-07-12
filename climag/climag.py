@@ -134,7 +134,7 @@ def rotated_pole_transform(data):
     return transform
 
 
-def weighted_average(data, averages: str, months=None):
+def weighted_average(data, time_groupby: str, months=None):
     """
     Calculate the weighted average
 
@@ -147,19 +147,31 @@ def weighted_average(data, averages: str, months=None):
         data = data.sel(time=data["time"].dt.month.isin(months))
     # calculate the weights by grouping month length by season or month
     weights = (
-        data.time.dt.days_in_month.groupby(f"time.{averages}")
-        / data.time.dt.days_in_month.groupby(f"time.{averages}").sum()
+        data.time.dt.days_in_month.groupby(f"time.{time_groupby}")
+        / data.time.dt.days_in_month.groupby(f"time.{time_groupby}").sum()
     )
     # test that the sum of weights for each year/season/month is one
     np.testing.assert_allclose(
-        weights.groupby(f"time.{averages}").sum().values,
-        np.ones(len(set(weights[averages].values))),
+        weights.groupby(f"time.{time_groupby}").sum().values,
+        np.ones(len(set(weights[time_groupby].values))),
     )
     # calculate the weighted average
-    data_weighted = (
-        (data * weights).groupby(f"time.{averages}").sum(dim="time")
-    )
-    return data_weighted
+    data = (data * weights).groupby(f"time.{time_groupby}").sum(dim="time")
+    return data
+
+
+def stats(stat, data, time_groupby: str, months=None):
+    if months:
+        data = data.sel(time=data["time"].dt.month.isin(months))
+    if stat == "std":
+        data = data.groupby(f"time.{time_groupby}").std(dim="time", ddof=1)
+    elif stat == "median":
+        data = data.groupby(f"time.{time_groupby}").median(dim="time")
+    elif stat == "0.9q":
+        data = data.groupby(f"time.{time_groupby}").quantile(0.9, dim="time")
+    elif stat == "0.1q":
+        data = data.groupby(f"time.{time_groupby}").quantile(0.1, dim="time")
+    return data
 
 
 def keep_minimal_vars(data):
@@ -205,11 +217,12 @@ def combine_datasets(dataset_dict, dataset_crs):
     return dataset
 
 
-def calculate_stats(clim_dataset):
+def datasets_dict(clim_dataset):
     ds = {}
-    ds_mam = {}
-    ds_jja = {}
-    ds_son = {}
+    # ds_res = {}
+    # ds_mam = {}
+    # ds_jja = {}
+    # ds_son = {}
 
     for exp, model in product(exp_list, model_list):
         # auto-rechunking may cause NotImplementedError with object dtype
@@ -262,10 +275,6 @@ def calculate_stats(clim_dataset):
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model)
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].expand_dims(dim="model")
 
-        # crop offshore cells
-        land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.clip(land_mask.to_crs(crs_ds).dissolve()["geometry"], all_touched=True)
-
         # calculate cumulative biomass
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
             bm_t=(
@@ -277,20 +286,20 @@ def calculate_stats(clim_dataset):
 
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
-        # weighted mean - yearly, MAM
-        ds_mam[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [3, 4, 5])
-        # weighted mean - yearly, JJA
-        ds_jja[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [6, 7, 8])
-        # weighted mean - yearly, SON
-        ds_son[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [9, 10, 11])
-        # weighted annual average
-        ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
+        # # weighted mean - yearly, MAM
+        # ds_mam[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [3, 4, 5])
+        # # weighted mean - yearly, JJA
+        # ds_jja[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [6, 7, 8])
+        # # weighted mean - yearly, SON
+        # ds_son[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [9, 10, 11])
+        # # weighted annual average
+        # ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
 
     # combine data
-    ds = combine_datasets(ds, crs_ds)
-    ds_mam = combine_datasets(ds_mam, crs_ds)
-    ds_jja = combine_datasets(ds_jja, crs_ds)
-    ds_son = combine_datasets(ds_son, crs_ds)
+    # ds = combine_datasets(ds, crs_ds)
+    # ds_mam = combine_datasets(ds_mam, crs_ds)
+    # ds_jja = combine_datasets(ds_jja, crs_ds)
+    # ds_son = combine_datasets(ds_son, crs_ds)
 
     # ensemble mean
     # ds_son = ds_son.mean(dim="model", skipna=True)
@@ -303,4 +312,26 @@ def calculate_stats(clim_dataset):
     # # shift SON year by one
     # ds_son["year"] = ds_son["year"] + 1
 
-    return ds, ds_mam, ds_jja, ds_son
+    return ds, crs_ds #, ds_mam, ds_jja, ds_son
+
+
+def calculate_stats(ds, crs_ds):
+    ds_stats = {}
+    land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+    for season in ["year", "MAM", "JJA", "SON"]:
+        ds_stats[season] = {}
+        for stat in ["mean", "std", "median"]:
+            ds_stats[season][stat] = {}
+    for exp, model in product(exp_list, model_list):
+        for season, months in zip(["year", "MAM", "JJA", "SON"], [None, [3, 4, 5], [6, 7, 8], [9, 10, 11]]):
+            # weighted mean
+            ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", months)
+            # standard deviation and quantiles
+            for stat in ["std", "median"]:
+                ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "year", months)
+    # combine data
+    for season, stat in product(["year", "MAM", "JJA", "SON"], ["mean", "std", "median"]):
+        ds_stats[season][stat] = combine_datasets(ds_stats[season][stat], crs_ds)
+        # crop offshore cells
+        ds_stats[season][stat] = ds_stats[season][stat].rio.clip(land_mask.to_crs(crs_ds).dissolve()["geometry"], all_touched=True)
+    return ds_stats
