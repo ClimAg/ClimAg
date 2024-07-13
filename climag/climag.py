@@ -203,6 +203,7 @@ def keep_minimal_vars(data):
             # "h_bm",
             # "pgro",
             # "bm",
+            # "gro",
         ]
     )
     return data
@@ -213,6 +214,7 @@ def combine_datasets(dataset_dict, dataset_crs):
     dataset = xr.combine_by_coords(
         dataset_dict.values(), combine_attrs="override"
     )
+    # dataset = xr.combine_nested(dataset_dict.values(), concat_dim=["model", "exp", "rlat", "rlon", "time"])
     dataset.rio.write_crs(dataset_crs, inplace=True)
     return dataset
 
@@ -246,6 +248,7 @@ def datasets_dict(clim_dataset):
             ),
             chunks=CHUNKS,
             decode_coords="all",
+            # decode_cf=False,
         )
 
         # copy CRS
@@ -264,10 +267,10 @@ def datasets_dict(clim_dataset):
         # convert HadGEM2-ES data back to 360-day calendar
         # this ensures that the correct weighting is applied when
         # calculating the weighted average
-        if model == "HadGEM2-ES":
-            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
-                "360_day", align_on="year"
-            )
+        # if model == "HadGEM2-ES":
+        #     ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
+        #         "360_day", align_on="year"
+        #     )
 
         # assign new coordinates and dimensions
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp)
@@ -286,6 +289,8 @@ def datasets_dict(clim_dataset):
 
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
+        # drop time_bnds
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
         # # weighted mean - yearly, MAM
         # ds_mam[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [3, 4, 5])
         # # weighted mean - yearly, JJA
@@ -296,6 +301,9 @@ def datasets_dict(clim_dataset):
         # ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
 
     # combine data
+    ds = xr.merge(ds.values())
+    # reassign CRS
+    ds.rio.write_crs(crs_ds, inplace=True)
     # ds = combine_datasets(ds, crs_ds)
     # ds_mam = combine_datasets(ds_mam, crs_ds)
     # ds_jja = combine_datasets(ds_jja, crs_ds)
@@ -312,23 +320,44 @@ def datasets_dict(clim_dataset):
     # # shift SON year by one
     # ds_son["year"] = ds_son["year"] + 1
 
-    return ds, crs_ds #, ds_mam, ds_jja, ds_son
+    return ds, crs_ds  #, ds_mam, ds_jja, ds_son
 
 
-def calculate_stats(ds, crs_ds):
+def calculate_stats(ds, crs_ds, clim_dataset, stat):
     ds_stats = {}
     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+    ds_stats["year"] = {}
+    # weighted mean
+    ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
+
+
     for season in ["year", "MAM", "JJA", "SON"]:
         ds_stats[season] = {}
+
+
+
         for stat in ["mean", "std", "median"]:
             ds_stats[season][stat] = {}
-    for exp, model in product(exp_list, model_list):
-        for season, months in zip(["year", "MAM", "JJA", "SON"], [None, [3, 4, 5], [6, 7, 8], [9, 10, 11]]):
+        for exp, model in product(exp_list, model_list):
+            if season == "year":
+                time_groupby = "year"
+            else:
+                # weighted mean
+                ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
+                # standard deviation and quantiles
+                for stat in ["std", "median"]:
+                    ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "season")
             # weighted mean
-            ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", months)
+            ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], time_groupby)
             # standard deviation and quantiles
             for stat in ["std", "median"]:
-                ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "year", months)
+                ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "season")
+        # for season, months in zip(["year", "MAM", "JJA", "SON"], [None, [3, 4, 5], [6, 7, 8], [9, 10, 11]]):
+        #     # weighted mean
+        #     ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", months)
+        #     # standard deviation and quantiles
+        #     for stat in ["std", "median"]:
+        #         ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "year", months)
     # combine data
     for season, stat in product(["year", "MAM", "JJA", "SON"], ["mean", "std", "median"]):
         ds_stats[season][stat] = combine_datasets(ds_stats[season][stat], crs_ds)
