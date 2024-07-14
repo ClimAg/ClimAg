@@ -309,15 +309,35 @@ def load_modvege_dataset(clim_dataset, exp):
     return ds, crs_ds
 
 
+def load_modvege_dataset_all(clim_dataset):
+    ds = {}
+    for exp in exp_list:
+        ds[exp], crs_ds = load_modvege_dataset(clim_dataset=clim_dataset, exp=exp)
+    ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
+    ds.rio.write_crs(crs_ds, inplace=True)
+    return ds, crs_ds
+
+
 def calculate_stats(ds, crs_ds, clim_dataset, stat):
     ds_stats = {}
     if stat == "mean":
-        ds_stats["mean_season"] = weighted_average(ds, "season")
-        ds_stats["mean_year"] = weighted_average(ds, "year")
-        ds_stats["mean_lta"] = weighted_average(ds, "year").mean(dim="year", skipna=True)
-        ds_stats["mean_season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
-        ds_stats["mean_year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
-        ds_stats["mean_lta_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
+        ds_stats["season"] = weighted_average(ds, "season")
+        ds_stats["year"] = weighted_average(ds, "year")
+        ds_stats["lt"] = weighted_average(ds, "year").mean(dim="year", skipna=True)
+        ds_stats["season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
+        ds_stats["year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
+        ds_stats["lt_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
+    elif stat == "std":
+        ds_stats["season"] = data.groupby("time.season").std(dim="time", ddof=1, skipna=True)
+        ds_stats["year"] = data.groupby("time.year").std(dim="time", ddof=1, skipna=True)
+        ds_stats["lt"] = data.std(dim="time", ddof=1, skipna=True)
+        ds_stats["season_ensemble"] = data.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
+        ds_stats["year_ensemble"] = data.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
+        ds_stats["lt_ensemble"] = data.std(dim=["time", "model"], ddof=1, skipna=True)
+    # sort seasons in the right order
+    for key in ds_stats:
+        if "season" in key:
+            ds_stats[key] = ds_stats[key].reindex(season=season_list)
     # land mask geometry for cropping
     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
