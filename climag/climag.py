@@ -164,13 +164,13 @@ def stats(stat, data, time_groupby: str, months=None):
     if months:
         data = data.sel(time=data["time"].dt.month.isin(months))
     if stat == "std":
-        data = data.groupby(f"time.{time_groupby}").std(dim="time", ddof=1)
+        data = data.groupby(f"time.{time_groupby}").std(dim="time", ddof=1, skipna=True)
     elif stat == "median":
-        data = data.groupby(f"time.{time_groupby}").median(dim="time")
+        data = data.groupby(f"time.{time_groupby}").median(dim="time", skipna=True)
     elif stat == "0.9q":
-        data = data.groupby(f"time.{time_groupby}").quantile(0.9, dim="time")
+        data = data.groupby(f"time.{time_groupby}").quantile(0.9, dim="time", skipna=True)
     elif stat == "0.1q":
-        data = data.groupby(f"time.{time_groupby}").quantile(0.1, dim="time")
+        data = data.groupby(f"time.{time_groupby}").quantile(0.1, dim="time", skipna=True)
     return data
 
 
@@ -209,24 +209,10 @@ def keep_minimal_vars(data):
     return data
 
 
-def combine_datasets(dataset_dict, dataset_crs):
-    """combine a dict of datasets into a single dataset"""
-    dataset = xr.combine_by_coords(
-        dataset_dict.values(), combine_attrs="override"
-    )
-    # dataset = xr.combine_nested(dataset_dict.values(), concat_dim=["model", "exp", "rlat", "rlon", "time"])
-    dataset.rio.write_crs(dataset_crs, inplace=True)
-    return dataset
-
-
-def datasets_dict(clim_dataset):
+def load_modvege_dataset(clim_dataset, exp):
     ds = {}
-    # ds_res = {}
-    # ds_mam = {}
-    # ds_jja = {}
-    # ds_son = {}
 
-    for exp, model in product(exp_list, model_list):
+    for model in model_list:
         # auto-rechunking may cause NotImplementedError with object dtype
         # where it will not be able to estimate the size in bytes of object
         # data
@@ -320,47 +306,23 @@ def datasets_dict(clim_dataset):
     # # shift SON year by one
     # ds_son["year"] = ds_son["year"] + 1
 
-    return ds, crs_ds  #, ds_mam, ds_jja, ds_son
+    return ds, crs_ds
 
 
 def calculate_stats(ds, crs_ds, clim_dataset, stat):
     ds_stats = {}
+    if stat == "mean":
+        ds_stats["mean_season"] = weighted_average(ds, "season")
+        ds_stats["mean_year"] = weighted_average(ds, "year")
+        ds_stats["mean_lta"] = weighted_average(ds, "year").mean(dim="year", skipna=True)
+        ds_stats["mean_season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
+        ds_stats["mean_year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
+        ds_stats["mean_lta_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
+    # land mask geometry for cropping
     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-    ds_stats["year"] = {}
-    # weighted mean
-    ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
-
-
-    for season in ["year", "MAM", "JJA", "SON"]:
-        ds_stats[season] = {}
-
-
-
-        for stat in ["mean", "std", "median"]:
-            ds_stats[season][stat] = {}
-        for exp, model in product(exp_list, model_list):
-            if season == "year":
-                time_groupby = "year"
-            else:
-                # weighted mean
-                ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
-                # standard deviation and quantiles
-                for stat in ["std", "median"]:
-                    ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "season")
-            # weighted mean
-            ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], time_groupby)
-            # standard deviation and quantiles
-            for stat in ["std", "median"]:
-                ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "season")
-        # for season, months in zip(["year", "MAM", "JJA", "SON"], [None, [3, 4, 5], [6, 7, 8], [9, 10, 11]]):
-        #     # weighted mean
-        #     ds_stats[season]["mean"][f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", months)
-        #     # standard deviation and quantiles
-        #     for stat in ["std", "median"]:
-        #         ds_stats[season][stat][f"{model}_{exp}"] = stats(stat, ds[f"{model}_{exp}"], "year", months)
-    # combine data
-    for season, stat in product(["year", "MAM", "JJA", "SON"], ["mean", "std", "median"]):
-        ds_stats[season][stat] = combine_datasets(ds_stats[season][stat], crs_ds)
-        # crop offshore cells
-        ds_stats[season][stat] = ds_stats[season][stat].rio.clip(land_mask.to_crs(crs_ds).dissolve()["geometry"], all_touched=True)
+    land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
+    # crop offshore cells
+    for key in ds_stats:
+        ds_stats[key].rio.write_crs(crs_ds, inplace=True)
+        ds_stats[key] = ds_stats[key].rio.clip(land_mask, all_touched=True)
     return ds_stats
