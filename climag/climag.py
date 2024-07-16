@@ -309,13 +309,38 @@ def load_modvege_dataset(clim_dataset, exp):
     return ds, crs_ds
 
 
-def load_modvege_dataset_all(clim_dataset):
+def results_mean(clim_dataset):
     ds = {}
     for exp in exp_list:
         ds[exp], crs_ds = load_modvege_dataset(clim_dataset=clim_dataset, exp=exp)
     ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
     ds.rio.write_crs(crs_ds, inplace=True)
-    return ds, crs_ds
+    # seasonal and annual weighted means
+    ds_season = weighted_average(ds, "season")
+    ds_annual = weighted_average(ds, "year")
+    # land mask geometry for cropping
+    land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+    land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
+    # calculate ensemble means
+    # crop offshore cells
+    for data in [ds_season, ds_annual]:
+        data_e = data.mean(dim="model", skipna=True)
+        data_e = data_e.assign_coords(model="Ensemble")
+        data_e = data_e.expand_dims(dim="model")
+        data = xr.combine_by_coords([data, data_e], combine_attrs="override")
+        data.rio.write_crs(crs_ds, inplace=True)
+        data = data.rio.clip(land_mask, all_touched=True)
+    # sort seasons in the right order
+    ds_season = ds_season.reindex(season=season_list)
+    return ds_season, ds_year, crs_ds
+
+
+def results_normalised(data_season, data_year):
+    mean_hist = data_year.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    std_hist = data_year.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
+    ds_season_norm = (ds_season - mean_hist) / std_hist
+    ds_year_norm = (ds_year - mean_hist) / std_hist
+    return ds_season_norm, ds_year_norm
 
 
 def calculate_stats(ds, crs_ds, clim_dataset, stat):
@@ -323,17 +348,17 @@ def calculate_stats(ds, crs_ds, clim_dataset, stat):
     if stat == "mean":
         ds_stats["season"] = weighted_average(ds, "season")
         ds_stats["year"] = weighted_average(ds, "year")
-        ds_stats["lt"] = weighted_average(ds, "year").mean(dim="year", skipna=True)
+        ds_stats["lt"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
         ds_stats["season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
         ds_stats["year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
         ds_stats["lt_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
     elif stat == "std":
-        ds_stats["season"] = data.groupby("time.season").std(dim="time", ddof=1, skipna=True)
-        ds_stats["year"] = data.groupby("time.year").std(dim="time", ddof=1, skipna=True)
-        ds_stats["lt"] = data.std(dim="time", ddof=1, skipna=True)
-        ds_stats["season_ensemble"] = data.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
-        ds_stats["year_ensemble"] = data.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
-        ds_stats["lt_ensemble"] = data.std(dim=["time", "model"], ddof=1, skipna=True)
+        ds_stats["season"] = ds.groupby("time.season").std(dim="time", ddof=1, skipna=True)
+        ds_stats["year"] = ds.groupby("time.year").std(dim="time", ddof=1, skipna=True)
+        ds_stats["lt"] = ds.std(dim="time", ddof=1, skipna=True)
+        ds_stats["season_ensemble"] = ds.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
+        ds_stats["year_ensemble"] = ds.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
+        ds_stats["lt_ensemble"] = ds.std(dim=["time", "model"], ddof=1, skipna=True)
     # sort seasons in the right order
     for key in ds_stats:
         if "season" in key:
