@@ -160,20 +160,6 @@ def weighted_average(data, time_groupby: str, months=None):
     return data
 
 
-def stats(stat, data, time_groupby: str, months=None):
-    if months:
-        data = data.sel(time=data["time"].dt.month.isin(months))
-    if stat == "std":
-        data = data.groupby(f"time.{time_groupby}").std(dim="time", ddof=1, skipna=True)
-    elif stat == "median":
-        data = data.groupby(f"time.{time_groupby}").median(dim="time", skipna=True)
-    elif stat == "0.9q":
-        data = data.groupby(f"time.{time_groupby}").quantile(0.9, dim="time", skipna=True)
-    elif stat == "0.1q":
-        data = data.groupby(f"time.{time_groupby}").quantile(0.1, dim="time", skipna=True)
-    return data
-
-
 def keep_minimal_vars(data):
     """
     Drop variables that are not needed
@@ -209,10 +195,11 @@ def keep_minimal_vars(data):
     return data
 
 
-def load_modvege_dataset(clim_dataset, exp):
+def results_weighted_mean(clim_dataset):
     ds = {}
+    ds_annual = {}
 
-    for model in model_list:
+    for model, exp in product(model_list, exp_list):
         # auto-rechunking may cause NotImplementedError with object dtype
         # where it will not be able to estimate the size in bytes of object
         # data
@@ -253,10 +240,10 @@ def load_modvege_dataset(clim_dataset, exp):
         # convert HadGEM2-ES data back to 360-day calendar
         # this ensures that the correct weighting is applied when
         # calculating the weighted average
-        # if model == "HadGEM2-ES":
-        #     ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
-        #         "360_day", align_on="year"
-        #     )
+        if model == "HadGEM2-ES":
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
+                "360_day", align_on="year"
+            )
 
         # assign new coordinates and dimensions
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
@@ -274,46 +261,60 @@ def load_modvege_dataset(clim_dataset, exp):
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
         # drop time_bnds
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
+        # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
+        # annual weighted mean
+        ds_annual[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
+        # seasonal mean
+        ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
 
-    # combine data
-    ds = xr.merge(ds.values())
-    # reassign CRS
-    ds.rio.write_crs(crs_ds, inplace=True)
-
-    return ds, crs_ds
-
-
-def results_mean(clim_dataset):
-    ds = {}
-    for exp in exp_list:
-        ds[exp], crs_ds = load_modvege_dataset(clim_dataset=clim_dataset, exp=exp)
-    ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
-    ds.rio.write_crs(crs_ds, inplace=True)
-    # seasonal and annual weighted means
-    ds_season = weighted_average(ds, "season")
-    ds_annual = weighted_average(ds, "year")
     # land mask geometry for cropping
     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
-    # calculate ensemble means
+
+    # ds = xr.merge(ds.values())
+    # combine data
+    ds = xr.combine_by_coords(ds.values())
+    ds_annual = xr.combine_by_coords(ds_annual.values())
+    # reassign CRS
+    ds.rio.write_crs(crs_ds, inplace=True)
+    ds_annual.rio.write_crs(crs_ds, inplace=True)
     # crop offshore cells
-    for data in [ds_season, ds_annual]:
-        # data_e = data.mean(dim="model", skipna=True).assign_coords(model="Ensemble").expand_dims(dim="model")
-        # data = xr.combine_by_coords([data, data_e], combine_attrs="override")
-        data.rio.write_crs(crs_ds, inplace=True)
-        data = data.rio.clip(land_mask, all_touched=True)
-    # sort seasons in the right order
-    ds_season = ds_season.reindex(season=season_list)
-    return ds_season, ds_year, crs_ds
+    ds = ds.rio.clip(land_mask, all_touched=True)
+    ds_annual = ds_annual.rio.clip(land_mask, all_touched=True)
+
+    return ds, ds_annual, crs_ds
 
 
-def results_normalised(data_season, data_year):
-    mean_hist = data_year.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
-    std_hist = data_year.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
-    ds_season_norm = (ds_season - mean_hist) / std_hist
-    ds_year_norm = (ds_year - mean_hist) / std_hist
-    return ds_season_norm, ds_year_norm
+# def results_mean(clim_dataset):
+#     ds = {}
+#     for exp in exp_list:
+#         ds[exp], crs_ds = load_modvege_dataset(clim_dataset=clim_dataset, exp=exp)
+#     ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
+#     ds.rio.write_crs(crs_ds, inplace=True)
+#     # seasonal and annual weighted means
+#     ds_season = weighted_average(ds, "season")
+#     ds_annual = weighted_average(ds, "year")
+#     # land mask geometry for cropping
+#     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+#     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
+#     # calculate ensemble means
+#     # crop offshore cells
+#     for data in [ds_season, ds_annual]:
+#         # data_e = data.mean(dim="model", skipna=True).assign_coords(model="Ensemble").expand_dims(dim="model")
+#         # data = xr.combine_by_coords([data, data_e], combine_attrs="override")
+#         data.rio.write_crs(crs_ds, inplace=True)
+#         data = data.rio.clip(land_mask, all_touched=True)
+#     # sort seasons in the right order
+#     ds_season = ds_season.reindex(season=season_list)
+#     return ds_season, ds_annual, crs_ds
+
+
+def results_normalised(data_season, data_annual):
+    mean_hist = data_annual.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    std_hist = data_annual.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
+    data_season_norm = (data_season - mean_hist) / std_hist
+    data_annual_norm = (data_annual - mean_hist) / std_hist
+    return data_season_norm, data_annual_norm
 
 
 # def calculate_stats(ds, crs_ds, clim_dataset, stat):
