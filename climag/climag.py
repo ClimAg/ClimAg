@@ -259,10 +259,8 @@ def load_modvege_dataset(clim_dataset, exp):
         #     )
 
         # assign new coordinates and dimensions
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp)
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].expand_dims(dim="exp")
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model)
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].expand_dims(dim="model")
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model).expand_dims(dim="model")
 
         # calculate cumulative biomass
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
@@ -277,34 +275,11 @@ def load_modvege_dataset(clim_dataset, exp):
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
         # drop time_bnds
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
-        # # weighted mean - yearly, MAM
-        # ds_mam[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [3, 4, 5])
-        # # weighted mean - yearly, JJA
-        # ds_jja[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [6, 7, 8])
-        # # weighted mean - yearly, SON
-        # ds_son[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year", [9, 10, 11])
-        # # weighted annual average
-        # ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
 
     # combine data
     ds = xr.merge(ds.values())
     # reassign CRS
     ds.rio.write_crs(crs_ds, inplace=True)
-    # ds = combine_datasets(ds, crs_ds)
-    # ds_mam = combine_datasets(ds_mam, crs_ds)
-    # ds_jja = combine_datasets(ds_jja, crs_ds)
-    # ds_son = combine_datasets(ds_son, crs_ds)
-
-    # ensemble mean
-    # ds_son = ds_son.mean(dim="model", skipna=True)
-    # ds_mam = ds_mam.mean(dim="model", skipna=True)
-    # ds_jja = ds_jja.mean(dim="model", skipna=True)
-
-    # long-term average
-    # ds_son_lta = ds_son.mean(dim="year", skipna=True)
-
-    # # shift SON year by one
-    # ds_son["year"] = ds_son["year"] + 1
 
     return ds, crs_ds
 
@@ -324,10 +299,8 @@ def results_mean(clim_dataset):
     # calculate ensemble means
     # crop offshore cells
     for data in [ds_season, ds_annual]:
-        data_e = data.mean(dim="model", skipna=True)
-        data_e = data_e.assign_coords(model="Ensemble")
-        data_e = data_e.expand_dims(dim="model")
-        data = xr.combine_by_coords([data, data_e], combine_attrs="override")
+        # data_e = data.mean(dim="model", skipna=True).assign_coords(model="Ensemble").expand_dims(dim="model")
+        # data = xr.combine_by_coords([data, data_e], combine_attrs="override")
         data.rio.write_crs(crs_ds, inplace=True)
         data = data.rio.clip(land_mask, all_touched=True)
     # sort seasons in the right order
@@ -343,31 +316,31 @@ def results_normalised(data_season, data_year):
     return ds_season_norm, ds_year_norm
 
 
-def calculate_stats(ds, crs_ds, clim_dataset, stat):
-    ds_stats = {}
-    if stat == "mean":
-        ds_stats["season"] = weighted_average(ds, "season")
-        ds_stats["year"] = weighted_average(ds, "year")
-        ds_stats["lt"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
-        ds_stats["season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
-        ds_stats["year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
-        ds_stats["lt_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
-    elif stat == "std":
-        ds_stats["season"] = ds.groupby("time.season").std(dim="time", ddof=1, skipna=True)
-        ds_stats["year"] = ds.groupby("time.year").std(dim="time", ddof=1, skipna=True)
-        ds_stats["lt"] = ds.std(dim="time", ddof=1, skipna=True)
-        ds_stats["season_ensemble"] = ds.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
-        ds_stats["year_ensemble"] = ds.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
-        ds_stats["lt_ensemble"] = ds.std(dim=["time", "model"], ddof=1, skipna=True)
-    # sort seasons in the right order
-    for key in ds_stats:
-        if "season" in key:
-            ds_stats[key] = ds_stats[key].reindex(season=season_list)
-    # land mask geometry for cropping
-    land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-    land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
-    # crop offshore cells
-    for key in ds_stats:
-        ds_stats[key].rio.write_crs(crs_ds, inplace=True)
-        ds_stats[key] = ds_stats[key].rio.clip(land_mask, all_touched=True)
-    return ds_stats
+# def calculate_stats(ds, crs_ds, clim_dataset, stat):
+#     ds_stats = {}
+#     if stat == "mean":
+#         ds_stats["season"] = weighted_average(ds, "season")
+#         ds_stats["year"] = weighted_average(ds, "year")
+#         ds_stats["lt"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
+#         ds_stats["season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
+#         ds_stats["year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
+#         ds_stats["lt_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
+#     elif stat == "std":
+#         ds_stats["season"] = ds.groupby("time.season").std(dim="time", ddof=1, skipna=True)
+#         ds_stats["year"] = ds.groupby("time.year").std(dim="time", ddof=1, skipna=True)
+#         ds_stats["lt"] = ds.std(dim="time", ddof=1, skipna=True)
+#         ds_stats["season_ensemble"] = ds.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
+#         ds_stats["year_ensemble"] = ds.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
+#         ds_stats["lt_ensemble"] = ds.std(dim=["time", "model"], ddof=1, skipna=True)
+#     # sort seasons in the right order
+#     for key in ds_stats:
+#         if "season" in key:
+#             ds_stats[key] = ds_stats[key].reindex(season=season_list)
+#     # land mask geometry for cropping
+#     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
+#     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
+#     # crop offshore cells
+#     for key in ds_stats:
+#         ds_stats[key].rio.write_crs(crs_ds, inplace=True)
+#         ds_stats[key] = ds_stats[key].rio.clip(land_mask, all_touched=True)
+#     return ds_stats
