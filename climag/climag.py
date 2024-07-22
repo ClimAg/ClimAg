@@ -104,12 +104,12 @@ def rotated_pole_point(data, lon, lat):
 
 
 def rotated_pole_transform(data):
-    """Rotated pole transform for plotting CORDEX data.
+    """Rotated pole transform for plotting EURO-CORDEX data.
 
     Parameters
     ----------
     data : xarray.Dataset
-        Input CORDEX data
+        Input EURO-CORDEX data
 
     Returns
     -------
@@ -134,7 +134,7 @@ def rotated_pole_transform(data):
     return transform
 
 
-def weighted_average(data, time_groupby: str, months=None):
+def weighted_average(data, time_groupby: str):
     """
     Calculate the weighted average
 
@@ -143,8 +143,8 @@ def weighted_average(data, time_groupby: str, months=None):
     - https://docs.xarray.dev/en/stable/examples/monthly-means.html
     - https://ncar.github.io/esds/posts/2020/Time/
     """
-    if months:
-        data = data.sel(time=data["time"].dt.month.isin(months))
+    # if months:
+    #     data = data.sel(time=data["time"].dt.month.isin(months))
     # calculate the weights by grouping month length by season or month
     weights = (
         data.time.dt.days_in_month.groupby(f"time.{time_groupby}")
@@ -158,6 +158,19 @@ def weighted_average(data, time_groupby: str, months=None):
     # calculate the weighted average
     data = (data * weights).groupby(f"time.{time_groupby}").sum(dim="time")
     return data
+
+
+def weighted_average_year(data):
+    ds_yearmon = {}
+    for year in set(data.time.dt.year.values):
+        ds_yearmon[year] = ds.sel(time=slice(str(year), str(year)))
+        ds_yearmon[year] = weighted_average(data=ds_yearmon[year], time_groupby="month")
+        ds_mon = {}
+        for month in ds_yearmon[year].month.values:
+            ds_mon[month] = ds_yearmon[year].sel(month=month).assign_coords(time=datetime.datetime(year, month, 15)).expand_dims(dim="time")
+        ds_yearmon[year] = xr.combine_by_coords(ds_mon.values())
+    ds_yearmon = xr.combine_by_coords(ds_yearmon.values())
+    return ds_yearmon
 
 
 def keep_minimal_vars(data):
@@ -196,6 +209,7 @@ def keep_minimal_vars(data):
 
 
 def results_weighted_mean(clim_dataset):
+    """Annual and seasonal weighted means"""
     ds = {}
     ds_annual = {}
 
@@ -275,14 +289,19 @@ def results_weighted_mean(clim_dataset):
     # combine data
     ds = xr.combine_by_coords(ds.values())
     ds_annual = xr.combine_by_coords(ds_annual.values())
+    # sort seasons in the right order
+    ds = ds.reindex(season=season_list)
     # reassign CRS
     ds.rio.write_crs(crs_ds, inplace=True)
     ds_annual.rio.write_crs(crs_ds, inplace=True)
     # crop offshore cells
     ds = ds.rio.clip(land_mask, all_touched=True)
     ds_annual = ds_annual.rio.clip(land_mask, all_touched=True)
+    # ensemble means
+    ds_ens = ds.mean(dim="model", skipna=True)
+    ds_annual_ens = ds_annual.mean(dim="model", skipna=True)
 
-    return ds, ds_annual, crs_ds
+    return ds, ds_annual, ds_ens, ds_annual_ens, crs_ds
 
 
 # def results_mean(clim_dataset):
@@ -308,10 +327,18 @@ def results_weighted_mean(clim_dataset):
 #     ds_season = ds_season.reindex(season=season_list)
 #     return ds_season, ds_annual, crs_ds
 
+def results_historical(data_season, data_annual):
+    # mean_hist_season = data_season.sel(exp="historical").drop_vars("exp").mean(dim="season", skipna=True)
+    # std_hist_season = data_season.sel(exp="historical").drop_vars("exp").std(dim="season", ddof=1, skipna=True)
+    mean_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    std_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
+    # q10_hist = data_annual.sel(exp="historical").drop_vars("exp").quantile(dim="year", q=10, skipna=True)
+    return mean_hist_annual, std_hist_annual
+
 
 def results_normalised(data_season, data_annual):
-    mean_hist = data_annual.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
-    std_hist = data_annual.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
+    """Normalise using the historical mean and standard deviation"""
+    mean_hist, std_hist = results_historical(data_season, data_annual)
     data_season_norm = (data_season - mean_hist) / std_hist
     data_annual_norm = (data_annual - mean_hist) / std_hist
     return data_season_norm, data_annual_norm

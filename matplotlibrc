@@ -28,8 +28,8 @@ axes.linewidth: 1
 grid.color: .8
 # xtick.major.size: 0
 # ytick.major.size: 0
-# xtick.minor.size: 0
-# ytick.minor.size: 0
+xtick.minor.size: 0
+ytick.minor.size: 0
 
 # Custom settings
 figure.dpi: 96
