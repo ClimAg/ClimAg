@@ -285,10 +285,10 @@ def load_all_data(clim_dataset):
     return ds
 
 
-def calc_normalised_vars_year(ds):
+def calc_normalised_vars_year(data_dict):
     ds_mean = {}
     for model, exp in product(model_list, exp_list):
-        ds_mean[f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
+        ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
     # combine data
     ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
     # historical mean
@@ -300,19 +300,29 @@ def calc_normalised_vars_year(ds):
     return ds_norm
 
 
-def calc_normalised_vars_season(ds):
+def calc_normalised_vars_season(data_dict, season):
     ds_seas = {}
+    if season == "DJF":
+        months = [12, 1, 2]
+    elif season == "MAM":
+        months = [3, 4, 5]
+    elif season == "JJA":
+        months = [6, 7, 8]
+    elif season == "SON":
+        months = [9, 10, 11]
     for model, exp in product(model_list, exp_list):
-        ds_seas_year = {}
-        for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
-            ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=True)
-            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-        ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+        ds_seas[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].sel(time=data_dict[f"{model}_{exp}"]["time"].dt.month.isin(months))
+        ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
+        # ds_seas_year = {}
+        # for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
+        #     ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
+        #     ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=True)
+        #     ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
+        # ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
     # combine data
     ds_seas = xr.combine_by_coords(ds_seas.values(), combine_attrs="override")
     # sort seasons in the right order
-    ds_seas = ds_seas.reindex(season=season_list)
+    # ds_seas = ds_seas.reindex(season=season_list)
     # historical mean
     hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
     # historical standard deviation
