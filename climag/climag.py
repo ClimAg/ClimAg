@@ -200,7 +200,7 @@ def keep_minimal_vars(data):
             "c_bm",
             "i_bm",
             "h_bm",
-            # "pgro",
+            "pgro",
             # "bm",
             # "gro",
         ]
@@ -274,13 +274,13 @@ def load_all_data(clim_dataset):
                 + ds[f"{model}_{exp}"]["h_bm"]
             )
         )
-        # total biomass
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-            bm_t=(
-                ds[f"{model}_{exp}"]["bm"]
-                + ds[f"{model}_{exp}"]["bm_c"]
-            )
-        )
+        # # total biomass
+        # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
+        #     bm_t=(
+        #         ds[f"{model}_{exp}"]["bm"]
+        #         + ds[f"{model}_{exp}"]["bm_c"]
+        #     )
+        # )
 
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
@@ -313,11 +313,6 @@ def calc_annual_mean(data_dict, seasonal, skipna):
 
 
 def calc_normalised_std(data_dict, seasonal=False, skipna=True):
-    # ds_mean = {}
-    # for model, exp in product(model_list, exp_list):
-    #     ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
-    # # combine data
-    # ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
     hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
@@ -329,22 +324,6 @@ def calc_normalised_std(data_dict, seasonal=False, skipna=True):
 
 
 def calc_normalised_relative(data_dict, seasonal=False, skipna=True):
-    # ds_mean = {}
-    # for model, exp in product(model_list, exp_list):
-    #     if season:
-    #         ds_seas_year = {}
-    #         for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
-    #             ds_seas_year[year] = data_dict[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-    #             ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
-    #             ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-    #         ds_mean[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
-    #     else:
-    #         ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
-    # # combine data
-    # ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
-    # # sort seasons in the right order
-    # if season:
-    #     ds_mean = ds_mean.reindex(season=season_list)
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
     hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
@@ -353,159 +332,50 @@ def calc_normalised_relative(data_dict, seasonal=False, skipna=True):
     return ds_norm
 
 
-def calc_relative_change_season(data_dict, skipna=True):
-    ds_seas = {}
-    # if season == "DJF":
-    #     months = [12, 1, 2]
-    # elif season == "MAM":
-    #     months = [3, 4, 5]
-    # elif season == "JJA":
-    #     months = [6, 7, 8]
-    # elif season == "SON":
-    #     months = [9, 10, 11]
-    for model, exp in product(model_list, exp_list):
-        # ds_seas[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].sel(time=data_dict[f"{model}_{exp}"]["time"].dt.month.isin(months))
-        # ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
-        ds_seas_year = {}
-        for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
-            ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
-            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-        ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
-    # combine data
-    ds_seas = xr.combine_by_coords(ds_seas.values(), combine_attrs="override")
-    # sort seasons in the right order
-    ds_seas = ds_seas.reindex(season=season_list)
+def calc_anomaly_absolute(data_dict, seasonal=False, skipna=True):
+    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
-    hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    # calculate anomaly
+    ds_anom = ds_calc - hist_mean
+    return ds_anom
+
+
+def calc_event_frequency(data_dict, seasonal=False, skipna=True):
+    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
+    # historical 10th percentile
+    hist_p10 = ds_calc.sel(exp="historical").drop_vars("exp").chunk(dict(year=-1)).quantile(dim="year", skipna=skipna, q=0.1)
+    # calculate difference
+    ds_anom = ds_calc - hist_p10
+    return ds_anom
+
+
+def calc_event_severity(data_dict, seasonal=False, skipna=True):
+    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical standard deviation
-    # hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
-    # normalise
-    ds_norm = (ds_seas - hist_mean) / hist_mean * 100
-    return ds_norm
+    hist_std = ds_calc.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
+    # calculate intensity
+    ds_anom = ds_calc / hist_std
+    return ds_anom
 
 
-# def calc_mean_yearmon(ds):
-#     ds_yearmon = {}
-#     for year in set(ds.time.dt.year.values):
-#         ds_yearmon[year] = ds.sel(time=slice(str(year), str(year)))
-#         ds_yearmon[year] = ds_yearmon[year].groupby("time.month").mean(dim="time", skipna=True)
-#         ds_mon = {}
-#         for month in ds_yearmon[year].month.values:
-#             ds_mon[month] = ds_yearmon[year].sel(month=month).assign_coords(time=datetime.datetime(year, month, 15)).expand_dims(dim="time")
-#         ds_yearmon[year] = xr.combine_by_coords(ds_mon.values())
-#     ds_yearmon = xr.combine_by_coords(ds_yearmon.values())
-#     return ds_yearmon
-
-        # for t in time_groupby:
-            # ds_stat[t]["mean"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").mean(dim="time", skipna=True)
-            # ds_stat[t]["std"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").std(dim="time", skipna=True, ddof=1)
-            # ds_stat[t]["median"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").median(dim="time", skipna=True)
-            # ds_stat[t]["p10"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].chunk(dict(time=-1)).groupby(f"time.{t}").quantile(dim="time", skipna=True, q=0.1)
-            # ds_stat[t]["p90"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].chunk(dict(time=-1)).groupby(f"time.{t}").quantile(dim="time", skipna=True, q=0.9)
-            # ds_stat[t]["min"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").min(dim="time", skipna=True)
-            # ds_stat[t]["max"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").max(dim="time", skipna=True)
-
-    # # land mask geometry for cropping
-    # land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-    # land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
-
-    # # combine data
-    # ds = xr.merge(ds.values())
-
-    # # calculate stats
-    # ds_stat["mean_year"] = ds.groupby("time.year").mean(dim=["time", "model"], skipna=True)
-    # ds_stat["mean_season"] = ds.groupby("time.season").mean(dim=["time", "model"], skipna=True)
-    # ds_stat["hist_mean"] = ds.sel(exp="historical").drop_vars("exp").mean(dim=["time", "model"], skipna=True)
-    # ds_stat["hist_std"] = ds.sel(exp="historical").drop_vars("exp").std(dim=["time", "model"], skipna=True, ddof=1)
-    # ds_stat["hist_10p"] = ds.sel(exp="historical").drop_vars("exp").quantile(dim=["time", "model"], skipna=True, q=0.1)
-
-    # # sort seasons in the right order
-    # ds_stat["mean_season"] = ds_stat["mean_season"].reindex(season=season_list)
-
-    # # reassign CRS and crop offshore cells
-    # for s in stat_list:
-    #     ds_stat[s].rio.write_crs(crs_ds, inplace=True)
-    #     ds_stat[s] = ds_stat[s].rio.clip(land_mask, all_touched=True)
-    # # # combine data
-    # # for t, s in product(time_groupby, stats):
-    # #     ds_stat[t][s] = xr.combine_by_coords(ds_stat[t][s].values(), combine_attrs="override")
-    # #     # sort seasons in the right order
-    # #     if t == "season":
-    # #         ds_stat[t][s] = ds_stat[t][s].reindex(season=season_list)
-    # #     # reassign CRS
-    # #     ds_stat[t][s].rio.write_crs(crs_ds, inplace=True)
-    # #     # crop offshore cells
-    # #     ds_stat[t][s] = ds_stat[t][s].rio.clip(land_mask, all_touched=True)
-    # return ds_stat
-
-
-# def results_mean(clim_dataset):
-#     ds = {}
-#     for exp in exp_list:
-#         ds[exp], crs_ds = load_modvege_dataset(clim_dataset=clim_dataset, exp=exp)
-#     ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
-#     ds.rio.write_crs(crs_ds, inplace=True)
-#     # seasonal and annual weighted means
-#     ds_season = weighted_average(ds, "season")
-#     ds_annual = weighted_average(ds, "year")
-#     # land mask geometry for cropping
-#     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-#     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
-#     # calculate ensemble means
-#     # crop offshore cells
-#     for data in [ds_season, ds_annual]:
-#         # data_e = data.mean(dim="model", skipna=True).assign_coords(model="Ensemble").expand_dims(dim="model")
-#         # data = xr.combine_by_coords([data, data_e], combine_attrs="override")
-#         data.rio.write_crs(crs_ds, inplace=True)
-#         data = data.rio.clip(land_mask, all_touched=True)
-#     # sort seasons in the right order
-#     ds_season = ds_season.reindex(season=season_list)
-#     return ds_season, ds_annual, crs_ds
-
-def results_historical(data_season, data_annual):
-    # mean_hist_season = data_season.sel(exp="historical").drop_vars("exp").mean(dim="season", skipna=True)
-    # std_hist_season = data_season.sel(exp="historical").drop_vars("exp").std(dim="season", ddof=1, skipna=True)
-    mean_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
-    std_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
-    # q10_hist = data_annual.sel(exp="historical").drop_vars("exp").quantile(dim="year", q=0.1, skipna=True)
-    return mean_hist_annual, std_hist_annual
-
-
-def results_normalised(data):
-    """Normalise using the historical mean and standard deviation"""
-    mean_hist = data.sel(exp="historical").drop_vars("exp")
-    std_hist = results_historical(data_season, data_annual)
-    data_season_norm = (data_season - mean_hist) / std_hist
-    data_annual_norm = (data_annual - mean_hist) / std_hist
-    return data_season_norm, data_annual_norm
-
-
-# def calculate_stats(ds, crs_ds, clim_dataset, stat):
-#     ds_stats = {}
-#     if stat == "mean":
-#         ds_stats["season"] = weighted_average(ds, "season")
-#         ds_stats["year"] = weighted_average(ds, "year")
-#         ds_stats["lt"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
-#         ds_stats["season_ensemble"] = weighted_average(ds, "season").mean(dim="model", skipna=True)
-#         ds_stats["year_ensemble"] = weighted_average(ds, "year").mean(dim="model", skipna=True)
-#         ds_stats["lt_ensemble"] = weighted_average(ds, "year").mean(dim=["year", "model"], skipna=True)
-#     elif stat == "std":
-#         ds_stats["season"] = ds.groupby("time.season").std(dim="time", ddof=1, skipna=True)
-#         ds_stats["year"] = ds.groupby("time.year").std(dim="time", ddof=1, skipna=True)
-#         ds_stats["lt"] = ds.std(dim="time", ddof=1, skipna=True)
-#         ds_stats["season_ensemble"] = ds.groupby("time.season").std(dim=["time", "model"], ddof=1, skipna=True)
-#         ds_stats["year_ensemble"] = ds.groupby("time.year").std(dim=["time", "model"], ddof=1, skipna=True)
-#         ds_stats["lt_ensemble"] = ds.std(dim=["time", "model"], ddof=1, skipna=True)
-#     # sort seasons in the right order
-#     for key in ds_stats:
-#         if "season" in key:
-#             ds_stats[key] = ds_stats[key].reindex(season=season_list)
-#     # land mask geometry for cropping
-#     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
-#     land_mask = land_mask.to_crs(crs_ds).dissolve()["geometry"]
-#     # crop offshore cells
-#     for key in ds_stats:
-#         ds_stats[key].rio.write_crs(crs_ds, inplace=True)
-#         ds_stats[key] = ds_stats[key].rio.clip(land_mask, all_touched=True)
-#     return ds_stats
+def plot_stats(dataset, transform, levels=14, seasonal=False):
+    if seasonal:
+        row = "season"
+        figsize = (9, 16.25)
+        pad = 0.015
+    else:
+        row = None
+        figsize = (9, 4.75)
+        pad = 0.075
+    for v in list(dataset.data_vars):
+        fig = dataset[v].plot.contourf(x="rlon", y="rlat", col="exp", row=row, subplot_kws={"projection": projection_hiresireland}, transform=transform, xlim=(-1.775, 1.6), ylim=(-2.1, 2.1), cmap="BrBG", robust=True, extend="both", cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad}, figsize=figsize, levels=levels)
+        for axis in fig.axs.flat:
+            mask.to_crs(projection_hiresireland).plot(
+                ax=axis, color="white", linewidth=0
+            )
+            ie_bbox.to_crs(projection_hiresireland).plot(
+                ax=axis, edgecolor="darkslategrey", color="white", linewidth=0.5
+            )
+        fig.set_titles("{value}", weight="semibold", fontsize=14)
+        plt.show()
