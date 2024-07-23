@@ -333,25 +333,25 @@ def calc_relative_change_season(data_dict, skipna=True):
     # elif season == "SON":
     #     months = [9, 10, 11]
     for model, exp in product(model_list, exp_list):
-        ds_seas[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].sel(time=data_dict[f"{model}_{exp}"]["time"].dt.month.isin(months))
-        ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
-        # ds_seas_year = {}
-        # for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
-        #     ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-        #     ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
-        #     ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-        # ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+        # ds_seas[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].sel(time=data_dict[f"{model}_{exp}"]["time"].dt.month.isin(months))
+        # ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
+        ds_seas_year = {}
+        for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
+            ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
+            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
+            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
+        ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
     # combine data
     ds_seas = xr.combine_by_coords(ds_seas.values(), combine_attrs="override")
     # sort seasons in the right order
-    # ds_seas = ds_seas.reindex(season=season_list)
+    ds_seas = ds_seas.reindex(season=season_list)
     # historical mean
     hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
     # historical standard deviation
-    hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
+    # hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
     # normalise
-    ds_norm = (ds_seas - hist_mean) / hist_std
-    return ds_seas
+    ds_norm = (ds_seas - hist_mean) / hist_mean * 100
+    return ds_norm
 
 
 # def calc_mean_yearmon(ds):
