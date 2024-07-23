@@ -267,11 +267,18 @@ def load_all_data(clim_dataset):
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model).expand_dims(dim="model")
 
-        # # calculate ingested + harvested biomass
+        # calculate ingested + harvested biomass
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-            bm_t=(
+            bm_c=(
                 ds[f"{model}_{exp}"]["i_bm"]
                 + ds[f"{model}_{exp}"]["h_bm"]
+            )
+        )
+        # total biomass
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
+            bm_t=(
+                ds[f"{model}_{exp}"]["bm"]
+                + ds[f"{model}_{exp}"]["bm_c"]
             )
         )
 
@@ -285,38 +292,53 @@ def load_all_data(clim_dataset):
     return ds
 
 
-def calc_normalised_vars_year(data_dict):
+def calc_normalised_vars_year(data_dict, skipna=True):
     ds_mean = {}
     for model, exp in product(model_list, exp_list):
-        ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
+        ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
     # combine data
     ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
     # historical mean
-    hist_mean = ds_mean.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    hist_mean = ds_mean.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
     # historical standard deviation
-    hist_std = ds_mean.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=True, ddof=1)
+    hist_std = ds_mean.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
     # normalise
     ds_norm = (ds_mean - hist_mean) / hist_std
     return ds_norm
 
 
-def calc_normalised_vars_season(data_dict, season):
+def calc_relative_change(data_dict, season=None, skipna=True):
+    ds_mean = {}
+    for model, exp in product(model_list, exp_list):
+        ds_mean[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
+    # combine data
+    ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
+    # historical mean
+    hist_mean = ds_mean.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    # historical standard deviation
+    # hist_std = ds_mean.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
+    # normalise
+    ds_norm = (ds_mean - hist_mean) / hist_mean * 100
+    return ds_norm
+
+
+def calc_relative_change_season(data_dict, skipna=True):
     ds_seas = {}
-    if season == "DJF":
-        months = [12, 1, 2]
-    elif season == "MAM":
-        months = [3, 4, 5]
-    elif season == "JJA":
-        months = [6, 7, 8]
-    elif season == "SON":
-        months = [9, 10, 11]
+    # if season == "DJF":
+    #     months = [12, 1, 2]
+    # elif season == "MAM":
+    #     months = [3, 4, 5]
+    # elif season == "JJA":
+    #     months = [6, 7, 8]
+    # elif season == "SON":
+    #     months = [9, 10, 11]
     for model, exp in product(model_list, exp_list):
         ds_seas[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].sel(time=data_dict[f"{model}_{exp}"]["time"].dt.month.isin(months))
-        ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
+        ds_seas[f"{model}_{exp}"] = ds_seas[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
         # ds_seas_year = {}
         # for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
         #     ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-        #     ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=True)
+        #     ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
         #     ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
         # ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
     # combine data
@@ -324,9 +346,9 @@ def calc_normalised_vars_season(data_dict, season):
     # sort seasons in the right order
     # ds_seas = ds_seas.reindex(season=season_list)
     # historical mean
-    hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
     # historical standard deviation
-    hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=True, ddof=1)
+    hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
     # normalise
     ds_norm = (ds_seas - hist_mean) / hist_std
     return ds_seas
