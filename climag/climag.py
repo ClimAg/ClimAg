@@ -208,10 +208,16 @@ def keep_minimal_vars(data):
     return data
 
 
-def results_weighted_mean(clim_dataset):
-    """Annual and seasonal weighted means"""
+def results_stats(clim_dataset):
+    """Annual and seasonal ensemble stats"""
     ds = {}
-    ds_annual = {}
+    ds_stats = {}
+    time_groupby = ["year", "season"]
+    stats = ["mean", "std", "median", "p10", "p90", "min", "max"]
+    for t in time_groupby:
+        ds_stats[t] = {}
+        for s in stats:
+            ds_stats[t][s] = {}
 
     for model, exp in product(model_list, exp_list):
         # auto-rechunking may cause NotImplementedError with object dtype
@@ -252,8 +258,6 @@ def results_weighted_mean(clim_dataset):
             )
 
         # convert HadGEM2-ES data back to 360-day calendar
-        # this ensures that the correct weighting is applied when
-        # calculating the weighted average
         if model == "HadGEM2-ES":
             ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].convert_calendar(
                 "360_day", align_on="year"
@@ -263,23 +267,27 @@ def results_weighted_mean(clim_dataset):
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model).expand_dims(dim="model")
 
-        # calculate cumulative biomass
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-            bm_t=(
-                ds[f"{model}_{exp}"]["bm"]
-                + ds[f"{model}_{exp}"]["i_bm"]
-                + ds[f"{model}_{exp}"]["h_bm"]
-            )
-        )
+        # # calculate cumulative biomass
+        # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
+        #     bm_t=(
+        #         ds[f"{model}_{exp}"]["bm"]
+        #         + ds[f"{model}_{exp}"]["i_bm"]
+        #         + ds[f"{model}_{exp}"]["h_bm"]
+        #     )
+        # )
 
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
-        # drop time_bnds
+        # # drop time_bnds
         # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
-        # annual weighted mean
-        ds_annual[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "year")
-        # seasonal mean
-        ds[f"{model}_{exp}"] = weighted_average(ds[f"{model}_{exp}"], "season")
+        for t in time_groupby:
+            ds_stat[t]["mean"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").mean(dim=["time", "model"], skipna=True)
+            ds_stat[t]["std"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").std(dim=["time", "model"], skipna=True, ddof=1)
+            ds_stat[t]["median"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").median(dim=["time", "model"], skipna=True)
+            ds_stat[t]["p10"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").quantile(dim=["time", "model"], skipna=True, q=0.1)
+            ds_stat[t]["p90"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").quantile(dim=["time", "model"], skipna=True, q=0.9)
+            ds_stat[t]["min"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").min(dim=["time", "model"], skipna=True)
+            ds_stat[t]["max"][f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby(f"time.{t}").max(dim=["time", "model"], skipna=True)
 
     # land mask geometry for cropping
     land_mask = gpd.read_file(os.path.join("data", "ModVege", "params.gpkg"), layer=clim_dataset.replace("-", "").lower())
@@ -287,21 +295,17 @@ def results_weighted_mean(clim_dataset):
 
     # ds = xr.merge(ds.values())
     # combine data
-    ds = xr.combine_by_coords(ds.values())
-    ds_annual = xr.combine_by_coords(ds_annual.values())
-    # sort seasons in the right order
-    ds = ds.reindex(season=season_list)
-    # reassign CRS
-    ds.rio.write_crs(crs_ds, inplace=True)
-    ds_annual.rio.write_crs(crs_ds, inplace=True)
-    # crop offshore cells
-    ds = ds.rio.clip(land_mask, all_touched=True)
-    ds_annual = ds_annual.rio.clip(land_mask, all_touched=True)
-    # ensemble means
-    ds_ens = ds.mean(dim="model", skipna=True)
-    ds_annual_ens = ds_annual.mean(dim="model", skipna=True)
+    for t, s in product(time_groupby, stats):
+        ds_stat[t][s] = xr.combine_by_coords(ds_stat[t][s].values())
+        # sort seasons in the right order
+        if t == "season":
+            ds_stat[t][s] = ds_stat[t][s].reindex(season=season_list)
+        # reassign CRS
+        ds_stat[t][s].rio.write_crs(crs_ds, inplace=True)
+        # crop offshore cells
+        ds_stat[t][s] = ds_stat[t][s].rio.clip(land_mask, all_touched=True)
 
-    return ds, ds_annual, ds_ens, ds_annual_ens, crs_ds
+    return ds_stat, crs_ds
 
 
 # def results_mean(clim_dataset):
@@ -332,7 +336,7 @@ def results_historical(data_season, data_annual):
     # std_hist_season = data_season.sel(exp="historical").drop_vars("exp").std(dim="season", ddof=1, skipna=True)
     mean_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
     std_hist_annual = data_annual.sel(exp="historical").drop_vars("exp").std(dim="year", ddof=1, skipna=True)
-    # q10_hist = data_annual.sel(exp="historical").drop_vars("exp").quantile(dim="year", q=10, skipna=True)
+    # q10_hist = data_annual.sel(exp="historical").drop_vars("exp").quantile(dim="year", q=0.1, skipna=True)
     return mean_hist_annual, std_hist_annual
 
 
