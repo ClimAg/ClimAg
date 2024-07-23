@@ -198,8 +198,8 @@ def keep_minimal_vars(data):
             "abs_dv",
             "abs_dr",
             "c_bm",
-            # "i_bm",
-            # "h_bm",
+            "i_bm",
+            "h_bm",
             # "pgro",
             # "bm",
             # "gro",
@@ -209,13 +209,15 @@ def keep_minimal_vars(data):
 
 
 def load_all_data(clim_dataset):
-    """Annual ensemble stats"""
+    """Load all results datasets
+
+    Parameters
+    ----------
+
+    clim_dataset : str
+        EURO-CORDEX or HiResIreland
+    """
     ds = {}
-    # ds_stat = {}
-    # # stat_list = ["mean", "std", "median", "p10", "p90", "min", "max"]
-    # stat_list = ["mean_year", "mean_season", "hist_mean", "hist_std", "hist_10p"]
-    # for s in stat_list:
-    #     ds_stat[s] = {}
 
     for model, exp in product(model_list, exp_list):
         # auto-rechunking may cause NotImplementedError with object dtype
@@ -265,14 +267,13 @@ def load_all_data(clim_dataset):
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model).expand_dims(dim="model")
 
-        # # calculate cumulative biomass
-        # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-        #     bm_t=(
-        #         ds[f"{model}_{exp}"]["bm"]
-        #         + ds[f"{model}_{exp}"]["i_bm"]
-        #         + ds[f"{model}_{exp}"]["h_bm"]
-        #     )
-        # )
+        # # calculate ingested + harvested biomass
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
+            bm_t=(
+                ds[f"{model}_{exp}"]["i_bm"]
+                + ds[f"{model}_{exp}"]["h_bm"]
+            )
+        )
 
         # drop unnecessary variables
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
@@ -290,8 +291,6 @@ def calc_normalised_vars_year(ds):
         ds_mean[f"{model}_{exp}"] = ds[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=True)
     # combine data
     ds_mean = xr.combine_by_coords(ds_mean.values(), combine_attrs="override")
-    # ensemble mean
-    # ds_mean = ds.mean(dim="model", skipna=True)
     # historical mean
     hist_mean = ds_mean.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
     # historical standard deviation
@@ -302,16 +301,25 @@ def calc_normalised_vars_year(ds):
 
 
 def calc_normalised_vars_season(ds):
+    ds_seas = {}
     for model, exp in product(model_list, exp_list):
-        ds_seas = {}
+        ds_seas_year = {}
         for year in set(ds[f"{model}_{exp}"].time.dt.year.values):
-            ds_seas[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-            ds_seas[year] = ds_seas[year].groupby("time.season").mean(dim="time", skipna=True)
-            ds_seas[year] = ds_seas[year].assign_coords(year=year).expand_dims(dim="year")
-        ds[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas.values(), combine_attrs="override")
-        # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].mean(dim="year", skipna=True)
-    ds = xr.combine_by_coords(ds.values(), combine_attrs="override")
-    return ds
+            ds_seas_year[year] = ds[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
+            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=True)
+            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
+        ds_seas[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+    # combine data
+    ds_seas = xr.combine_by_coords(ds_seas.values(), combine_attrs="override")
+    # sort seasons in the right order
+    ds_seas = ds_seas.reindex(season=season_list)
+    # historical mean
+    hist_mean = ds_seas.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=True)
+    # historical standard deviation
+    hist_std = ds_seas.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=True, ddof=1)
+    # normalise
+    ds_norm = (ds_seas - hist_mean) / hist_std
+    return ds_seas
 
 
 # def calc_mean_yearmon(ds):
