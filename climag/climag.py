@@ -341,25 +341,22 @@ def calc_anomaly_absolute(data_dict, seasonal=False, skipna=True):
     return ds_anom
 
 
-def calc_event_frequency(data_dict, seasonal=False, skipna=True):
+def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=True):
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical 10th percentile
     hist_p10 = ds_calc.sel(exp="historical").drop_vars("exp").chunk(dict(year=-1)).quantile(dim="year", skipna=skipna, q=0.1)
-    # calculate difference
-    ds_anom = ds_calc - hist_p10
-    return ds_anom
-
-
-def calc_event_severity(data_dict, seasonal=False, skipna=True):
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical standard deviation
     hist_std = ds_calc.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
-    # calculate intensity
-    ds_anom = ds_calc / hist_std
-    return ds_anom
+    # calculate difference
+    ds_anom = ds_calc - hist_p10
+    # set negative values to 1, positive to 0
+    ds_freq = xr.where(ds_anom < 0, 1, 0)
+    # intensity
+    ds_int = ds_anom / hist_std
+    return ds_anom, ds_freq, ds_int
 
 
-def plot_stats(dataset, transform, levels=14, seasonal=False):
+def plot_stats(dataset, transform, levels=14, seasonal=False, cmap="BrBG"):
     if seasonal:
         row = "season"
         figsize = (9, 16.25)
@@ -369,7 +366,7 @@ def plot_stats(dataset, transform, levels=14, seasonal=False):
         figsize = (9, 4.75)
         pad = 0.075
     for v in list(dataset.data_vars):
-        fig = dataset[v].plot.contourf(x="rlon", y="rlat", col="exp", row=row, subplot_kws={"projection": projection_hiresireland}, transform=transform, xlim=(-1.775, 1.6), ylim=(-2.1, 2.1), cmap="BrBG", robust=True, extend="both", cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad}, figsize=figsize, levels=levels)
+        fig = dataset[v].plot.contourf(x="rlon", y="rlat", col="exp", row=row, subplot_kws={"projection": projection_hiresireland}, transform=transform, xlim=(-1.775, 1.6), ylim=(-2.1, 2.1), cmap=cmap, robust=True, cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad}, figsize=figsize, levels=levels)
         for axis in fig.axs.flat:
             mask.to_crs(projection_hiresireland).plot(
                 ax=axis, color="white", linewidth=0
