@@ -312,7 +312,7 @@ def calc_annual_mean(data_dict, seasonal, skipna):
     return ds_mean_ann
 
 
-def calc_normalised_std(data_dict, seasonal=False, skipna=True):
+def calc_normalised_std(data_dict, seasonal=False, skipna=None):
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
     hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
@@ -323,7 +323,7 @@ def calc_normalised_std(data_dict, seasonal=False, skipna=True):
     return ds_norm
 
 
-def calc_normalised_relative(data_dict, seasonal=False, skipna=True):
+def calc_normalised_relative(data_dict, seasonal=False, skipna=None):
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
     hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
@@ -332,7 +332,7 @@ def calc_normalised_relative(data_dict, seasonal=False, skipna=True):
     return ds_norm
 
 
-def calc_anomaly_absolute(data_dict, seasonal=False, skipna=True):
+def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None):
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical mean
     hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
@@ -341,7 +341,7 @@ def calc_anomaly_absolute(data_dict, seasonal=False, skipna=True):
     return ds_anom
 
 
-def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=True):
+def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
     # historical 10th percentile
     hist_p10 = ds_calc.sel(exp="historical").drop_vars("exp").chunk(dict(year=-1)).quantile(dim="year", skipna=skipna, q=0.1)
@@ -351,6 +351,12 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=True):
     ds_anom = ds_calc - hist_p10
     # set negative values to 1, positive to 0
     ds_freq = xr.where(ds_anom < 0, 1, 0)
+    # sum for all years
+    ds_freq = ds_freq.sum(dim="year", skipna=skipna)
+    # historical frequency
+    hist_freq = ds_freq.sel(exp="historical").drop_vars("exp")
+    # number of times more frequent in future
+    ds_freq = ds_freq / hist_freq
     # intensity
     ds_int = ds_anom / hist_std
     return ds_anom, ds_freq, ds_int
