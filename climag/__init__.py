@@ -5,7 +5,7 @@ risks due to climate change
 
 - https://climag.readthedocs.io/
 - https://www.ucc.ie/en/eel/projects/climag/
-- https://github.com/ClimAg
+- https://github.com/ClimAg/ClimAg
 """
 
 __author__ = """Nithiya Streethran"""
