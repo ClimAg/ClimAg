@@ -208,7 +208,7 @@ def keep_minimal_vars(data):
     return data
 
 
-def load_all_data(clim_dataset):
+def load_all_data(clim_dataset, hist_only=False):
     """Load all results datasets
 
     Parameters
@@ -219,7 +219,12 @@ def load_all_data(clim_dataset):
     """
     ds = {}
 
-    for model, exp in product(model_list, exp_list):
+    if hist_only:
+        model_exp_list = product(model_list, ["historical"])
+    else:
+        model_exp_list = product(model_list, exp_list)
+
+    for model, exp in model_exp_list:
         # auto-rechunking may cause NotImplementedError with object dtype
         # where it will not be able to estimate the size in bytes of object
         # data
@@ -308,11 +313,17 @@ def load_obs_data():
 def regrid_climate_model_data(obs_data, clim_data_dict):
     clim_data = {}
     for model in model_list:
+        # keep only overlapping years
         clim_data[f"{model}_historical"] = clim_data_dict[f"{model}_historical"].sel(time=slice("1981", "2005"))
+        # remove model and exp dimensions
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].sel(model=model, exp="historical")
         clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].drop(["lat", "lon"])
         clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rename({"rlon": "x", "rlat": "y"})
         clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rio.reproject_match(obs_data, resampling=rio.enums.Resampling.bilinear)
         clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords({"x": obs_data["x"], "y": obs_data["y"]})
+        # reassign coordinates and dimensions
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords(exp="historical").expand_dims(dim="exp")
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords(model=model).expand_dims(dim="model")
         # reassign projection
         clim_data[f"{model}_historical"].rio.write_crs(projection_lambert_conformal, inplace=True)
     return clim_data
