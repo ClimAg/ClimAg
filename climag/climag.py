@@ -164,10 +164,17 @@ def weighted_average_year(data):
     ds_yearmon = {}
     for year in set(data.time.dt.year.values):
         ds_yearmon[year] = ds.sel(time=slice(str(year), str(year)))
-        ds_yearmon[year] = weighted_average(data=ds_yearmon[year], time_groupby="month")
+        ds_yearmon[year] = weighted_average(
+            data=ds_yearmon[year], time_groupby="month"
+        )
         ds_mon = {}
         for month in ds_yearmon[year].month.values:
-            ds_mon[month] = ds_yearmon[year].sel(month=month).assign_coords(time=datetime.datetime(year, month, 15)).expand_dims(dim="time")
+            ds_mon[month] = (
+                ds_yearmon[year]
+                .sel(month=month)
+                .assign_coords(time=datetime.datetime(year, month, 15))
+                .expand_dims(dim="time")
+            )
         ds_yearmon[year] = xr.combine_by_coords(ds_mon.values())
     ds_yearmon = xr.combine_by_coords(ds_yearmon.values())
     return ds_yearmon
@@ -269,8 +276,14 @@ def load_all_data(clim_dataset, hist_only=False):
             )
 
         # assign new coordinates and dimensions
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign_coords(model=model).expand_dims(dim="model")
+        ds[f"{model}_{exp}"] = (
+            ds[f"{model}_{exp}"].assign_coords(exp=exp).expand_dims(dim="exp")
+        )
+        ds[f"{model}_{exp}"] = (
+            ds[f"{model}_{exp}"]
+            .assign_coords(model=model)
+            .expand_dims(dim="model")
+        )
 
         # calculate ingested + harvested biomass
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
@@ -287,9 +300,13 @@ def load_all_data(clim_dataset, hist_only=False):
         # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
         # if historical data only, keep overlapping years with obs data
         if hist_only:
-            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].sel(time=slice("1981", "2005"))
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].sel(
+                time=slice("1981", "2005")
+            )
         # reassign CRS
-        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.write_crs(crs_ds, inplace=True)
+        ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.write_crs(
+            crs_ds, inplace=True
+        )
 
     return ds
 
@@ -323,14 +340,32 @@ def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
         if seasonal:
             ds_seas_year = {}
             for year in set(data_dict[f"{model}_{exp}"].time.dt.year.values):
-                ds_seas_year[year] = data_dict[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
-                ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
-                ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-            ds_mean_ann[f"{model}_{exp}"] = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+                ds_seas_year[year] = data_dict[f"{model}_{exp}"].sel(
+                    time=slice(str(year), str(year))
+                )
+                ds_seas_year[year] = (
+                    ds_seas_year[year]
+                    .groupby("time.season")
+                    .mean(dim="time", skipna=skipna)
+                )
+                ds_seas_year[year] = (
+                    ds_seas_year[year]
+                    .assign_coords(year=year)
+                    .expand_dims(dim="year")
+                )
+            ds_mean_ann[f"{model}_{exp}"] = xr.combine_by_coords(
+                ds_seas_year.values(), combine_attrs="override"
+            )
         else:
-            ds_mean_ann[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].groupby("time.year").mean(dim="time", skipna=skipna)
+            ds_mean_ann[f"{model}_{exp}"] = (
+                data_dict[f"{model}_{exp}"]
+                .groupby("time.year")
+                .mean(dim="time", skipna=skipna)
+            )
     # combine data
-    ds_mean_ann = xr.combine_by_coords(ds_mean_ann.values(), combine_attrs="override")
+    ds_mean_ann = xr.combine_by_coords(
+        ds_mean_ann.values(), combine_attrs="override"
+    )
     # sort seasons in the right order
     if seasonal:
         ds_mean_ann = ds_mean_ann.reindex(season=season_list)
@@ -342,32 +377,62 @@ def calc_obs_annual_mean(obs_data, seasonal, skipna):
         ds_seas_year = {}
         for year in set(obs_data.time.dt.year.values):
             ds_seas_year[year] = obs_data.sel(time=slice(str(year), str(year)))
-            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
-            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
-        obs_data_mean = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+            ds_seas_year[year] = (
+                ds_seas_year[year]
+                .groupby("time.season")
+                .mean(dim="time", skipna=skipna)
+            )
+            ds_seas_year[year] = (
+                ds_seas_year[year]
+                .assign_coords(year=year)
+                .expand_dims(dim="year")
+            )
+        obs_data_mean = xr.combine_by_coords(
+            ds_seas_year.values(), combine_attrs="override"
+        )
     else:
-        obs_data_mean = obs_data.groupby("time.year").mean(dim="time", skipna=skipna)
+        obs_data_mean = obs_data.groupby("time.year").mean(
+            dim="time", skipna=skipna
+        )
     return obs_data_mean
 
 
-def regrid_climate_model_data(obs_data, data_dict, seasonal=False, skipna=None):
+def regrid_climate_model_data(
+    obs_data, data_dict, seasonal=False, skipna=None
+):
     # annual mean for climate data
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna, hist_only=True)
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, hist_only=True
+    )
     # annual mean for observational data
-    obs_calc = calc_obs_annual_mean(obs_data=obs_data, seasonal=seasonal, skipna=skipna)
+    obs_calc = calc_obs_annual_mean(
+        obs_data=obs_data, seasonal=seasonal, skipna=skipna
+    )
     clim_data = {}
     for model in model_list:
         # remove model and exp dimensions
         clim_data[model] = ds_calc.sel(model=model, exp="historical")
         clim_data[model] = clim_data[model].drop(["lat", "lon"])
         clim_data[model] = clim_data[model].rename({"rlon": "x", "rlat": "y"})
-        clim_data[model] = clim_data[model].rio.reproject_match(obs_calc, resampling=rio.enums.Resampling.bilinear)
-        clim_data[model] = clim_data[model].assign_coords({"x": obs_calc["x"], "y": obs_calc["y"]})
+        clim_data[model] = clim_data[model].rio.reproject_match(
+            obs_calc, resampling=rio.enums.Resampling.bilinear
+        )
+        clim_data[model] = clim_data[model].assign_coords(
+            {"x": obs_calc["x"], "y": obs_calc["y"]}
+        )
         # reassign coordinates and dimensions
-        clim_data[model] = clim_data[model].assign_coords(model=model).expand_dims(dim="model")
+        clim_data[model] = (
+            clim_data[model]
+            .assign_coords(model=model)
+            .expand_dims(dim="model")
+        )
         # reassign projection
-        clim_data[model].rio.write_crs(projection_lambert_conformal, inplace=True)
-    clim_data = xr.combine_by_coords(clim_data.values(), combine_attrs="override")
+        clim_data[model].rio.write_crs(
+            projection_lambert_conformal, inplace=True
+        )
+    clim_data = xr.combine_by_coords(
+        clim_data.values(), combine_attrs="override"
+    )
     return clim_data, obs_calc
 
 
@@ -378,40 +443,73 @@ def calc_bias(obs_data, clim_model_data):
 
 
 def calc_normalised_std(data_dict, seasonal=False, skipna=None):
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+    )
     # historical mean
-    hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    hist_mean = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .mean(dim="year", skipna=skipna)
+    )
     # historical standard deviation
-    hist_std = ds_calc.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
+    hist_std = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .std(dim="year", skipna=skipna, ddof=1)
+    )
     # normalise
     ds_norm = (ds_calc - hist_mean) / hist_std
     return ds_norm
 
 
 def calc_normalised_relative(data_dict, seasonal=False, skipna=None):
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+    )
     # historical mean
-    hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    hist_mean = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .mean(dim="year", skipna=skipna)
+    )
     # normalise
     ds_norm = (ds_calc - hist_mean) / hist_mean * 100
     return ds_norm
 
 
 def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None):
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+    )
     # historical mean
-    hist_mean = ds_calc.sel(exp="historical").drop_vars("exp").mean(dim="year", skipna=skipna)
+    hist_mean = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .mean(dim="year", skipna=skipna)
+    )
     # calculate anomaly
     ds_anom = ds_calc - hist_mean
     return ds_anom
 
 
 def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
-    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna)
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+    )
     # historical 10th percentile
-    hist_p10 = ds_calc.sel(exp="historical").drop_vars("exp").chunk(dict(year=-1)).quantile(dim="year", skipna=skipna, q=0.1)
+    hist_p10 = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .chunk(dict(year=-1))
+        .quantile(dim="year", skipna=skipna, q=0.1)
+    )
     # historical standard deviation
-    hist_std = ds_calc.sel(exp="historical").drop_vars("exp").std(dim="year", skipna=skipna, ddof=1)
+    hist_std = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .std(dim="year", skipna=skipna, ddof=1)
+    )
     # calculate difference
     ds_anom = ds_calc - hist_p10
     # set negative values to 1, positive to 0
@@ -438,13 +536,30 @@ def plot_stats(dataset, transform, levels=14, seasonal=False, cmap="BrBG"):
         figsize = (9, 4.75)
         pad = 0.075
     for v in list(dataset.data_vars):
-        fig = dataset[v].plot.contourf(x="rlon", y="rlat", col="exp", row=row, subplot_kws={"projection": projection_hiresireland}, transform=transform, xlim=(-1.775, 1.6), ylim=(-2.1, 2.1), cmap=cmap, robust=True, cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad}, figsize=figsize, levels=levels)
+        fig = dataset[v].plot.contourf(
+            x="rlon",
+            y="rlat",
+            col="exp",
+            row=row,
+            subplot_kws={"projection": projection_hiresireland},
+            transform=transform,
+            xlim=(-1.775, 1.6),
+            ylim=(-2.1, 2.1),
+            cmap=cmap,
+            robust=True,
+            cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad},
+            figsize=figsize,
+            levels=levels,
+        )
         for axis in fig.axs.flat:
             mask.to_crs(projection_hiresireland).plot(
                 ax=axis, color="white", linewidth=0
             )
             ie_bbox.to_crs(projection_hiresireland).plot(
-                ax=axis, edgecolor="darkslategrey", color="white", linewidth=0.5
+                ax=axis,
+                edgecolor="darkslategrey",
+                color="white",
+                linewidth=0.5,
             )
         fig.set_titles("{value}", weight="semibold", fontsize=14)
         plt.show()
