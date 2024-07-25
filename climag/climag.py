@@ -47,16 +47,16 @@ projection_eurocordex = ccrs.RotatedPole(
 )
 
 # Ireland boundary
-ie_bbox = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
-    layer="ne_10m_land_2157_IE_BBOX_DIFF",
-)
 ie = gpd.read_file(
     os.path.join("data", "boundaries", "boundaries_all.gpkg"),
     layer="NUTS_RG_01M_2021_2157_IE",
 )
-
-# mask out non-pasture areas
+# mask for offshore areas
+ie_bbox = gpd.read_file(
+    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+    layer="ne_10m_land_2157_IE_BBOX_DIFF",
+)
+# mask for non-pasture areas
 mask = gpd.read_file(
     os.path.join("data", "boundaries", "boundaries_all.gpkg"),
     layer="CLC_2018_MASK_PASTURE_2157_IE",
@@ -269,17 +269,11 @@ def load_all_data(clim_dataset):
 
         # calculate ingested + harvested biomass
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-            bm_c=(
-                ds[f"{model}_{exp}"]["i_bm"]
-                + ds[f"{model}_{exp}"]["h_bm"]
-            )
+            bm_c=(ds[f"{model}_{exp}"]["i_bm"] + ds[f"{model}_{exp}"]["h_bm"])
         )
         # # total biomass
         # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].assign(
-        #     bm_t=(
-        #         ds[f"{model}_{exp}"]["bm"]
-        #         + ds[f"{model}_{exp}"]["bm_c"]
-        #     )
+        #     bm_t=(ds[f"{model}_{exp}"]["bm"] + ds[f"{model}_{exp}"]["bm_c"])
         # )
 
         # drop unnecessary variables
@@ -290,6 +284,25 @@ def load_all_data(clim_dataset):
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.write_crs(crs_ds, inplace=True)
 
     return ds
+
+
+def load_obs_data():
+    mera = xr.open_mfdataset(
+        glob.glob(
+            os.path.join("data", "ModVege", "MERA", "*MERA_FC3hr_3_day*.nc")
+        ),
+        chunks="auto",
+        decode_coords="all",
+    )
+    # remove spin-up year and years outside historical reference period
+    mera = mera.sel(time=slice("1981", "2005"))
+    # calculate ingested + harvested biomass
+    mera = mera.assign(bm_c=(mera["i_bm"] + mera["h_bm"]))
+    # drop unnecessary variables
+    mera = keep_minimal_vars(data=mera)
+    # reassign CRS
+    mera = mera.rio.write_crs(projection_lambert_conformal, inplace=True)
+    return mera
 
 
 def calc_annual_mean(data_dict, seasonal, skipna):
