@@ -305,9 +305,26 @@ def load_obs_data():
     return mera
 
 
-def calc_annual_mean(data_dict, seasonal, skipna):
+def regrid_climate_model_data(obs_data, clim_data_dict):
+    clim_data = {}
+    for model in model_list:
+        clim_data[f"{model}_historical"] = clim_data_dict[f"{model}_historical"].sel(time=slice("1981", "2005"))
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].drop(["lat", "lon"])
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rename({"rlon": "x", "rlat": "y"})
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rio.reproject_match(obs_data, resampling=rio.enums.Resampling.bilinear)
+        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords({"x": obs_data["x"], "y": obs_data["y"]})
+        # reassign projection
+        clim_data[f"{model}_historical"].rio.write_crs(projection_lambert_conformal, inplace=True)
+    return clim_data
+
+
+def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
     ds_mean_ann = {}
-    for model, exp in product(model_list, exp_list):
+    if hist_only:
+        model_exp_list = product(model_list, ["historical"])
+    else:
+        model_exp_list = product(model_list, exp_list)
+    for model, exp in model_exp_list:
         if seasonal:
             ds_seas_year = {}
             for year in set(data_dict[f"{model}_{exp}"].time.dt.year.values):
@@ -323,6 +340,28 @@ def calc_annual_mean(data_dict, seasonal, skipna):
     if seasonal:
         ds_mean_ann = ds_mean_ann.reindex(season=season_list)
     return ds_mean_ann
+
+
+def calc_obs_annual_mean(obs_data, seasonal, skipna):
+    if seasonal:
+        ds_seas_year = {}
+        for year in set(obs_data.time.dt.year.values):
+            ds_seas_year[year] = obs_data.sel(time=slice(str(year), str(year)))
+            ds_seas_year[year] = ds_seas_year[year].groupby("time.season").mean(dim="time", skipna=skipna)
+            ds_seas_year[year] = ds_seas_year[year].assign_coords(year=year).expand_dims(dim="year")
+        obs_data_mean = xr.combine_by_coords(ds_seas_year.values(), combine_attrs="override")
+    else:
+        obs_data_mean = obs_data.groupby("time.year").mean(dim="time", skipna=skipna)
+    return obs_data_mean
+
+
+def calc_bias(data_dict, obs_data, seasonal=False, skipna=None):
+    ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna, hist_only=True)
+    # mean for observational data
+    obs_calc = calc_obs_annual_mean(obs_data=obs_data, seasonal=seasonal, skipna=skipna)
+    bias_abs = ds_calc - obs_calc
+    bias_rel = (ds_calc - obs_calc) / obs_calc * 100
+    return bias_abs, bias_rel
 
 
 def calc_normalised_std(data_dict, seasonal=False, skipna=None):
