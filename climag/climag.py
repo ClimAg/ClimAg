@@ -358,7 +358,8 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
     # number of times more frequent in future
     ds_freq = ds_freq / hist_freq
     # intensity
-    ds_int = ds_anom / hist_std
+    ds_int = xr.where(ds_anom < 0, -ds_anom, 0)
+    ds_int = ds_int / hist_std
     return ds_anom, ds_freq, ds_int
 
 
