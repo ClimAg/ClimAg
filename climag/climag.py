@@ -285,6 +285,9 @@ def load_all_data(clim_dataset, hist_only=False):
         ds[f"{model}_{exp}"] = keep_minimal_vars(data=ds[f"{model}_{exp}"])
         # # drop time_bnds
         # ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].drop_vars(["time_bnds"])
+        # if historical data only, keep overlapping years with obs data
+        if hist_only:
+            ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].sel(time=slice("1981", "2005"))
         # reassign CRS
         ds[f"{model}_{exp}"] = ds[f"{model}_{exp}"].rio.write_crs(crs_ds, inplace=True)
 
@@ -308,25 +311,6 @@ def load_obs_data():
     # reassign CRS
     mera = mera.rio.write_crs(projection_lambert_conformal, inplace=True)
     return mera
-
-
-def regrid_climate_model_data(obs_data, clim_data_dict):
-    clim_data = {}
-    for model in model_list:
-        # keep only overlapping years
-        clim_data[f"{model}_historical"] = clim_data_dict[f"{model}_historical"].sel(time=slice("1981", "2005"))
-        # remove model and exp dimensions
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].sel(model=model, exp="historical")
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].drop(["lat", "lon"])
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rename({"rlon": "x", "rlat": "y"})
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].rio.reproject_match(obs_data, resampling=rio.enums.Resampling.bilinear)
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords({"x": obs_data["x"], "y": obs_data["y"]})
-        # reassign coordinates and dimensions
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords(exp="historical").expand_dims(dim="exp")
-        clim_data[f"{model}_historical"] = clim_data[f"{model}_historical"].assign_coords(model=model).expand_dims(dim="model")
-        # reassign projection
-        clim_data[f"{model}_historical"].rio.write_crs(projection_lambert_conformal, inplace=True)
-    return clim_data
 
 
 def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
@@ -366,12 +350,30 @@ def calc_obs_annual_mean(obs_data, seasonal, skipna):
     return obs_data_mean
 
 
-def calc_bias(data_dict, obs_data, seasonal=False, skipna=None):
+def regrid_climate_model_data(obs_data, data_dict, seasonal=False, skipna=None):
+    # annual mean for climate data
     ds_calc = calc_annual_mean(data_dict=data_dict, seasonal=seasonal, skipna=skipna, hist_only=True)
-    # mean for observational data
+    # annual mean for observational data
     obs_calc = calc_obs_annual_mean(obs_data=obs_data, seasonal=seasonal, skipna=skipna)
-    bias_abs = ds_calc - obs_calc
-    bias_rel = (ds_calc - obs_calc) / obs_calc * 100
+    clim_data = {}
+    for model in model_list:
+        # remove model and exp dimensions
+        clim_data[model] = ds_calc.sel(model=model, exp="historical")
+        clim_data[model] = clim_data[model].drop(["lat", "lon"])
+        clim_data[model] = clim_data[model].rename({"rlon": "x", "rlat": "y"})
+        clim_data[model] = clim_data[model].rio.reproject_match(obs_calc, resampling=rio.enums.Resampling.bilinear)
+        clim_data[model] = clim_data[model].assign_coords({"x": obs_calc["x"], "y": obs_calc["y"]})
+        # reassign coordinates and dimensions
+        clim_data[model] = clim_data[model].assign_coords(model=model).expand_dims(dim="model")
+        # reassign projection
+        clim_data[model].rio.write_crs(projection_lambert_conformal, inplace=True)
+    clim_data = xr.combine_by_coords(clim_data.values(), combine_attrs="override")
+    return clim_data, obs_calc
+
+
+def calc_bias(obs_data, clim_model_data):
+    bias_abs = clim_model_data - obs_data
+    bias_rel = bias_abs / obs_data * 100
     return bias_abs, bias_rel
 
 
@@ -420,9 +422,9 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
     hist_freq = ds_freq.sel(exp="historical").drop_vars("exp")
     # number of times more frequent in future
     ds_freq = ds_freq / hist_freq
-    # intensity
-    ds_int = xr.where(ds_anom < 0, -ds_anom, 0)
-    ds_int = ds_int / hist_std
+    # intensity - keep only negative values
+    ds_int = xr.where(ds_anom < 0, ds_anom, 0)
+    ds_int = -ds_int / hist_std
     return ds_anom, ds_freq, ds_int
 
 
