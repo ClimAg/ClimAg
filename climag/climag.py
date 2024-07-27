@@ -23,6 +23,9 @@ from matplotlib import patheffects
 warnings.filterwarnings(
     action="ignore", category=RuntimeWarning, module="dask"
 )
+warnings.filterwarnings(
+    action="ignore", category=UserWarning, module="gribapi"
+)
 
 # Irish Transverse Mercator
 ITM_EPSG = 2157
@@ -46,21 +49,21 @@ projection_eurocordex = ccrs.RotatedPole(
     pole_longitude=-162.0, pole_latitude=39.25
 )
 
-# Ireland boundary
-ie = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
-    layer="NUTS_RG_01M_2021_2157_IE",
-)
-# mask for offshore areas
-ie_bbox = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
-    layer="ne_10m_land_2157_IE_BBOX_DIFF",
-)
-# mask for non-pasture areas
-mask = gpd.read_file(
-    os.path.join("data", "boundaries", "boundaries_all.gpkg"),
-    layer="CLC_2018_MASK_PASTURE_2157_IE",
-)
+# # Ireland boundary
+# ie = gpd.read_file(
+#     os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+#     layer="NUTS_RG_01M_2021_2157_IE",
+# )
+# # mask for offshore areas
+# ie_bbox = gpd.read_file(
+#     os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+#     layer="ne_10m_land_2157_IE_BBOX_DIFF",
+# )
+# # mask for non-pasture areas
+# mask = gpd.read_file(
+#     os.path.join("data", "boundaries", "boundaries_all.gpkg"),
+#     layer="CLC_2018_MASK_PASTURE_2157_IE",
+# )
 
 season_list = ["DJF", "MAM", "JJA", "SON"]
 exp_list = ["historical", "rcp45", "rcp85"]
@@ -526,7 +529,7 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
     return ds_anom, ds_freq, ds_int
 
 
-def plot_stats(dataset, transform, levels=14, seasonal=False, cmap="BrBG"):
+def plot_stats(dataset, transform, mask, ie_bbox, levels=14, seasonal=False, cmap="BrBG"):
     if seasonal:
         row = "season"
         figsize = (9, 16.25)
