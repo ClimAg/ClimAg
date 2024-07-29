@@ -37,6 +37,7 @@ savefig.dpi: 600
 savefig.bbox: tight
 # clear the Matplotlib font cache after installing a new font
 font.sans-serif: Source Sans 3, Source Sans Pro, -apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica Neue, sans-serif
+mathtext.fontset: custom
 axes.grid: False
 text.color: darkslategrey
 axes.labelcolor: darkslategrey

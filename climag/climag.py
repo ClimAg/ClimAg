@@ -20,12 +20,16 @@ from matplotlib import patheffects
 
 # from dateutil.parser import parse
 
-warnings.filterwarnings(
-    action="ignore", category=RuntimeWarning, module="dask"
-)
-warnings.filterwarnings(
-    action="ignore", category=UserWarning, module="gribapi"
-)
+warnings.simplefilter("once")
+# warnings.filterwarnings(
+#     action="once", category=RuntimeWarning, module="dask"
+# )
+# warnings.filterwarnings(
+#     action="once", category=RuntimeWarning, module="numpy"
+# )
+# warnings.filterwarnings(
+#     action="ignore", category=UserWarning, module="gribapi"
+# )
 
 # Irish Transverse Mercator
 ITM_EPSG = 2157
@@ -333,7 +337,7 @@ def load_obs_data():
     return mera
 
 
-def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
+def calc_annual_mean(data_dict, seasonal, skipna, var_avg, hist_only=False):
     ds_mean_ann = {}
     if hist_only:
         model_exp_list = product(model_list, ["historical"])
@@ -346,11 +350,7 @@ def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
                 ds_seas_year[year] = data_dict[f"{model}_{exp}"].sel(
                     time=slice(str(year), str(year))
                 )
-                ds_seas_year[year] = (
-                    ds_seas_year[year]
-                    .groupby("time.season")
-                    .mean(dim="time", skipna=skipna)
-                )
+                ds_seas_year[year] = getattr(ds_seas_year[year].groupby("time.season"), var_avg)(dim="time", skipna=skipna)
                 ds_seas_year[year] = (
                     ds_seas_year[year]
                     .assign_coords(year=year)
@@ -360,11 +360,7 @@ def calc_annual_mean(data_dict, seasonal, skipna, hist_only=False):
                 ds_seas_year.values(), combine_attrs="override"
             )
         else:
-            ds_mean_ann[f"{model}_{exp}"] = (
-                data_dict[f"{model}_{exp}"]
-                .groupby("time.year")
-                .mean(dim="time", skipna=skipna)
-            )
+            ds_mean_ann[f"{model}_{exp}"] = getattr(data_dict[f"{model}_{exp}"].groupby("time.year"), var_avg)(dim="time", skipna=skipna)
     # combine data
     ds_mean_ann = xr.combine_by_coords(
         ds_mean_ann.values(), combine_attrs="override"
@@ -401,11 +397,11 @@ def calc_obs_annual_mean(obs_data, seasonal, skipna):
 
 
 def regrid_climate_model_data(
-    obs_data, data_dict, seasonal=False, skipna=None
+    obs_data, data_dict, seasonal=False, skipna=None, var_avg="mean"
 ):
     # annual mean for climate data
     ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna, hist_only=True
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg, hist_only=True
     )
     # annual mean for observational data
     obs_calc = calc_obs_annual_mean(
@@ -445,9 +441,9 @@ def calc_bias(obs_data, clim_model_data):
     return bias_abs, bias_rel
 
 
-def calc_normalised_std(data_dict, seasonal=False, skipna=None):
+def calc_normalised_std(data_dict, seasonal=False, skipna=None, var_avg="mean"):
     ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
     )
     # historical mean
     hist_mean = (
@@ -466,9 +462,9 @@ def calc_normalised_std(data_dict, seasonal=False, skipna=None):
     return ds_norm
 
 
-def calc_normalised_relative(data_dict, seasonal=False, skipna=None):
+def calc_normalised_relative(data_dict, seasonal=False, skipna=None, var_avg="mean"):
     ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
     )
     # historical mean
     hist_mean = (
@@ -481,9 +477,9 @@ def calc_normalised_relative(data_dict, seasonal=False, skipna=None):
     return ds_norm
 
 
-def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None):
+def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None, var_avg="mean"):
     ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
     )
     # historical mean
     hist_mean = (
@@ -496,9 +492,9 @@ def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None):
     return ds_anom
 
 
-def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None):
+def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_avg="mean"):
     ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
     )
     # historical 10th percentile
     hist_p10 = (
