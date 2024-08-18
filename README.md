@@ -11,10 +11,7 @@ ClimAg seeks to identify the multifactorial drivers of fodder crises by:
 - developing a detailed understanding of the multiple interlinked drivers of previous fodder crises affecting the Irish agricultural sector
 - combining datasets from 21st century climate simulations with grass growth models to predict the frequency and severity of fodder crisis events under future climate change scenarios
 
-## Repositories
-
-Documentation is available at: <https://climag.readthedocs.io>.
-All repositories can be found in the [ClimAg GitHub organisation](https://github.com/ClimAg).
+Documentation is available at: [climag.readthedocs.io](https://climag.readthedocs.io/).
 [This repository](https://github.com/ClimAg/ClimAg) hosts Python code for the grass growth model and scripts to perform data preparation, model simulations, and analysis.
 
 ## Acknowledgements
@@ -24,7 +21,7 @@ ClimAg is a three-year research project funded by the [Environmental Protection 
 The Python implementation of the [ModVege](https://code.europa.eu/agri4cast/modvege) pasture model adapted for use in this project was translated from Java to Python by Y. Chemin of [JRC Ispra](https://joint-research-centre.ec.europa.eu/jrc-sites-across-europe/jrc-ispra-italy_en).
 This Python implementation was originally published as public domain software on GitHub under the [Unlicence license](https://github.com/ClimAg/modvege).
 The Java model was provided by R. Martin of [INRAE](https://www.inrae.fr/en) UREP Clermont-Ferrand for the original Python implementation.
-The original ModVege pasture model was developed by [Jouven et al.](https://doi.org/10.1111/j.1365-2494.2006.00515.x).
+The original ModVege pasture model was developed by [Jouven *et al.*](https://doi.org/10.1111/j.1365-2494.2006.00515.x).
 
 ## Installation
 

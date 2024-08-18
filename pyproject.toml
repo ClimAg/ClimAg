@@ -11,7 +11,8 @@ dependencies = [
   "pooch",
   "cartopy",
   "cfgrib",
-  "dask",
+  "dask[dataframe]",
+  "netcdf4",
   "rioxarray",
 ]
 authors = [

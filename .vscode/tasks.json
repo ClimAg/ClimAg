@@ -4,18 +4,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "nbconvert",
-            "type": "shell",
-            "command": "source zsh-conda-init.sh && cd docs && ./convert-notebooks.sh",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-            }
-        },
-        {
             "label": "docs",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && cd docs && make html",
+            "command": "source .venv/bin/activate && cd docs && make html",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -25,16 +16,16 @@
         {
             "label": "docs-clean",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && cd docs && make clean html",
+            "command": "source .venv/bin/activate && cd docs && make clean html",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
             }
         },
         {
-            "label": "format-py",
+            "label": "black-isort",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && black **/*.py **/*.ipynb && isort **/*.py",
+            "command": "source .venv/bin/activate && black **/*.py **/*.ipynb docs/*/*.ipynb && isort **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -43,7 +34,7 @@
         {
             "label": "sanitise-notebooks",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && jupyter nbconvert --sanitize-html --to notebook --inplace **/*.ipynb",
+            "command": "source .venv/bin/activate && jupyter nbconvert --sanitize-html --to notebook --inplace **/*.ipynb",
             "problemMatcher": [],
             "group": {
                 "kind": "build"
@@ -62,7 +53,7 @@
         {
             "label": "pylint",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && pylint **/*.py",
+            "command": "source .venv/bin/activate && pylint **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "test"
@@ -71,11 +62,23 @@
         {
             "label": "flake8",
             "type": "shell",
-            "command": "source zsh-conda-init.sh && flake8 **/*.py",
+            "command": "source .venv/bin/activate && flake8 **/*.py",
             "problemMatcher": [],
             "group": {
                 "kind": "test"
             }
         },
+        {
+            "label": "prune-remote",
+            "type": "shell",
+            "command": "git fetch --prune && cd docs && git fetch --prune && cd ../data && git fetch --prune",
+            "problemMatcher": []
+        },
+        {
+            "label": "prune-local",
+            "type": "shell",
+            "command": "git prune --dry-run --verbose",
+            "problemMatcher": []
+        }
     ]
 }
