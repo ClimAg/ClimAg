@@ -411,7 +411,7 @@ def regrid_climate_model_data(
     for model in model_list:
         # remove model and exp dimensions
         clim_data[model] = ds_calc.sel(model=model, exp="historical")
-        clim_data[model] = clim_data[model].drop(["lat", "lon"])
+        clim_data[model] = clim_data[model].drop_vars(["lat", "lon"])
         clim_data[model] = clim_data[model].rename({"rlon": "x", "rlat": "y"})
         clim_data[model] = clim_data[model].rio.reproject_match(
             obs_calc, resampling=rio.enums.Resampling.bilinear
