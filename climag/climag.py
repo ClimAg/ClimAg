@@ -20,6 +20,7 @@ from matplotlib import patheffects
 
 # from dateutil.parser import parse
 
+warnings.filterwarnings("once")
 warnings.simplefilter("once")
 # warnings.filterwarnings(
 #     action="once", category=RuntimeWarning, module="dask"
@@ -28,7 +29,7 @@ warnings.simplefilter("once")
 #     action="once", category=RuntimeWarning, module="numpy"
 # )
 # warnings.filterwarnings(
-#     action="ignore", category=UserWarning, module="gribapi"
+#     action="once", category=UserWarning, module="gribapi"
 # )
 
 # Irish Transverse Mercator
@@ -525,7 +526,7 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
     return ds_anom, ds_freq, ds_int
 
 
-def plot_stats(dataset, transform, mask, ie_bbox, levels=14, seasonal=False, cmap="BrBG"):
+def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=False, cmap="BrBG"):
     if seasonal:
         row = "season"
         figsize = (9, 16.25)
@@ -534,31 +535,35 @@ def plot_stats(dataset, transform, mask, ie_bbox, levels=14, seasonal=False, cma
         row = None
         figsize = (9, 4.75)
         pad = 0.075
-    for v in list(dataset.data_vars):
-        fig = dataset[v].plot.contourf(
-            x="rlon",
-            y="rlat",
-            col="exp",
-            row=row,
-            subplot_kws={"projection": projection_hiresireland},
-            transform=transform,
-            xlim=(-1.775, 1.6),
-            ylim=(-2.1, 2.1),
-            cmap=cmap,
-            robust=True,
-            cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad},
-            figsize=figsize,
-            levels=levels,
+    # format exp names: https://github.com/pydata/xarray/discussions/9097
+    dataset["exp"] = dataset["exp"].where(dataset["exp"] != "historical", "Historical")
+    dataset["exp"] = dataset["exp"].where(dataset["exp"] != "rcp45", "RCP4.5")
+    dataset["exp"] = dataset["exp"].where(dataset["exp"] != "rcp85", "RCP8.5")
+    fig = dataset.plot.contourf(
+        x="rlon",
+        y="rlat",
+        col="exp",
+        row=row,
+        subplot_kws={"projection": projection_hiresireland},
+        transform=transform,
+        xlim=(-1.775, 1.6),
+        ylim=(-2.1, 2.1),
+        cmap=cmap,
+        robust=True,
+        extend="both",
+        cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad, "label": label},
+        figsize=figsize,
+        levels=levels,
+    )
+    for axis in fig.axs.flat:
+        mask.to_crs(projection_hiresireland).plot(
+            ax=axis, color="white", linewidth=0
         )
-        for axis in fig.axs.flat:
-            mask.to_crs(projection_hiresireland).plot(
-                ax=axis, color="white", linewidth=0
-            )
-            ie_bbox.to_crs(projection_hiresireland).plot(
-                ax=axis,
-                edgecolor="darkslategrey",
-                color="white",
-                linewidth=0.5,
-            )
-        fig.set_titles("{value}", weight="semibold", fontsize=14)
-        plt.show()
+        ie_bbox.to_crs(projection_hiresireland).plot(
+            ax=axis,
+            edgecolor="darkslategrey",
+            color="white",
+            linewidth=0.5,
+        )
+    fig.set_titles("{value}", weight="semibold", fontsize=14)
+    plt.show()
