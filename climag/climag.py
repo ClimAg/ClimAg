@@ -1,6 +1,4 @@
-"""Utility functions
-
-"""
+"""Utility functions"""
 
 import glob
 import os
@@ -519,14 +517,18 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
     # historical frequency
     hist_freq = ds_freq.sel(exp="historical").drop_vars("exp")
     # number of times more frequent in future
-    ds_freq = ds_freq / hist_freq
+    ds_freq_norm = ds_freq / hist_freq
     # intensity - keep only negative values
     ds_int = xr.where(ds_anom < 0, ds_anom, 0)
-    ds_int = -ds_int / hist_std
-    return ds_anom, ds_freq, ds_int
+    # intensity compared to historical std
+    ds_int_std = -ds_int / hist_std
+    # intensity compared to historical p10
+    # ds_int = -ds_int
+    ds_int = -ds_int / hist_p10 * 100
+    return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std
 
 
-def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=False, cmap="BrBG"):
+def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=False, cmap="BrBG", extend="both"):
     if seasonal:
         row = "season"
         figsize = (9, 16.25)
@@ -550,7 +552,7 @@ def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=Fal
         ylim=(-2.1, 2.1),
         cmap=cmap,
         robust=True,
-        extend="both",
+        extend=extend,
         cbar_kwargs={"location": "bottom", "aspect": 30, "pad": pad, "label": label},
         figsize=figsize,
         levels=levels,
