@@ -16,7 +16,10 @@ Documentation is available at: [climag.readthedocs.io](https://climag.readthedoc
 
 ## Acknowledgements
 
-ClimAg is a three-year research project funded by the [Environmental Protection Agency (EPA)](https://www.epa.ie/) under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority](https://hea.ie/).
+ClimAg is a three-year research project funded by the [Environmental Protection Agency (EPA)](https://www.epa.ie/) (Ireland) under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority](https://hea.ie/) (Ireland).
+
+The authors acknowledge the inputs of the ClimAg project steering committee members throughout the project.
+The authors thank Eoin Whelan ([Met Éireann](https://www.met.ie/), Dublin, Ireland), Paul Nolan ([Irish Centre for High-End Computing](https://www.ichec.ie/), Dublin, Ireland), and Elodie Ruelle ([Teagasc](https://www.teagasc.ie/animals/dairy/moorepark/), Moorepark, Ireland) for providing datasets used in this study.
 
 The Python implementation of the [ModVege](https://code.europa.eu/agri4cast/modvege) pasture model adapted for use in this project was translated from Java to Python by Y. Chemin of [JRC Ispra](https://joint-research-centre.ec.europa.eu/jrc-sites-across-europe/jrc-ispra-italy_en).
 This Python implementation was originally published as public domain software on GitHub under the [Unlicence license](https://github.com/ClimAg/modvege).

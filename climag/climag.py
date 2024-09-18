@@ -492,6 +492,7 @@ def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None, var_avg="mean"
 
 
 def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_avg="mean"):
+    # https://docs.xarray.dev/en/stable/examples/visualization_gallery.html#Control-the-plot's-colorbar
     ds_calc = calc_annual_mean(
         data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
     )
