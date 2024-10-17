@@ -4,6 +4,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/climag/badge/?version=latest)](https://climag.readthedocs.io/?badge=latest)
 
+**ClimAg report:**
+Streethran, N., Hickey, K., Wingler, A., and Leahy, P. (2024). *ClimAg: Multifactorial Causes of Fodder Crises in Ireland and Risks due to Climate Change*. Johnstown Castle: Environmental Protection Agency (EPA Research Report, 464). Available at: <https://www.epa.ie/publications/research/climate-change/research-464> (Accessed: 17 October 2024).
+
 ClimAg is examining past fodder crises such as the 2018 dry summer and placing them in the context of long-term climate change.
 
 ClimAg seeks to identify the multifactorial drivers of fodder crises by:
