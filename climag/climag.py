@@ -529,13 +529,14 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
     return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std
 
 
-def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=False, cmap="BrBG", extend="both"):
-    if seasonal:
-        row = "season"
+def plot_stats(dataset, transform, mask, ie_bbox, label, row=None, col="exp", levels=14, cmap="BrBG", extend="both"):
+    if row == "season":
         figsize = (9, 16.25)
         pad = 0.015
+    elif col == "season":
+        figsize = (10, 8.5)
+        pad = 0.045
     else:
-        row = None
         figsize = (9, 4.75)
         pad = 0.075
     # format exp names: https://github.com/pydata/xarray/discussions/9097
@@ -545,7 +546,7 @@ def plot_stats(dataset, transform, mask, ie_bbox, label, levels=14, seasonal=Fal
     fig = dataset.plot.contourf(
         x="rlon",
         y="rlat",
-        col="exp",
+        col=col,
         row=row,
         subplot_kws={"projection": projection_hiresireland},
         transform=transform,
