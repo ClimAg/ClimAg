@@ -524,9 +524,10 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
     # intensity compared to historical std
     ds_int_std = -ds_int / hist_std
     # intensity compared to historical p10
-    # ds_int = -ds_int
-    ds_int = -ds_int / hist_p10 * 100
-    return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std
+    ds_int_p10 = -ds_int / hist_p10 * 100
+    # absolute intensity
+    ds_int = -ds_int
+    return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std, ds_int_p10
 
 
 def plot_stats(dataset, transform, mask, ie_bbox, label, row=None, col="exp", levels=14, cmap="BrBG", extend="both"):
