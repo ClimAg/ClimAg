@@ -491,11 +491,11 @@ def calc_anomaly_absolute(data_dict, seasonal=False, skipna=None, var_avg="mean"
     return ds_anom
 
 
-def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_avg="mean"):
+def calc_event_frequency_intensity(data_dict, variable, seasonal=False, skipna=None, var_avg="mean"):
     # https://docs.xarray.dev/en/stable/examples/visualization_gallery.html#Control-the-plot's-colorbar
     ds_calc = calc_annual_mean(
         data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
-    )
+    )[variable]
     # historical 10th percentile
     hist_p10 = (
         ds_calc.sel(exp="historical")
@@ -503,6 +503,7 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
         .chunk(dict(year=-1))
         .quantile(dim="year", skipna=skipna, q=0.1)
     )
+    hist_p10.rio.write_crs(ds_calc.rio.crs, inplace=True)
     # historical standard deviation
     hist_std = (
         ds_calc.sel(exp="historical")
@@ -520,14 +521,69 @@ def calc_event_frequency_intensity(data_dict, seasonal=False, skipna=None, var_a
     # number of times more frequent in future
     ds_freq_norm = ds_freq / hist_freq
     # intensity - keep only negative values
-    ds_int = xr.where(ds_anom < 0, ds_anom, 0)
+    ds_int = xr.where(ds_anom < 0, -ds_anom, 0)
+    ds_int.rio.write_crs(ds_calc.rio.crs, inplace=True)
     # intensity compared to historical std
-    ds_int_std = -ds_int / hist_std
+    ds_int_std = ds_int / hist_std
     # intensity compared to historical p10
-    ds_int_p10 = -ds_int / hist_p10 * 100
-    # absolute intensity
-    ds_int = -ds_int
+    ds_int_p10 = ds_int / hist_p10 * 100
     return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std, ds_int_p10
+
+
+def calc_event_duration(data_dict, variable, seasonal=False, skipna=None, var_avg="mean"):
+    ds_calc = calc_annual_mean(
+        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
+    )[variable]
+    # historical 10th percentile
+    hist_p10 = (
+        ds_calc.sel(exp="historical")
+        .drop_vars("exp")
+        .chunk(dict(year=-1))
+        .quantile(dim="year", skipna=skipna, q=0.1)
+    )
+    # 30-day rolling mean of daily data
+    data_count = {}
+    data_val = {}
+    for key in data_dict:
+        d = data_dict[key].rolling(time=30).mean(skipna=True)[variable]
+        # difference between daily rolling average and historical
+        # 10th percentile
+        d = d - hist_p10
+        # keep only negative values and aggregate as yearly data
+        data_count[key] = xr.where(d < 0, 1, 0).groupby("time.year").sum(dim="time", skipna=True)
+        data_val[key] = getattr(xr.where(d < 0, -d, 0).groupby("time.year"), var_avg)(dim="time", skipna=True)
+    # combine data
+    data_count = xr.combine_by_coords(
+        data_count.values(), combine_attrs="override"
+    )
+    data_val = xr.combine_by_coords(
+        data_val.values(), combine_attrs="override"
+    )
+    data_val.rio.write_crs(data_count.rio.crs, inplace=True)
+    return data_count, data_val
+
+
+def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
+    dataset_df = dataset.rio.clip(pastures.to_crs(dataset.rio.crs), all_touched=True).to_dataframe()
+    cols = []
+    if exp:
+        cols.append("exp")
+    if model:
+        cols.append("model")
+    if xrdataset:
+        vl = list(dataset.data_vars)
+    else:
+        vl = [dataset.name]
+    cols = cols + vl
+    dataset_df = dataset_df.reset_index()[cols]
+    dataset_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    dataset_df.dropna(subset=vl, how="all", inplace=True)
+    if model:
+        return dataset_df.groupby("model").describe().T
+    elif exp:
+        return dataset_df.groupby("exp").describe().T
+    else:
+        return dataset_df.describe()
 
 
 def plot_stats(dataset, transform, mask, ie_bbox, label, row=None, col="exp", levels=14, cmap="BrBG", extend="both"):
