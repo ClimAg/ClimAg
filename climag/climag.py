@@ -15,6 +15,7 @@ import rasterio as rio
 import seaborn as sns
 import xarray as xr
 from matplotlib import patheffects
+from rioxarray.exceptions import MissingSpatialDimensionError
 
 # from dateutil.parser import parse
 
@@ -559,12 +560,15 @@ def calc_event_duration(data_dict, variable, seasonal=False, skipna=None, var_av
     data_val = xr.combine_by_coords(
         data_val.values(), combine_attrs="override"
     )
-    data_val.rio.write_crs(data_count.rio.crs, inplace=True)
+    data_val.rio.write_crs(ds_calc.rio.crs, inplace=True)
     return data_count, data_val
 
 
 def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
-    dataset_df = dataset.rio.clip(pastures.to_crs(dataset.rio.crs), all_touched=True).to_dataframe()
+    try:
+        dataset_df = dataset.rio.clip(pastures.to_crs(dataset.rio.crs), all_touched=True).to_dataframe()
+    except MissingSpatialDimensionError:
+        dataset_df = dataset.rename({"rlon": "x", "rlat": "y"}).rio.clip(pastures.to_crs(dataset.rio.crs), all_touched=True).to_dataframe()
     cols = []
     if exp:
         cols.append("exp")
@@ -574,7 +578,7 @@ def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
         vl = list(dataset.data_vars)
     else:
         vl = [dataset.name]
-    cols = cols + vl
+    cols += vl
     dataset_df = dataset_df.reset_index()[cols]
     dataset_df.replace([np.inf, -np.inf], np.nan, inplace=True)
     dataset_df.dropna(subset=vl, how="all", inplace=True)
