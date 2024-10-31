@@ -531,40 +531,7 @@ def calc_event_frequency_intensity(data_dict, variable, seasonal=False, skipna=N
     return ds_anom, ds_freq, ds_freq_norm, ds_int, ds_int_std, ds_int_p10
 
 
-def calc_event_duration(data_dict, variable, seasonal=False, skipna=None, var_avg="mean"):
-    ds_calc = calc_annual_mean(
-        data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
-    )[variable]
-    # historical 10th percentile
-    hist_p10 = (
-        ds_calc.sel(exp="historical")
-        .drop_vars("exp")
-        .chunk(dict(year=-1))
-        .quantile(dim="year", skipna=skipna, q=0.1)
-    )
-    # 30-day rolling mean of daily data
-    data_count = {}
-    data_val = {}
-    for key in data_dict:
-        d = data_dict[key].rolling(time=30).mean(skipna=True)[variable]
-        # difference between daily rolling average and historical
-        # 10th percentile
-        d = d - hist_p10
-        # keep only negative values and aggregate as yearly data
-        data_count[key] = xr.where(d < 0, 1, 0).groupby("time.year").sum(dim="time", skipna=True)
-        data_val[key] = getattr(xr.where(d < 0, -d, 0).groupby("time.year"), var_avg)(dim="time", skipna=True)
-    # combine data
-    data_count = xr.combine_by_coords(
-        data_count.values(), combine_attrs="override"
-    )
-    data_val = xr.combine_by_coords(
-        data_val.values(), combine_attrs="override"
-    )
-    data_val.rio.write_crs(ds_calc.rio.crs, inplace=True)
-    return data_count, data_val
-
-
-def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
+def describe_dataset(dataset, pastures, model=False, exp=False, season=False, xrdataset=True):
     try:
         dataset_df = dataset.rio.clip(pastures.to_crs(dataset.rio.crs), all_touched=True).to_dataframe()
     except MissingSpatialDimensionError:
@@ -574,6 +541,8 @@ def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
         cols.append("exp")
     if model:
         cols.append("model")
+    if season:
+        cols.append("season")
     if xrdataset:
         vl = list(dataset.data_vars)
     else:
@@ -586,6 +555,8 @@ def describe_dataset(dataset, pastures, model=False, exp=False, xrdataset=True):
         return dataset_df.groupby("model").describe().T
     elif exp:
         return dataset_df.groupby("exp").describe().T
+    elif season:
+        return dataset_df.groupby("season").describe().T
     else:
         return dataset_df.describe()
 
