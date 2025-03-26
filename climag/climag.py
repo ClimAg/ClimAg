@@ -603,3 +603,118 @@ def plot_stats(dataset, transform, mask, ie_bbox, label, row=None, col="exp", le
         )
     fig.set_titles("{value}", weight="semibold", fontsize=14)
     plt.show()
+
+
+def event_duration(data_dict, variable, skipna=None, var_avg="mean", rolling_time=7):
+    data_model = {}
+    data_count = {}
+    data_val = {}
+    for model, exp in product(model_list, exp_list):
+        if model == "HadGEM2-ES":
+            data_model[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"][variable].convert_calendar("standard", align_on="year")
+        else:
+            data_model[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"][variable]
+        data_model[f"{model}_{exp}"] = data_model[f"{model}_{exp}"].rolling(time=rolling_time).mean(skipna=skipna).groupby(data_model[f"{model}_{exp}"]["time"].dt.isocalendar().week).mean(skipna=skipna)
+        d = data_model[f"{model}_{exp}"] - data_model[f"{model}_historical"].sel(exp="historical").drop_vars("exp")
+        data_count[f"{model}_{exp}"] = xr.where(d < 0, 1, 0).sum(dim="week", skipna=skipna)
+        data_val[f"{model}_{exp}"] = getattr(xr.where(d < 0, -d, 0), var_avg)(dim="week", skipna=skipna)
+    # combine data
+    data_count = xr.combine_by_coords(
+        data_count.values(), combine_attrs="override"
+    )
+    data_val = xr.combine_by_coords(
+        data_val.values(), combine_attrs="override"
+    )
+    data_val.rio.write_crs(data_dict[f"{model}_historical"].rio.crs, inplace=True)
+    return data_count, data_val
+
+
+def calc_event_duration(data_dict, variable, seasonal=False, skipna=None, var_avg="mean"):
+    # merge data of same driving model
+    data_model = {}
+    data_count = {}
+    data_val = {}
+    for model, exp in product(model_list, exp_list):
+        # d = hist.sel(time=slice(year, year))
+        # d = d.groupby(d["time"].dt.isocalendar().week).mean(skipna=True).assign_coords(year=int(year)).expand_dims(dim="year")
+        data_model[f"{model}_{exp}"] = data_dict[f"{model}_{exp}"].rolling(time=30).mean(skipna=skipna)[variable]#.sel(exp="historical").drop_vars("exp")
+        yr_dict = {}
+        for year in data_model[f"{model}_{exp}"].time.dt.year.values:
+            yr_dict[year] = data_model[f"{model}_{exp}"].sel(time=slice(str(year), str(year)))
+            yr_dict[year] = yr_dict[year].groupby(yr_dict[year]["time"].dt.isocalendar().week).mean(skipna=True)
+            if exp == "historical":
+                yrval = year + 65
+            else:
+                yrval = year
+            yr_dict[year] = yr_dict[year].assign_coords(year=int(yrval)).expand_dims(dim="year")
+        data_model[f"{model}_{exp}"] = xr.combine_by_coords(yr_dict.values(), combine_attrs="override")
+        d = data_model[f"{model}_{exp}"] - data_model[f"{model}_historical"].sel(exp="historical").drop_vars("exp")
+        # hist = data_model[f"{model}_historical"].sel(exp="historical").drop_vars("exp")
+
+        # d = data_dict[f"{model}_{exp}"].rolling(time=30).mean(skipna=skipna)[variable] - hist
+        # rcp45 = data_dict[f"{model}_rcp45"].rolling(time=30).mean(skipna=skipna)[variable]
+        # rcp85 = data_dict[f"{model}_rcp85"].rolling(time=30).mean(skipna=skipna)[variable]
+        # diff45 = rcp45 - hist
+        # diff85 = rcp85 - hist
+        # keep only negative values and aggregate as yearly data
+        data_count[f"{model}_{exp}"] = xr.where(d < 0, 1, 0).sum(dim="week", skipna=skipna)
+        data_val[f"{model}_{exp}"] = getattr(xr.where(d < 0, -d, 0), var_avg)(dim="week", skipna=skipna)
+        # data_model[model] = xr.combine_by_coords([data_dict[f"{model}_historical"], data_dict[f"{model}_rcp45"], data_dict[f"{model}_rcp85"]], combine_attrs="override")
+    # ds_calc = calc_annual_mean(
+    #     data_dict=data_dict, seasonal=seasonal, skipna=skipna, var_avg=var_avg
+    # )[variable]
+    # # historical 10th percentile
+    # # hist_p10 = (
+    # #     ds_calc.sel(exp="historical")
+    # #     .drop_vars("exp")
+    # #     .chunk(dict(year=-1))
+    # #     .quantile(dim="year", skipna=skipna, q=0.1)
+    # # )
+    # # historical mean
+    # hist_mean = (
+    #     ds_calc.sel(exp="historical")
+    #     .drop_vars("exp")
+    #     .mean(dim="year", skipna=skipna)
+    # )
+    # 30-day rolling mean of daily data
+
+    # # for key in data_model:
+    # #     d = data_model[key].rolling(time=30).mean(skipna=skipna)[variable]
+    # #     # difference between daily rolling average and historical
+    # #     # 10th percentile
+    # #     # d = d - hist_p10
+    # #     if seasonal:
+    # #         ddict = {}
+    # #         for s, m in zip(season_list, [[12, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]]):
+    # #             # ddict[s] = d.sel(time=(d.time.dt.month.isin(m))) - hist_mean.sel(season=s).drop_vars("season")
+    # #             ddict[s] = d.sel(time=(d.time.dt.month.isin(m))) - d.sel(time=(d.time.dt.month.isin(m))).sel(exp="historical").drop_vars("exp")
+    # #             ddict[s] = ddict[s].assign_coords(season=s).expand_dims(dim="season")
+    # #         # d = xr.merge(ddict.values())
+    # #         d = xr.combine_by_coords(ddict.values(), combine_attrs="override")
+    # #     else:
+    # #         d = d - d.sel(exp="historical").drop_vars("exp")
+    # #     # keep only negative values and aggregate as yearly data
+    # #     data_count[key] = xr.where(d < 0, 1, 0).groupby("time.year").sum(dim="time", skipna=skipna)
+    # #     data_val[key] = getattr(xr.where(d < 0, -d, 0).groupby("time.year"), var_avg)(dim="time", skipna=skipna)
+
+    # combine data
+    data_count = xr.combine_by_coords(
+        data_count.values(), combine_attrs="override"
+    )
+    data_val = xr.combine_by_coords(
+        data_val.values(), combine_attrs="override"
+    )
+    data_val.rio.write_crs(data_dict[f"{model}_historical"].rio.crs, inplace=True)
+    return data_count, data_val
+
+
+def duration_surplus_biomass(data_dict, variable="bm_c", seasonal=False, skipna=None):
+    data_count = {}
+    for key in data_dict:
+        d = data_dict[key][variable]
+        data_count[key] = xr.where(d > 0, 1, 0).groupby("time.year").sum(dim="time", skipna=skipna)
+    # combine data
+    data_count = xr.combine_by_coords(
+        data_count.values(), combine_attrs="override"
+    )
+    return data_count
