@@ -11,4 +11,4 @@ risks due to climate change
 __author__ = """Nithiya Streethran"""
 __email__ = "nmstreethran@gmail.com"
 __version__ = "0.1.0"
-__copyright__ = "Copyright (C) 2022-2024 N. Streethran"
+__copyright__ = "Copyright (C) 2022-2025 N. Streethran"
