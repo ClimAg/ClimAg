@@ -5,7 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/climag/badge/?version=latest)](https://climag.readthedocs.io/?badge=latest)
 
 :sparkles: **ClimAg report:**
-Streethran, N., Hickey, K., Wingler, A., and Leahy, P. (2024). *ClimAg: Multifactorial Causes of Fodder Crises in Ireland and Risks due to Climate Change*. Johnstown Castle: Environmental Protection Agency (EPA Research Report, 464). Available at: <https://www.epa.ie/publications/research/climate-change/research-464> (Accessed: 17 October 2024).
+Streethran, N., Hickey, K., Wingler, A., and Leahy, P. (2024). *ClimAg: Multifactorial Causes of Fodder Crises in Ireland and Risks due to Climate Change*. Johnstown Castle: Environmental Protection Agency (EPA Research Report, 464). Available at: <https://www.epa.ie/publications/research/climate-change/research-464-climag-multifactorial-causes-of-fodder-crises-in-ireland-and-risks-due-to-climate-change.php> (Accessed: 17 October 2024).
 
 ClimAg is examining past fodder crises such as the 2018 dry summer and placing them in the context of long-term climate change.
 ClimAg seeks to identify the multifactorial drivers of fodder crises by:
@@ -18,7 +18,7 @@ Documentation is available at: [climag.readthedocs.io](https://climag.readthedoc
 
 ## Acknowledgements
 
-ClimAg is a three-year research project funded by the [Environmental Protection Agency (EPA)](https://www.epa.ie/) (Ireland) under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority](https://hea.ie/) (Ireland).
+ClimAg is a three-year research project funded by the [Environmental Protection Agency (EPA) Ireland](https://www.epa.ie/) under the Climate Change Research Programme grant number 2018-CCRP-MS.50, with additional funding provided under the COVID-19 research support scheme of the [Higher Education Authority (HEA) Ireland](https://hea.ie/).
 
 The authors acknowledge the inputs of the ClimAg project steering committee members throughout the project.
 The authors thank Eoin Whelan ([Met Éireann](https://www.met.ie/), Dublin, Ireland), Paul Nolan ([Irish Centre for High-End Computing](https://www.ichec.ie/), Dublin, Ireland), and Elodie Ruelle ([Teagasc](https://www.teagasc.ie/animals/dairy/moorepark/), Moorepark, Ireland) for providing datasets used in this study.
